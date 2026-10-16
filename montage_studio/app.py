@@ -1,4 +1,4 @@
-"""Montage Studio : interface locale de montage vidéo (Gradio + FFmpeg).
+"""Montage Studio Video (MSV) : interface locale de montage vidéo (Gradio + FFmpeg).
 
 Lancer :  python app.py      puis ouvrir http://127.0.0.1:7860
 Interface en 4 langues : /fr/, /en/, /it/, /es/ (la racine choisit d'après le navigateur ou le dernier choix).

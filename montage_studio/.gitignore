@@ -9,3 +9,8 @@ medias/
 sorties/
 projets/
 cache/
+
+# Voix off : clé API ElevenLabs et voix Piper téléchargées (ne jamais publier)
+voix_config.json
+modeles_voix/
+

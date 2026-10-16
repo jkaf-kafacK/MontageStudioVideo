@@ -1,4 +1,9 @@
-<p align="center"><img src="assets/logo.svg" alt="Montage Studio" width="420"></p>
+<p align="center"><img src="montage_studio/assets/logo.svg" alt="Montage Studio Video" width="420"></p>
+
+# Montage Studio Video (MSV)
+
+Logiciel de montage vidéo **100 % local** pour produire vite des Shorts, des vidéos YouTube et des séries de vidéos.
+L'application et sa documentation sont dans le dossier [`montage_studio/`](montage_studio/).
 
 
 
