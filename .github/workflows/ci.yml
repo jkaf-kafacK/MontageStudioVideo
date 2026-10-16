@@ -58,3 +58,69 @@ jobs:
         run: |
           python -m pip install pip-audit
           pip-audit -r requirements.txt
+
+  installateur:
+    name: Installateur Windows (compilation, installation, désinstallation)
+    runs-on: windows-latest
+    env:
+      UV_VERSION: "0.12.21"
+      UV_WIN_SHA256: "5d223efa0bf00208c3853246af09420419dfbd352536aa6bb8163d6170e23890"
+    defaults:
+      run:
+        working-directory: .
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Préparer uv et la version de test
+        run: |
+          Set-Content -Path montage_studio\VERSION -Value "0.0.0-ci" -NoNewline -Encoding utf8NoBOM
+          Invoke-WebRequest "https://github.com/astral-sh/uv/releases/download/$env:UV_VERSION/uv-x86_64-pc-windows-msvc.zip" -OutFile uv.zip
+          if ((Get-FileHash uv.zip -Algorithm SHA256).Hash.ToLower() -ne $env:UV_WIN_SHA256) { throw "Empreinte de uv invalide" }
+          Expand-Archive uv.zip -DestinationPath uvtmp
+          Copy-Item uvtmp\uv.exe installer\uv.exe
+
+      - name: Compiler l'installateur
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=0.0.0-ci" installer\MontageStudioVideo.iss
+          if ($LASTEXITCODE -ne 0) { throw "Échec de la compilation" }
+
+      - name: Installer comme un utilisateur (silencieux, sans droits administrateur)
+        run: |
+          $setup = Get-ChildItem dist\MontageStudioVideo-*-Setup.exe | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -Wait
+          $app = "$env:LOCALAPPDATA\Programs\Montage Studio Video"
+          foreach ($f in "lancer_msv.bat","uv.exe","app\app.py","app\requirements.lock","app\VERSION") {
+            if (-not (Test-Path "$app\$f")) { throw "Fichier manquant après installation : $f" }
+          }
+          if (Test-Path "$app\app\tests") { throw "Les tests ne doivent pas être installés" }
+
+      - name: Premier lancement (téléchargement de Python et des composants)
+        run: |
+          $env:MSV_PREPARER_SEULEMENT = "1"
+          & "$env:LOCALAPPDATA\Programs\Montage Studio Video\lancer_msv.bat"
+          if ($LASTEXITCODE -ne 0) { throw "Le premier lancement a échoué" }
+
+      - name: L'application démarre avec les composants installés
+        run: |
+          $py = "$env:LOCALAPPDATA\MontageStudioVideo\venv\Scripts\python.exe"
+          $env:MSV_INSTALLED = "1"
+          Push-Location "$env:LOCALAPPDATA\Programs\Montage Studio Video\app"
+          & $py -c "import app; app.build_app(); from core import paths; print(paths.MODE, paths.DATA_DIR); assert paths.MODE == 'installe'"
+          if ($LASTEXITCODE -ne 0) { throw "L'application ne démarre pas" }
+          & $py app.py --version
+          Pop-Location
+
+      - name: Désinstaller (les fichiers de Documents doivent rester)
+        run: |
+          $docs = [Environment]::GetFolderPath("MyDocuments")
+          New-Item -ItemType File -Force -Path "$docs\Montage Studio Video\sorties\ma_video.mp4" | Out-Null
+          $unins = "$env:LOCALAPPDATA\Programs\Montage Studio Video\unins000.exe"
+          Start-Process $unins -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
+          # le désinstallateur se relance depuis un dossier temporaire : attendre qu'il ait vraiment fini
+          for ($i = 0; ($i -lt 60) -and (Test-Path $unins); $i++) { Start-Sleep -Seconds 2 }
+          Start-Sleep -Seconds 3
+          if (Test-Path "$env:LOCALAPPDATA\MontageStudioVideo") { throw "Les composants internes n'ont pas été supprimés" }
+          if (-not (Test-Path "$docs\Montage Studio Video\sorties\ma_video.mp4")) { throw "Les vidéos de l'utilisateur ont été supprimées !" }

@@ -83,6 +83,13 @@ La fenêtre noire (réduite dans la barre des tâches) **est** le moteur : la fe
 
 ---
 
+### Version installée (Windows)
+L'installateur (`installer/MontageStudioVideo.iss`, compilé par GitHub Actions) copie l'application dans
+`%LOCALAPPDATA%\Programs\Montage Studio Video`. Le lanceur `lancer_msv.bat` prépare au premier lancement Python et les
+composants avec `uv`, à partir de `requirements.lock`. En mode installé (`MSV_INSTALLED=1`), `core/paths.py` range les
+fichiers de l'utilisateur dans `Documents\Montage Studio Video` et les fichiers internes dans
+`%LOCALAPPDATA%\MontageStudioVideo`. Lancé depuis le dépôt, tout reste dans le dossier `montage_studio/`, comme avant.
+
 ## 3. Utiliser l'application
 
 L'interface a 4 onglets. Le sélecteur **FR · EN · IT · ES** en haut à droite change la langue.

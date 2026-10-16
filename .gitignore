@@ -1,2 +1,7 @@
 # Réglages personnels de l'éditeur
 .vscode/
+
+# Fichiers produits par la compilation de l'installateur
+installer/uv.exe
+dist/
+montage_studio/VERSION

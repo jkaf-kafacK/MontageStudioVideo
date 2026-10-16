@@ -30,19 +30,16 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image
 
-from core import batch, ff, subs, tools, voice
+from core import batch, ff, paths, subs, tools, voice
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, QUALITY, TRANSITIONS,
                          fit_image, merge_defaults, render_project)
 from core.textimg import DEFAULT_STYLE, list_fonts, render_text
+from core.version import __version__
 
-BASE = Path(__file__).resolve().parent
-MEDIA_DIR = BASE / "medias"
-OUT_DIR = BASE / "sorties"
-PROJ_DIR = BASE / "projets"
-TPL_DIR = BASE / "templates"
-for d in (MEDIA_DIR, OUT_DIR, PROJ_DIR, TPL_DIR):
-    d.mkdir(exist_ok=True)
+BASE = Path(__file__).resolve().parent          # code de l'application (lecture seule une fois installée)
+MEDIA_DIR, OUT_DIR, PROJ_DIR = paths.MEDIA_DIR, paths.OUT_DIR, paths.PROJ_DIR   # fichiers de l'utilisateur
+paths.ensure_dirs()
 
 COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img"]
 FROM_MONTAGE = "(réglages de l'onglet Montage)"   # valeur interne ; seul le libellé affiché est traduit
@@ -70,11 +67,12 @@ def persist(path) -> str:
     p = Path(path if isinstance(path, str) else getattr(path, "name", str(path)))
     if not p.exists():
         return str(p)
-    try:
-        p.resolve().relative_to(BASE)
-        return str(p.resolve())
-    except ValueError:
-        pass
+    for racine in (BASE, paths.DATA_DIR):
+        try:
+            p.resolve().relative_to(racine)
+            return str(p.resolve())
+        except ValueError:
+            pass
     dest = MEDIA_DIR / p.name
     if dest.exists() and dest.stat().st_size != p.stat().st_size:
         dest = MEDIA_DIR / f"{p.stem}_{int(time.time())}{p.suffix}"
@@ -154,7 +152,7 @@ def media_label(path: str) -> str:
 
 
 def template_choices() -> list:
-    return [(_(FROM_MONTAGE), FROM_MONTAGE)] + sorted(p.stem for p in TPL_DIR.glob("*.json"))
+    return [(_(FROM_MONTAGE), FROM_MONTAGE)] + paths.template_names()
 
 
 # --------------------------------------------------------------------------- réglages ⇄ projet
@@ -367,7 +365,7 @@ def save_template_ui(*values):
     proj["subtitles"]["srt_path"] = ""
     proj["title"]["text"] = ""
     name = slug(proj["name"])
-    (TPL_DIR / f"{name}.json").write_text(json.dumps(proj, ensure_ascii=False, indent=2), encoding="utf-8")
+    (paths.USER_TEMPLATES / f"{name}.json").write_text(json.dumps(proj, ensure_ascii=False, indent=2), encoding="utf-8")
     gr.Info(_("Modèle enregistré : templates/{name}.json", name=name))
     return gr.Dropdown(choices=template_choices(), value=name)
 
@@ -375,7 +373,7 @@ def save_template_ui(*values):
 def load_template_into_montage(name):
     if not name or name == FROM_MONTAGE:
         raise gr.Error(_("Choisis un modèle enregistré."))
-    proj = json.loads((TPL_DIR / f"{name}.json").read_text(encoding="utf-8"))
+    proj = json.loads(paths.template_path(name).read_text(encoding="utf-8"))
     return project_values(proj)
 
 
@@ -385,7 +383,7 @@ def template_info(name):
     if not name or name == FROM_MONTAGE:
         return _("Les réglages actuels de l'onglet Montage serviront de modèle.")
     try:
-        d = json.loads((TPL_DIR / f"{name}.json").read_text(encoding="utf-8"))
+        d = json.loads(paths.template_path(name).read_text(encoding="utf-8"))
         return (d.get(f"description_{LANG.get()}") or d.get("description")
                 or _("Modèle {name} ({fmt}).", name=name, fmt=d.get("format", "?")))
     except Exception as e:
@@ -403,7 +401,7 @@ def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_n
     if tpl == FROM_MONTAGE or not tpl:
         template = collect(values)
     else:
-        template = merge_defaults(json.loads((TPL_DIR / f"{tpl}.json").read_text(encoding="utf-8")))
+        template = merge_defaults(json.loads(paths.template_path(tpl).read_text(encoding="utf-8")))
     if mode == "Tableau CSV":
         if not csv_file:
             raise gr.Error(_("Ajoute le fichier CSV de la série."))
@@ -1011,7 +1009,7 @@ def _build_ui(lang: str) -> gr.Blocks:
             gr.Markdown(f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
                         f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}")
         pied = _("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
-        gr.HTML(f"<div id='pied'>{pied}</div>")
+        gr.HTML(f"<div id='pied'>{pied} · v{__version__}</div>")
 
         # ------------------------------------------------------------- événements
         up.upload(L(import_files), [up, lib], [lib, media_dd, up])
@@ -1149,6 +1147,8 @@ def build_app():
     allowed = [str(d) for d in (OUT_DIR, MEDIA_DIR, PROJ_DIR, BASE / "exemples")]
     blocked = [str(BASE / d) for d in (".venv", "core", "assets", "cache", "templates")] + \
               [str(f) for f in BASE.glob("*") if f.is_file()]
+    if paths.PRIVATE_DIR != BASE:          # clé API, voix téléchargées, cache : jamais téléchargeables
+        blocked.append(str(paths.PRIVATE_DIR))
     for code in LANGS:
         gr.mount_gradio_app(app, build_ui(code).queue(), path=f"/{code}", theme=THEME, css=CSS,
                             allowed_paths=allowed, blocked_paths=blocked)
@@ -1163,10 +1163,12 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Montage Studio Video (MSV)")
     ap.add_argument("--port", type=int, default=None, help="par défaut : premier port libre à partir de 7860")
     ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--version", action="version", version=f"Montage Studio Video {__version__}")
     a = ap.parse_args()
     port = a.port or free_port()
     url = f"http://127.0.0.1:{port}/"
     app = build_app()
+    print(f"Montage Studio Video {__version__} · dossier de travail : {paths.DATA_DIR}")
     print(f"Montage Studio Video : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
     if not a.no_browser:
         threading.Timer(1.5, webbrowser.open, args=(url,)).start()

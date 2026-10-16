@@ -1,6 +1,7 @@
-# Publie une version téléchargeable (ZIP) quand on pousse une étiquette comme v1.0.0.
-#   git tag v1.0.0
-#   git push origin v1.0.0
+# Publie une version quand on pousse une étiquette comme v1.2.0 :
+#   git tag v1.2.0
+#   git push origin v1.2.0
+# Produit : l'installateur Windows (MontageStudioVideo-<version>-Setup.exe) + le ZIP du code.
 name: Publier une version
 
 on:
@@ -10,15 +11,22 @@ on:
 permissions:
   contents: write
 
+env:
+  # Version de uv figée (publiée depuis plus de 2 semaines) et son empreinte SHA-256 vérifiée.
+  UV_VERSION: "0.12.21"
+  UV_WIN_SHA256: "5d223efa0bf00208c3853246af09420419dfbd352536aa6bb8163d6170e23890"
+
 jobs:
-  release:
+  zip:
+    name: ZIP du code
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Fabriquer le ZIP de l'application
         run: |
-          git archive --format=zip --prefix=montage_studio/ \
+          echo "${GITHUB_REF_NAME#v}" > VERSION
+          git archive --format=zip --prefix=montage_studio/ --add-file=VERSION \
             -o "montage_studio-${GITHUB_REF_NAME}.zip" "HEAD:montage_studio"
 
       - name: Créer la version sur GitHub
@@ -27,7 +35,49 @@ jobs:
           files: montage_studio-${{ github.ref_name }}.zip
           generate_release_notes: true
           body: |
-            ## Installation (Windows)
-            1. Télécharger `montage_studio-${{ github.ref_name }}.zip` ci-dessous et le décompresser.
-            2. Installer [Python 3.12](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**.
-            3. Double-cliquer sur `lancer_windows.bat` (macOS / Linux : `./lancer_mac_linux.sh`).
+            ## Installation sous Windows (recommandé)
+            1. Télécharger **`MontageStudioVideo-${{ github.ref_name }}-Setup.exe`** ci-dessous (la ligne apparaît quelques minutes après la publication).
+            2. Double-cliquer. Si Windows affiche « Windows a protégé votre ordinateur » : *Informations complémentaires* → *Exécuter quand même*.
+            3. Au premier lancement, Python et les composants sont téléchargés automatiquement (une seule fois, connexion Internet nécessaire).
+
+            Tes vidéos, médias et projets sont rangés dans **Documents\Montage Studio Video**.
+
+            ## Installation manuelle (macOS / Linux / développeurs)
+            Télécharger le ZIP, installer [Python 3.12](https://www.python.org/downloads/), puis lancer `lancer_mac_linux.sh` (ou `lancer_windows.bat`).
+
+  windows:
+    name: Installateur Windows
+    needs: zip
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Numéro de version
+        shell: pwsh
+        run: |
+          $v = "$env:GITHUB_REF_NAME".TrimStart("v")
+          Set-Content -Path montage_studio\VERSION -Value $v -NoNewline -Encoding utf8NoBOM
+          "APP_VERSION=$v" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Télécharger uv et vérifier son empreinte
+        shell: pwsh
+        run: |
+          $url = "https://github.com/astral-sh/uv/releases/download/$env:UV_VERSION/uv-x86_64-pc-windows-msvc.zip"
+          Invoke-WebRequest $url -OutFile uv.zip
+          $hash = (Get-FileHash uv.zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:UV_WIN_SHA256) { throw "Empreinte de uv invalide : $hash" }
+          Expand-Archive uv.zip -DestinationPath uvtmp
+          Copy-Item uvtmp\uv.exe installer\uv.exe
+
+      - name: Compiler l'installateur (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          & $iscc "/DAppVersion=$env:APP_VERSION" installer\MontageStudioVideo.iss
+          if ($LASTEXITCODE -ne 0) { throw "Échec de la compilation de l'installateur" }
+
+      - name: Ajouter l'installateur à la version
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/MontageStudioVideo-*-Setup.exe

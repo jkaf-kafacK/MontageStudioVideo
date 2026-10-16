@@ -24,9 +24,7 @@ from pathlib import Path
 from . import ff, subs
 from .i18n import _
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-MODELS_DIR = BASE_DIR / "modeles_voix"
-CONFIG_FILE = BASE_DIR / "voix_config.json"
+from .paths import VOICE_CONFIG as CONFIG_FILE, VOICE_MODELS_DIR as MODELS_DIR  # noqa: E402
 
 ELEVEN_API = "https://api.elevenlabs.io"
 ELEVEN_MODELS = {
@@ -66,6 +64,7 @@ def load_config() -> dict:
 def save_config(**values) -> None:
     cfg = load_config()
     cfg.update({k: v for k, v in values.items() if v is not None})
+    CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
     CONFIG_FILE.write_text(json.dumps(cfg, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
@@ -171,7 +170,7 @@ def _piper_model(name: str) -> Path:
     d = MODELS_DIR / f"vits-piper-{name}"
     if (d / f"{name}.onnx").exists():
         return d
-    MODELS_DIR.mkdir(exist_ok=True)
+    MODELS_DIR.mkdir(parents=True, exist_ok=True)
     arch = MODELS_DIR / f"{name}.tar.bz2"
     urllib.request.urlretrieve(PIPER_URL.format(name=name), arch)
     with tarfile.open(arch, "r:bz2") as t:

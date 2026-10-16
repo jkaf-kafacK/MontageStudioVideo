@@ -5,6 +5,9 @@
 Logiciel de montage vidéo **100 % local** pour produire vite des Shorts, des vidéos YouTube et des séries de vidéos.
 L'application et sa documentation sont dans le dossier [`montage_studio/`](montage_studio/).
 
+**Installer sous Windows** : télécharge `MontageStudioVideo-<version>-Setup.exe` dans les
+[Releases](https://github.com/jkaf-kafacK/MontageStudioVideo/releases), double-clique, c'est tout.
+
 
 
 ## 2. Fonctions

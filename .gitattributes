@@ -1,0 +1,5 @@
+# Scripts Windows : toujours en fin de ligne CRLF sur le disque, quel que soit le système
+*.bat text eol=crlf
+*.iss text eol=crlf
+# Scripts Unix : toujours LF
+*.sh text eol=lf

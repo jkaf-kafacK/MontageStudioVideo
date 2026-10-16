@@ -24,6 +24,7 @@ from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from .tools import detect_speech_ranges, extract_audio
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+from .paths import CACHE_DIR  # noqa: E402
 
 FORMATS = {
     "9:16": (1080, 1920),
@@ -514,8 +515,8 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
         if progress:
             progress(max(0.0, min(1.0, frac)), msg)
 
-    cache = BASE_DIR / "cache"
-    cache.mkdir(exist_ok=True)
+    cache = CACHE_DIR
+    cache.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(prefix="rendu_", dir=cache))
     try:
         prog(0.01, _("Analyse des médias"))

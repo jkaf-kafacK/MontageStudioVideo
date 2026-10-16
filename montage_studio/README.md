@@ -13,7 +13,8 @@ Interface dans le navigateur (Gradio), moteur FFmpeg, texte rendu avec Pillow : 
 
 | Système | Étapes |
 |---|---|
-| **Windows** | 1. Installer [Python 3.10+](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**. 2. Double-cliquer sur `lancer_windows.bat`. |
+| **Windows (recommandé)** | Télécharger **`MontageStudioVideo-<version>-Setup.exe`** dans les [Releases](https://github.com/jkaf-kafacK/MontageStudioVideo/releases), double-cliquer, puis lancer *Montage Studio Video* depuis le menu Démarrer. Pas besoin d'installer Python. |
+| **Windows (développeurs)** | 1. Installer [Python 3.10+](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**. 2. Double-cliquer sur `lancer_windows.bat`. |
 | **macOS / Linux** | 1. Avoir Python 3.10+. 2. Dans un terminal : `./lancer_mac_linux.sh` |
 
 Le premier lancement crée un environnement `.venv` et installe les dépendances (quelques minutes).
@@ -40,6 +41,17 @@ pip install faster-whisper
 Le modèle (`small` ≈ 500 Mo) est téléchargé au premier usage. Avec une carte NVIDIA il tourne sur le GPU, sinon sur le CPU.
 
 ---
+
+### Ce que fait l'installateur Windows
+
+| | |
+|---|---|
+| Droits administrateur | Aucun : installation dans ton profil (`%LOCALAPPDATA%\Programs\Montage Studio Video`) |
+| Premier lancement | Télécharge Python 3.12 et les composants, **une seule fois** (2 à 5 min, connexion Internet nécessaire). Versions figées et vérifiées par empreinte (`requirements.lock`) |
+| Tes fichiers | **Documents\Montage Studio Video** : `medias`, `sorties`, `projets`, `modeles` |
+| Fichiers internes | `%LOCALAPPDATA%\MontageStudioVideo` : Python, composants, cache, voix Piper, clé ElevenLabs |
+| Désinstallation | Paramètres Windows → Applications. Supprime l'application et les fichiers internes, **garde tes vidéos** dans Documents |
+| Alerte « Windows a protégé votre ordinateur » | Normale tant que l'installateur n'est pas signé : *Informations complémentaires → Exécuter quand même* |
 
 ## 2. Fonctions
 
