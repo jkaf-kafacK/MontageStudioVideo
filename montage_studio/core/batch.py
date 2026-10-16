@@ -116,7 +116,12 @@ def build_project(template: dict, row: dict, base: Path) -> dict:
 def run_batch(
     template: dict, rows: list[dict], base: str | Path, out_dir: str | Path,
     quality: str = "haute", progress: Optional[Callable[[float, str], None]] = None,
+    tts: dict | None = None,
 ) -> tuple[list[str], str]:
+    """tts : réglages de voix off ({"provider", "voice", ...}). S'il est fourni (ou si le modèle contient
+    "tts": {"enabled": true}), chaque ligne avec un « texte » et sans « voix_off » reçoit une voix générée."""
+    tpl_tts = template.get("tts") or {}
+    tts = tts or (tpl_tts if tpl_tts.get("enabled") else None)
     base, out_dir = Path(base), Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     done, log = [], []
@@ -130,6 +135,15 @@ def run_batch(
                 progress((i + f) / n, f"[{i + 1}/{n}] {name} : {msg}")
 
         try:
+            if tts and row.get("texte") and not row.get("voix_off"):
+                from .voice import generate
+                sub_prog(0.0, _("création de la voix off"))
+                opts = {k: v for k, v in tts.items() if k not in ("enabled", "provider", "voice")}
+                v = generate(row["texte"], out_dir / "voix", name=name, provider=tts.get("provider", "piper"),
+                             voice=tts.get("voice", "Pierre — homme, français"), **opts)
+                subs_on = (template.get("subtitles") or {}).get("source", "aucun") != "aucun"
+                row = {**row, "voix_off": v["audio"], "srt": row.get("srt") or (v["srt"] if subs_on else "")}
+                log.append(_("🎙 {name} : voix off générée ({dur:.1f} s)", name=name, dur=sum(v["durations"])))
             proj = build_project(template, row, base)
             res = render_project(proj, out_dir / f"{name}.mp4", progress=sub_prog, quality=quality)
             done.append(res["video"])

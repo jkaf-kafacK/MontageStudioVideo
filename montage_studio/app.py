@@ -30,7 +30,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image
 
-from core import batch, ff, subs, tools
+from core import batch, ff, subs, tools, voice
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, QUALITY, TRANSITIONS,
                          fit_image, merge_defaults, render_project)
@@ -393,7 +393,13 @@ def template_info(name):
 
 
 def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_name, quality, tpl,
+               auto_v, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
                *values, progress=gr.Progress()):
+    tts = None
+    if auto_v:
+        provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch,
+                                              speed, key)
+        tts = {"provider": provider, "voice": v, **options}
     if tpl == FROM_MONTAGE or not tpl:
         template = collect(values)
     else:
@@ -413,7 +419,7 @@ def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_n
         raise gr.Error(_("Aucune ligne à traiter."))
     out = OUT_DIR / slug(out_name or f"serie_{time.strftime('%Y%m%d_%H%M')}")
     files, log = batch.run_batch(template, rows, base, out, quality=quality,
-                                 progress=lambda f, m: progress(f, desc=m))
+                                 progress=lambda f, m: progress(f, desc=m), tts=tts)
     head = _("{ok}/{n} vidéos dans {out}", ok=len([f for f in files if f.endswith(".mp4")]), n=len(rows), out=out) + "\n\n"
     return files or None, head + log
 
@@ -463,6 +469,82 @@ def tool_transcribe(file, lang, model, max_words, progress=gr.Progress()):
     out = OUT_DIR / f"{Path(file).stem}.srt"
     subs.write_srt(cues, out)
     return str(out), "\n".join(f"[{c['start']:.1f} → {c['end']:.1f}] {c['text']}" for c in cues[:200])
+
+
+# --------------------------------------------------------------------------- actions : voix off
+
+ENGINES = ["Piper (gratuit, local)", "ElevenLabs (API)"]
+
+
+def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key=""):
+    """Traduit les réglages de l'onglet Voix off en (moteur, voix, options)."""
+    if engine == ENGINES[1]:
+        if not el_voice:
+            raise gr.Error(_("Choisis une voix ElevenLabs (bouton « Charger mes voix »)."))
+        return "elevenlabs", el_voice, {"key": key or None, "model": voice.ELEVEN_MODELS.get(el_model, el_model),
+                                        "stability": stab, "similarity": sim, "style": style, "speed": speed}
+    if not voice.piper_available():
+        raise gr.Error(_("Piper n'est pas installé : pip install sherpa-onnx"))
+    return "piper", piper_voice, {"pitch": pitch, "speed": speed}
+
+
+def load_el_voices(key, remember):
+    try:
+        if key and remember:
+            voice.save_config(elevenlabs_key=key.strip())
+        voices = voice.eleven_voices(key or None)
+    except Exception as e:
+        raise gr.Error(str(e)[:900])
+    gr.Info(_("{n} voix trouvées sur ton compte ElevenLabs.", n=len(voices)))
+    return gr.Dropdown(choices=voices, value=voices[0][1] if voices else None)
+
+
+def piper_licence(label):
+    lic = voice.PIPER_VOICES.get(label, ("", 0, "?"))[2]
+    return _("Licence du modèle : {lic} (détails dans TIERS.md)", lic=lic)
+
+
+def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
+              gap, max_words, progress=gr.Progress()):
+    provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key)
+    n = len(voice.split_scenes(script or ""))
+    if not n:
+        raise gr.Error(_("Écris le texte de la voix off."))
+    msg = _("Création de la voix ({n} scène(s))", n=n)
+    if provider == "piper":
+        msg += " · " + _("le premier usage télécharge la voix")
+    progress(0.05, desc=msg)
+    out = OUT_DIR / "voix" / time.strftime("%Y%m%d_%H%M%S")
+    try:
+        res = voice.generate(script, out, name=slug(name or "voix"), provider=provider, voice=v,
+                             gap=float(gap), max_words=int(max_words), **options)
+    except Exception as e:
+        raise gr.Error(str(e)[:900])
+    lines = [_("✅ Voix créée : {dur:.1f} s, {n} scène(s)", dur=sum(res["durations"]), n=len(res["scenes"]))]
+    lines += [_("   scène {i} : {dur:.2f} s", i=i + 1, dur=d) for i, d in enumerate(res["durations"])]
+    lines.append(_("Sous-titres : minutage exact (ElevenLabs)") if provider == "elevenlabs"
+                 else _("Sous-titres : minutage estimé"))
+    return res["audio"], [res["audio"], res["srt"]] + res["scenes"], "\n".join(lines), res
+
+
+def send_voice_to_montage(res):
+    if not res:
+        raise gr.Error(_("Génère d'abord une voix."))
+    gr.Info(_("Voix off et sous-titres envoyés dans l'onglet Montage."))
+    return res["audio"], "srt", res["srt"], True
+
+
+def tool_replace_voice(video, new_voice, last, at, keep, ref):
+    src = new_voice or (last or {}).get("audio")
+    if not video or not src:
+        raise gr.Error(_("Ajoute la vidéo et la nouvelle voix (ou génère-en une au-dessus)."))
+    out = OUT_DIR / f"{Path(video).stem}_nouvelle_voix.mp4"
+    try:
+        voice.replace_clip_voice(video, src, str(out), at=float(at or 0), keep_original=float(keep or 0),
+                                 match_level_of=ref or None)
+    except Exception as e:
+        raise gr.Error(str(e)[:900])
+    return str(out), str(out)
 
 
 # --------------------------------------------------------------------------- interface
@@ -568,7 +650,7 @@ def entete(lang: str) -> str:
 <div id="entete">
   <div class="marque">{LOGO_SVG}</div>
   <div class="titres">
-    <h1>Montage<span>Studio</span></h1>
+    <h1>Montage<span>Studio Video</span></h1>
     <p>{_("Montage vidéo local pour Shorts et vidéos YouTube, propulsé par FFmpeg.")}</p>
   </div>
   <div class="droite">
@@ -612,7 +694,7 @@ def build_ui(lang: str = DEFAULT_LANG) -> gr.Blocks:
 def _build_ui(lang: str) -> gr.Blocks:
     FIELDS.clear()
     L = functools.partial(bind, lang=lang)
-    with gr.Blocks(title="Montage Studio") as demo:
+    with gr.Blocks(title="Montage Studio Video") as demo:
         gr.HTML(entete(lang))
         lib = gr.State([])
 
@@ -789,6 +871,67 @@ def _build_ui(lang: str) -> gr.Blocks:
                     tpl_dd_m = gr.Dropdown(template_choices(), value=FROM_MONTAGE, label=_("Modèle"))
                     load_tpl_btn = gr.Button(_("Appliquer ce modèle aux réglages"))
 
+        # ------------------------------------------------------------- voix off
+        with gr.Tab(_("Voix off")):
+            gr.Markdown(_("Écris le texte, choisis une voix, génère. Sépare les scènes par une ligne `---` : "
+                          "une piste par scène + une piste complète + les sous-titres `.srt`."))
+            voice_res = gr.State(None)
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Texte")
+                    v_script = gr.Textbox(label=_("Texte de la voix off"), lines=12,
+                                          placeholder=_("15 janvier 1919. Boston.\n---\nDans le quartier du North End, "
+                                                        "une cuve géante domine le port."))
+                    with gr.Row():
+                        v_name = gr.Textbox(label=_("Nom"), value="voix", scale=2)
+                        v_gap = gr.Slider(0, 1.5, value=0.35, step=0.05, label=_("Pause entre scènes (s)"), scale=2)
+                        v_words = gr.Slider(1, 8, value=3, step=1, label=_("Mots par sous-titre"), scale=2)
+                    v_btn = gr.Button(_("Générer la voix"), variant="primary", size="lg")
+                    v_audio = gr.Audio(label=_("Écoute"), type="filepath")
+                    v_send = gr.Button(_("Utiliser dans l'onglet Montage (voix + sous-titres)"))
+                    v_files = gr.File(label=_("Fichiers (piste complète, .srt, une piste par scène)"),
+                                      file_count="multiple")
+                    v_log = gr.Textbox(label=_("Journal"), lines=5, elem_classes="mono")
+                with gr.Column(scale=2):
+                    section("2", "Voix")
+                    v_engine = gr.Radio(opts(ENGINES), value=ENGINES[0], label=_("Moteur"))
+                    v_speed = gr.Slider(0.7, 1.2, value=1.0, step=0.01, label=_("Vitesse"))
+                    with gr.Group(visible=True) as g_piper:
+                        gr.Markdown(_("**Piper** : gratuit, hors ligne. La voix est téléchargée au premier usage."))
+                        v_piper = gr.Dropdown(opts(list(voice.PIPER_VOICES)), value=voice.DEFAULT_PIPER,
+                                              label=_("Voix"))
+                        v_lic = gr.Markdown(piper_licence(voice.DEFAULT_PIPER))
+                        v_pitch = gr.Slider(-6, 6, value=0, step=0.5,
+                                            label=_("Hauteur (demi-tons, négatif = plus grave)"))
+                    with gr.Group(visible=False) as g_el:
+                        gr.Markdown(_("**ElevenLabs** : voix très naturelles et voix clonées. Payant, consomme tes "
+                                      "crédits. Clé : elevenlabs.io → Profile → API Keys."))
+                        v_key = gr.Textbox(label=_("Clé API"), type="password",
+                                           value=voice.load_config().get("elevenlabs_key", ""))
+                        v_remember = gr.Checkbox(value=True, label=_("Mémoriser la clé sur ce PC (voix_config.json)"))
+                        v_load = gr.Button(_("Charger mes voix"), size="sm")
+                        v_el = gr.Dropdown([], label=_("Voix"), interactive=True)
+                        v_model = gr.Dropdown(list(voice.ELEVEN_MODELS), value=list(voice.ELEVEN_MODELS)[0],
+                                              label=_("Modèle"))
+                        v_stab = gr.Slider(0, 1, value=0.45, step=0.05, label=_("Stabilité (bas = plus expressif)"))
+                        v_sim = gr.Slider(0, 1, value=0.8, step=0.05, label=_("Fidélité à la voix"))
+                        v_style = gr.Slider(0, 1, value=0.15, step=0.05, label=_("Style / exagération"))
+            with gr.Accordion(_("Remplacer la voix d'un clip existant"), open=False):
+                gr.Markdown(_("Pour une scène générée avec la mauvaise voix : la voix d'origine est retirée et la "
+                              "nouvelle est posée au moment choisi, au même volume qu'un clip de référence."))
+                with gr.Row():
+                    rv_video = gr.File(label=_("Clip vidéo"), type="filepath", height=80)
+                    rv_voice = gr.File(label=_("Nouvelle voix (vide = dernière voix générée)"), type="filepath",
+                                       height=80)
+                    rv_ref = gr.File(label=_("Clip de référence pour le volume (optionnel)"), type="filepath", height=80)
+                with gr.Row():
+                    rv_at = gr.Number(value=0.5, label=_("Début de la voix (s)"), precision=2)
+                    rv_keep = gr.Slider(0, 1, value=0, step=0.05, label=_("Garder le son d'origine (ambiance)"))
+                    rv_btn = gr.Button(_("Remplacer"), variant="primary")
+                with gr.Row():
+                    rv_out_v = gr.Video(label=_("Résultat"), height=320)
+                    rv_out = gr.File(label=_("Télécharger"))
+
         # ------------------------------------------------------------- série
         with gr.Tab(_("Shorts en série")):
             gr.Markdown(_("Une ligne du tableau = une vidéo terminée. Le modèle fixe le style, le tableau fixe le contenu."))
@@ -805,6 +948,8 @@ def _build_ui(lang: str) -> gr.Blocks:
                     with gr.Row():
                         max_dur = gr.Slider(5, 180, value=59, step=1, label=_("Durée max par vidéo (s)"))
                         title_name = gr.Checkbox(value=False, label=_("Titre = nom du fichier"))
+                    auto_voice = gr.Checkbox(value=False, label=_("Créer la voix off à partir de la colonne « texte » "
+                                                                   "(réglages de l'onglet Voix off)"))
                     with gr.Row():
                         out_name = gr.Textbox(label=_("Nom du dossier de sortie"), placeholder="serie_octobre")
                         q_series = gr.Dropdown(opts(QUALITY), value="haute", label=_("Qualité"))
@@ -865,7 +1010,7 @@ def _build_ui(lang: str) -> gr.Blocks:
             gr.Markdown(help_text())
             gr.Markdown(f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
                         f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}")
-        pied = _("Montage Studio · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
+        pied = _("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
         gr.HTML(f"<div id='pied'>{pied}</div>")
 
         # ------------------------------------------------------------- événements
@@ -892,8 +1037,21 @@ def _build_ui(lang: str) -> gr.Blocks:
 
         tpl_dd.change(L(template_info), tpl_dd, tpl_desc)
         refresh_btn.click(L(lambda: gr.Dropdown(choices=template_choices())), None, tpl_dd)
+        v_inputs = [v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper, v_pitch, v_speed]
         run_btn.click(L(run_series), [mode, csv_in, base_in, folder_series, max_dur, title_name, out_name, q_series,
-                                      tpl_dd] + vals, [series_files, series_log])
+                                      tpl_dd, auto_voice] + v_inputs + vals, [series_files, series_log])
+
+        v_engine.change(lambda e: (gr.Group(visible=e == ENGINES[0]), gr.Group(visible=e == ENGINES[1])),
+                        v_engine, [g_piper, g_el])
+        v_piper.change(L(piper_licence), v_piper, v_lic)
+        v_load.click(L(load_el_voices), [v_key, v_remember], v_el)
+        v_btn.click(L(gen_voice), [v_script, v_name, v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper,
+                                   v_pitch, v_speed, v_gap, v_words], [v_audio, v_files, v_log, voice_res])
+        v_send.click(L(send_voice_to_montage), voice_res,
+                     [FIELDS["voiceover.path"], FIELDS["subtitles.source"], FIELDS["subtitles.srt_path"],
+                      FIELDS["fit_images_to_voiceover"]])
+        rv_btn.click(L(tool_replace_voice), [rv_video, rv_voice, voice_res, rv_at, rv_keep, rv_ref],
+                     [rv_out_v, rv_out])
 
         th_btn.click(L(tool_thumbnail), [th_file, th_t, th_text, th_fmt, th_font, th_size, th_color, th_pos],
                      [th_img, th_out])
@@ -1002,14 +1160,14 @@ if __name__ == "__main__":
 
     import uvicorn
 
-    ap = argparse.ArgumentParser(description="Montage Studio")
+    ap = argparse.ArgumentParser(description="Montage Studio Video (MSV)")
     ap.add_argument("--port", type=int, default=None, help="par défaut : premier port libre à partir de 7860")
     ap.add_argument("--no-browser", action="store_true")
     a = ap.parse_args()
     port = a.port or free_port()
     url = f"http://127.0.0.1:{port}/"
     app = build_app()
-    print(f"Montage Studio : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
+    print(f"Montage Studio Video : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
     if not a.no_browser:
         threading.Timer(1.5, webbrowser.open, args=(url,)).start()
     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

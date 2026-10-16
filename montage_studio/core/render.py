@@ -84,6 +84,9 @@ DEFAULT_PROJECT = {
                   "karaoke": True, "language": "fr", "whisper_model": "small",
                   "style": {}},
     "logo": {"path": "", "position": "haut droite", "size": 0.14, "opacity": 0.9},
+    # Voix off générée automatiquement en production en série (voir core/voice.py)
+    "tts": {"enabled": False, "provider": "piper", "voice": "Pierre — homme, français",
+            "model": "eleven_multilingual_v2", "speed": 1.0, "pitch": 0.0},
 }
 
 Progress = Optional[Callable[[float, str], None]]
@@ -262,7 +265,9 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
               + ";[fit]format=yuv420p,setsar=1[v]")
         if seg["has_audio"] and not seg["mute"]:
             fc += (f";[0:a]asetpts=PTS-STARTPTS,{_atempo_chain(sp)},volume={seg['volume']:.3f},"
-                   f"aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad[a]")
+                   f"aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad,"
+                   # micro-fondus de 15-25 ms : évitent les « clics » audibles aux raccords
+                   f"atrim=0:{dur:.3f},afade=t=in:d=0.015,afade=t=out:st={max(0, dur - 0.025):.3f}:d=0.025[a]")
         else:
             args += silent
             fc += ";[1:a]anull[a]"

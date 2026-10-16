@@ -98,6 +98,12 @@ L'interface a 4 onglets. Le sélecteur **FR · EN · IT · ES** en haut à droit
 | **En bas** | **Aperçu rapide** (demi-résolution, 3 à 5× plus rapide) et **Exporter la vidéo**. Le résultat va dans `sorties/` avec un `.srt` à côté. |
 | **Projets et modèles** | Enregistrer / charger un projet (`projets/*.json`), enregistrer les réglages comme modèle (`templates/*.json`). |
 
+### Onglet « Voix off »
+Écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou **ElevenLabs** (ta clé API),
+puis « Générer la voix » : une piste par scène, une piste complète et un `.srt`. « Utiliser dans l'onglet Montage »
+règle d'un coup la voix off, les sous-titres et la répartition des images. L'accordéon « Remplacer la voix d'un clip
+existant » corrige une scène générée avec la mauvaise voix. Code : `core/voice.py`, tests : `tests/test_voix.py`.
+
 ### Onglet « Shorts en série »
 Un modèle (le style) + un tableau CSV ou un dossier (le contenu) = autant de vidéos que de lignes. Voir [section 8](#8-la-production-en-série-csv).
 
@@ -387,6 +393,9 @@ Pour modifier les couleurs ou la forme : change les constantes en haut de `asset
 ---
 
 # Partie 2 : code source complet
+
+> ⚠️ Cette copie du code date de la v1.0.0 : elle n'inclut pas la voix off (`core/voice.py`) ni les changements
+> suivants. La référence est toujours le code des fichiers du dépôt.
 
 Le code ci-dessous est la copie exacte des fichiers du projet au moment de la génération de ce document.
 Ordre de lecture conseillé : lanceurs → `app.py` → `core/render.py` → les autres modules du moteur.

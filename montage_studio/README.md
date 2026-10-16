@@ -1,6 +1,6 @@
-<p align="center"><img src="assets/logo.svg" alt="Montage Studio" width="420"></p>
+<p align="center"><img src="assets/logo.svg" alt="Montage Studio Video" width="420"></p>
 
-# Montage Studio
+# Montage Studio Video (MSV)
 
 Logiciel de montage vidéo **local** (rien n'est envoyé sur Internet), pensé pour produire vite des **Shorts 9:16**
 et des **vidéos YouTube 16:9** : montage manuel à la main, ou production **en série** à partir d'un tableau.
@@ -67,6 +67,9 @@ Le modèle (`small` ≈ 500 Mo) est téléchargé au premier usage. Avec une car
 | Vidéo → Short | Outils rapides | Un clic : 9:16 + silences coupés |
 | Extraire l'audio | Outils rapides | MP3 |
 | Transcription | Outils rapides | Audio/vidéo → `.srt` (Whisper) |
+| **Voix off** | Voix off | Texte → voix avec **ElevenLabs** (ta clé API) ou **Piper** (gratuit, hors ligne) ; une piste par scène + `.srt` |
+| Remplacer une voix | Voix off | Change la voix d'un clip existant, au même volume qu'un clip de référence |
+| Voix auto en série | Shorts en série | Chaque ligne du CSV avec un `texte` reçoit sa voix off générée |
 
 ---
 
@@ -174,7 +177,39 @@ Astuces : travaille en « aperçu », n'exporte en « haute » qu'à la fin ; sa
 
 ---
 
+## Voix off
+
+| | **Piper** | **ElevenLabs** |
+|---|---|---|
+| Prix | Gratuit | Selon ton abonnement ElevenLabs |
+| Internet | Seulement pour télécharger la voix la 1re fois | Obligatoire |
+| Qualité | Correcte, un peu synthétique | Très naturelle, voix clonées possibles |
+| Sous-titres | Minutage estimé | Minutage **exact**, mot par mot |
+| Voix | FR : Pierre, Tom, Gilles, Jessica, Siwis · EN : LibriTTS · ES : DaveFX, Sharvard | Toutes celles de ton compte |
+
+**ElevenLabs** : sur elevenlabs.io, *Profile → API Keys*, crée une clé, colle-la dans l'onglet Voix off puis
+« Charger mes voix ». La clé est mémorisée dans `voix_config.json` sur ton PC (ou mets-la dans la variable
+`ELEVENLABS_API_KEY`). Ce fichier est exclu de Git : ne le partage jamais.
+
+**Scènes** : sépare-les par une ligne `---`. ElevenLabs reçoit le texte des scènes voisines pour garder une intonation continue.
+
+**Licences des voix Piper** : seules les voix autorisant l'usage commercial sont proposées (détails dans `TIERS.md`).
+
+Ligne de commande :
+
+```bash
+python cli.py voix script.txt --voix "Pierre — homme, français" --hauteur -1 --nom histoire_07
+python cli.py voix "Bonjour" --moteur elevenlabs --voix <voice_id>
+python cli.py voix-liste
+```
+
+---
+
 ## 8. Licences
 
-Code : libre d'usage pour tes projets. Polices fournies : Anton et Montserrat, licence SIL Open Font
-(fichiers `fonts/OFL-*.txt`), utilisables commercialement. Vérifie toujours les droits des musiques que tu utilises.
+Montage Studio est un logiciel libre distribué sous **GPL-3.0-or-later** (fichier `LICENSE`) : tu peux l'utiliser,
+le modifier, le redistribuer et même le vendre, à condition de garder la même licence et de fournir le code source.
+Cette licence est imposée par FFmpeg (compilé avec x264, sous GPL).
+
+Les composants tiers (FFmpeg, polices Anton et Montserrat, voix Piper, bibliothèques Python) et leurs licences sont listés
+dans `TIERS.md`. Vérifie toujours les droits des musiques et des images que tu utilises dans tes vidéos.

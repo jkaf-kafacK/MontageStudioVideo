@@ -27,7 +27,7 @@ def main() -> None:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
-    ap = argparse.ArgumentParser(description="Montage Studio (ligne de commande)")
+    ap = argparse.ArgumentParser(description="Montage Studio Video (ligne de commande)")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     r = sub.add_parser("rendu", help="rendre un projet JSON")
@@ -50,7 +50,34 @@ def main() -> None:
     d.add_argument("--sortie", default="sorties/dossier")
     d.add_argument("--qualite", choices=["aperçu", "standard", "haute"], default="haute")
 
+    v = sub.add_parser("voix", help="créer une voix off (Piper gratuit ou ElevenLabs)")
+    v.add_argument("texte", help="texte, ou chemin d'un fichier .txt (scènes séparées par ---)")
+    v.add_argument("--moteur", choices=["piper", "elevenlabs"], default="piper")
+    v.add_argument("--voix", default="Pierre — homme, français", help="nom Piper ou voice_id ElevenLabs")
+    v.add_argument("--modele", default="eleven_multilingual_v2", help="ElevenLabs : modèle")
+    v.add_argument("--vitesse", type=float, default=1.0)
+    v.add_argument("--hauteur", type=float, default=0.0, help="Piper : demi-tons (ex. -2 = plus grave)")
+    v.add_argument("--nom", default="voix")
+    v.add_argument("--sortie", default="sorties/voix")
+    sub.add_parser("voix-liste", help="lister les voix disponibles")
+
     a = ap.parse_args()
+    if a.cmd in ("voix", "voix-liste"):
+        from core import voice
+        if a.cmd == "voix-liste":
+            print("Piper (gratuit) :")
+            for nom, (_m, _s, lic) in voice.PIPER_VOICES.items():
+                print(f"  {nom}   [{lic}]")
+            try:
+                print("ElevenLabs :", *(f"{n}  ->  {i}" for n, i in voice.eleven_voices()), sep="\n  ")
+            except Exception as e:
+                print(f"ElevenLabs : {e}")
+            return
+        txt = Path(a.texte).read_text(encoding="utf-8") if Path(a.texte).is_file() else a.texte
+        res = voice.generate(txt, a.sortie, name=a.nom, provider=a.moteur, voice=a.voix,
+                             model=a.modele, speed=a.vitesse, pitch=a.hauteur)
+        print(f"✅ {res['audio']}  ({sum(res['durations']):.1f} s)\n   sous-titres : {res['srt']}")
+        return
     if a.cmd == "rendu":
         proj = load_project(a.projet)
         out = a.sortie or f"sorties/{proj.get('name', 'video')}.mp4"

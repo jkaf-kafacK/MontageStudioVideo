@@ -97,3 +97,9 @@ Pour créer le tien : règle tout dans l'onglet Montage, donne un nom au projet,
 
 ---
 
+---
+
+## Licence
+
+Logiciel libre sous **GPL-3.0-or-later** : voir [`LICENSE`](LICENSE) et la liste des composants tiers dans
+[`montage_studio/TIERS.md`](montage_studio/TIERS.md).

@@ -1,0 +1,146 @@
+From c335327cf0fef24d490d7b3b8a0bf75327f7e55d Mon Sep 17 00:00:00 2001
+Subject: [PATCH 3/3] Nom officiel : Montage Studio Video (MSV)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Titre de la page, en-tête, pied de page (4 langues), ligne de commande, README et TIERS.md.
+Le logo (assets/) affiche toujours « Montage STUDIO » : à régénérer séparément si souhaité.
+---
+ README.md                   |  7 ++++++-
+ montage_studio/README.md    |  4 ++--
+ montage_studio/TIERS.md     |  2 +-
+ montage_studio/app.py       | 12 ++++++------
+ montage_studio/cli.py       |  2 +-
+ montage_studio/core/i18n.py |  8 ++++----
+ 6 files changed, 20 insertions(+), 15 deletions(-)
+
+diff --git a/README.md b/README.md
+index 32d29f4..defcbdc 100644
+--- a/README.md
++++ b/README.md
+@@ -1,4 +1,9 @@
+-<p align="center"><img src="montage_studio/assets/logo.svg" alt="Montage Studio" width="420"></p>
++<p align="center"><img src="montage_studio/assets/logo.svg" alt="Montage Studio Video" width="420"></p>
++
++# Montage Studio Video (MSV)
++
++Logiciel de montage vidéo **100 % local** pour produire vite des Shorts, des vidéos YouTube et des séries de vidéos.
++L'application et sa documentation sont dans le dossier [`montage_studio/`](montage_studio/).
+ 
+ 
+ 
+diff --git a/montage_studio/README.md b/montage_studio/README.md
+index 8059b99..ac1ae12 100644
+--- a/montage_studio/README.md
++++ b/montage_studio/README.md
+@@ -1,6 +1,6 @@
+-<p align="center"><img src="assets/logo.svg" alt="Montage Studio" width="420"></p>
++<p align="center"><img src="assets/logo.svg" alt="Montage Studio Video" width="420"></p>
+ 
+-# Montage Studio
++# Montage Studio Video (MSV)
+ 
+ Logiciel de montage vidéo **local** (rien n'est envoyé sur Internet), pensé pour produire vite des **Shorts 9:16**
+ et des **vidéos YouTube 16:9** : montage manuel à la main, ou production **en série** à partir d'un tableau.
+diff --git a/montage_studio/TIERS.md b/montage_studio/TIERS.md
+index 9e8856c..8d27052 100644
+--- a/montage_studio/TIERS.md
++++ b/montage_studio/TIERS.md
+@@ -1,6 +1,6 @@
+ # Composants tiers et licences
+ 
+-Montage Studio est distribué sous **GPL-3.0-or-later** (voir `LICENSE`).
++Montage Studio Video (MSV) est distribué sous **GPL-3.0-or-later** (voir `LICENSE`).
+ Ce choix est imposé par FFmpeg : le binaire fourni par `imageio-ffmpeg` est compilé avec
+ `--enable-gpl --enable-version3` (il inclut l'encodeur x264), il est donc sous GPL version 3.
+ 
+diff --git a/montage_studio/app.py b/montage_studio/app.py
+index 3a7b732..e0c792c 100644
+--- a/montage_studio/app.py
++++ b/montage_studio/app.py
+@@ -1,4 +1,4 @@
+-"""Montage Studio : interface locale de montage vidéo (Gradio + FFmpeg).
++"""Montage Studio Video (MSV) : interface locale de montage vidéo (Gradio + FFmpeg).
+ 
+ Lancer :  python app.py      puis ouvrir http://127.0.0.1:7860
+ Interface en 4 langues : /fr/, /en/, /it/, /es/ (la racine choisit d'après le navigateur ou le dernier choix).
+@@ -650,7 +650,7 @@ def entete(lang: str) -> str:
+ <div id="entete">
+   <div class="marque">{LOGO_SVG}</div>
+   <div class="titres">
+-    <h1>Montage<span>Studio</span></h1>
++    <h1>Montage<span>Studio Video</span></h1>
+     <p>{_("Montage vidéo local pour Shorts et vidéos YouTube, propulsé par FFmpeg.")}</p>
+   </div>
+   <div class="droite">
+@@ -694,7 +694,7 @@ def build_ui(lang: str = DEFAULT_LANG) -> gr.Blocks:
+ def _build_ui(lang: str) -> gr.Blocks:
+     FIELDS.clear()
+     L = functools.partial(bind, lang=lang)
+-    with gr.Blocks(title="Montage Studio") as demo:
++    with gr.Blocks(title="Montage Studio Video") as demo:
+         gr.HTML(entete(lang))
+         lib = gr.State([])
+ 
+@@ -1010,7 +1010,7 @@ def _build_ui(lang: str) -> gr.Blocks:
+             gr.Markdown(help_text())
+             gr.Markdown(f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
+                         f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}")
+-        pied = _("Montage Studio · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
++        pied = _("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
+         gr.HTML(f"<div id='pied'>{pied}</div>")
+ 
+         # ------------------------------------------------------------- événements
+@@ -1160,14 +1160,14 @@ if __name__ == "__main__":
+ 
+     import uvicorn
+ 
+-    ap = argparse.ArgumentParser(description="Montage Studio")
++    ap = argparse.ArgumentParser(description="Montage Studio Video (MSV)")
+     ap.add_argument("--port", type=int, default=None, help="par défaut : premier port libre à partir de 7860")
+     ap.add_argument("--no-browser", action="store_true")
+     a = ap.parse_args()
+     port = a.port or free_port()
+     url = f"http://127.0.0.1:{port}/"
+     app = build_app()
+-    print(f"Montage Studio : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
++    print(f"Montage Studio Video : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
+     if not a.no_browser:
+         threading.Timer(1.5, webbrowser.open, args=(url,)).start()
+     uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+diff --git a/montage_studio/cli.py b/montage_studio/cli.py
+index de081c0..375ded6 100644
+--- a/montage_studio/cli.py
++++ b/montage_studio/cli.py
+@@ -27,7 +27,7 @@ def main() -> None:
+         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+     except Exception:
+         pass
+-    ap = argparse.ArgumentParser(description="Montage Studio (ligne de commande)")
++    ap = argparse.ArgumentParser(description="Montage Studio Video (ligne de commande)")
+     sub = ap.add_subparsers(dest="cmd", required=True)
+ 
+     r = sub.add_parser("rendu", help="rendre un projet JSON")
+diff --git a/montage_studio/core/i18n.py b/montage_studio/core/i18n.py
+index 0afca3e..9a86457 100644
+--- a/montage_studio/core/i18n.py
++++ b/montage_studio/core/i18n.py
+@@ -20,10 +20,10 @@ _STRINGS: list[tuple[str, str, str, str]] = [
+      "Edición de vídeo local para Shorts y vídeos de YouTube, con FFmpeg."),
+     ("100 % local", "100% local", "100% locale", "100 % local"),
+     ("Langue de l'interface", "Interface language", "Lingua dell'interfaccia", "Idioma de la interfaz"),
+-    ("Montage Studio · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet",
+-     "Montage Studio · everything is processed on your computer, nothing is sent to the Internet",
+-     "Montage Studio · tutto viene elaborato sul tuo computer, niente viene inviato su Internet",
+-     "Montage Studio · todo se procesa en tu ordenador, no se envía nada a Internet"),
++    ("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet",
++     "Montage Studio Video · everything is processed on your computer, nothing is sent to the Internet",
++     "Montage Studio Video · tutto viene elaborato sul tuo computer, niente viene inviato su Internet",
++     "Montage Studio Video · todo se procesa en tu ordenador, no se envía nada a Internet"),
+     ("Montage", "Editor", "Montaggio", "Edición"),
+     ("Shorts en série", "Batch Shorts", "Shorts in serie", "Shorts en serie"),
+     ("Outils rapides", "Quick tools", "Strumenti rapidi", "Herramientas rápidas"),
+-- 
+2.43.0
+

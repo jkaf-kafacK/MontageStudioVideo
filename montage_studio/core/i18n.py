@@ -20,10 +20,10 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Edición de vídeo local para Shorts y vídeos de YouTube, con FFmpeg."),
     ("100 % local", "100% local", "100% locale", "100 % local"),
     ("Langue de l'interface", "Interface language", "Lingua dell'interfaccia", "Idioma de la interfaz"),
-    ("Montage Studio · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet",
-     "Montage Studio · everything is processed on your computer, nothing is sent to the Internet",
-     "Montage Studio · tutto viene elaborato sul tuo computer, niente viene inviato su Internet",
-     "Montage Studio · todo se procesa en tu ordenador, no se envía nada a Internet"),
+    ("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet",
+     "Montage Studio Video · everything is processed on your computer, nothing is sent to the Internet",
+     "Montage Studio Video · tutto viene elaborato sul tuo computer, niente viene inviato su Internet",
+     "Montage Studio Video · todo se procesa en tu ordenador, no se envía nada a Internet"),
     ("Montage", "Editor", "Montaggio", "Edición"),
     ("Shorts en série", "Batch Shorts", "Shorts in serie", "Shorts en serie"),
     ("Outils rapides", "Quick tools", "Strumenti rapidi", "Herramientas rápidas"),
@@ -354,6 +354,135 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Archivo no encontrado: {path}"),
     ("FFmpeg a échoué (code {code}) :\n{msg}", "FFmpeg failed (code {code}):\n{msg}",
      "FFmpeg non è riuscito (codice {code}):\n{msg}", "FFmpeg ha fallado (código {code}):\n{msg}"),
+    # ---- voix off (ElevenLabs / Piper)
+    ("Piper (gratuit, local)", "Piper (free, local)", "Piper (gratuito, locale)", "Piper (gratis, local)"),
+    ("ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)"),
+    ("Pierre — homme, français", "Pierre — male, French", "Pierre — uomo, francese", "Pierre — hombre, francés"),
+    ("Tom — homme, français", "Tom — male, French", "Tom — uomo, francese", "Tom — hombre, francés"),
+    ("Gilles — homme, français (grave)", "Gilles — male, French (deep)", "Gilles — uomo, francese (grave)",
+     "Gilles — hombre, francés (grave)"),
+    ("Jessica — femme, français", "Jessica — female, French", "Jessica — donna, francese", "Jessica — mujer, francés"),
+    ("Siwis — femme, français", "Siwis — female, French", "Siwis — donna, francese", "Siwis — mujer, francés"),
+    ("LibriTTS — homme, anglais", "LibriTTS — male, English", "LibriTTS — uomo, inglese", "LibriTTS — hombre, inglés"),
+    ("DaveFX — homme, espagnol", "DaveFX — male, Spanish", "DaveFX — uomo, spagnolo", "DaveFX — hombre, español"),
+    ("Sharvard — homme, espagnol", "Sharvard — male, Spanish", "Sharvard — uomo, spagnolo", "Sharvard — hombre, español"),
+    ("Sharvard — femme, espagnol", "Sharvard — female, Spanish", "Sharvard — donna, spagnolo", "Sharvard — mujer, español"),
+    ("Choisis une voix ElevenLabs (bouton « Charger mes voix »).",
+     "Choose an ElevenLabs voice (“Load my voices” button).",
+     "Scegli una voce ElevenLabs (pulsante «Carica le mie voci»).",
+     "Elige una voz de ElevenLabs (botón «Cargar mis voces»)."),
+    ("Piper n'est pas installé : pip install sherpa-onnx", "Piper is not installed: pip install sherpa-onnx",
+     "Piper non è installato: pip install sherpa-onnx", "Piper no está instalado: pip install sherpa-onnx"),
+    ("{n} voix trouvées sur ton compte ElevenLabs.", "{n} voices found on your ElevenLabs account.",
+     "{n} voci trovate sul tuo account ElevenLabs.", "{n} voces encontradas en tu cuenta de ElevenLabs."),
+    ("Licence du modèle : {lic} (détails dans TIERS.md)", "Model licence: {lic} (details in TIERS.md)",
+     "Licenza del modello: {lic} (dettagli in TIERS.md)", "Licencia del modelo: {lic} (detalles en TIERS.md)"),
+    ("Écris le texte de la voix off.", "Write the voice-over text.", "Scrivi il testo della voce fuori campo.",
+     "Escribe el texto de la voz en off."),
+    ("Création de la voix ({n} scène(s))", "Creating the voice ({n} scene(s))", "Creazione della voce ({n} scena/e)",
+     "Creando la voz ({n} escena(s))"),
+    ("le premier usage télécharge la voix", "first use downloads the voice", "il primo utilizzo scarica la voce",
+     "el primer uso descarga la voz"),
+    ("✅ Voix créée : {dur:.1f} s, {n} scène(s)", "✅ Voice created: {dur:.1f} s, {n} scene(s)",
+     "✅ Voce creata: {dur:.1f} s, {n} scena/e", "✅ Voz creada: {dur:.1f} s, {n} escena(s)"),
+    ("   scène {i} : {dur:.2f} s", "   scene {i}: {dur:.2f} s", "   scena {i}: {dur:.2f} s", "   escena {i}: {dur:.2f} s"),
+    ("Sous-titres : minutage exact (ElevenLabs)", "Subtitles: exact timing (ElevenLabs)",
+     "Sottotitoli: tempi esatti (ElevenLabs)", "Subtítulos: tiempos exactos (ElevenLabs)"),
+    ("Sous-titres : minutage estimé", "Subtitles: estimated timing", "Sottotitoli: tempi stimati",
+     "Subtítulos: tiempos estimados"),
+    ("Génère d'abord une voix.", "Generate a voice first.", "Genera prima una voce.", "Genera primero una voz."),
+    ("Voix off et sous-titres envoyés dans l'onglet Montage.", "Voice-over and subtitles sent to the Editor tab.",
+     "Voce fuori campo e sottotitoli inviati alla scheda Montaggio.",
+     "Voz en off y subtítulos enviados a la pestaña Edición."),
+    ("Ajoute la vidéo et la nouvelle voix (ou génère-en une au-dessus).",
+     "Add the video and the new voice (or generate one above).",
+     "Aggiungi il video e la nuova voce (o generane una qui sopra).",
+     "Añade el vídeo y la nueva voz (o genera una arriba)."),
+    ("Écris le texte, choisis une voix, génère. Sépare les scènes par une ligne `---` : une piste par scène + une piste "
+     "complète + les sous-titres `.srt`.",
+     "Write the text, choose a voice, generate. Separate scenes with a `---` line: one track per scene + a full track "
+     "+ the `.srt` subtitles.",
+     "Scrivi il testo, scegli una voce, genera. Separa le scene con una riga `---`: una traccia per scena + una "
+     "traccia completa + i sottotitoli `.srt`.",
+     "Escribe el texto, elige una voz y genera. Separa las escenas con una línea `---`: una pista por escena + una "
+     "pista completa + los subtítulos `.srt`."),
+    ("Texte de la voix off", "Voice-over text", "Testo della voce fuori campo", "Texto de la voz en off"),
+    ("15 janvier 1919. Boston.\n---\nDans le quartier du North End, une cuve géante domine le port.",
+     "January 15, 1919. Boston.\n---\nIn the North End, a giant tank towers over the harbour.",
+     "15 gennaio 1919. Boston.\n---\nNel quartiere del North End, un enorme serbatoio domina il porto.",
+     "15 de enero de 1919. Boston.\n---\nEn el barrio del North End, un tanque gigante domina el puerto."),
+    ("Nom", "Name", "Nome", "Nombre"),
+    ("Pause entre scènes (s)", "Pause between scenes (s)", "Pausa tra le scene (s)", "Pausa entre escenas (s)"),
+    ("Générer la voix", "Generate the voice", "Genera la voce", "Generar la voz"),
+    ("Écoute", "Listen", "Ascolto", "Escuchar"),
+    ("Utiliser dans l'onglet Montage (voix + sous-titres)", "Use in the Editor tab (voice + subtitles)",
+     "Usa nella scheda Montaggio (voce + sottotitoli)", "Usar en la pestaña Edición (voz + subtítulos)"),
+    ("Fichiers (piste complète, .srt, une piste par scène)", "Files (full track, .srt, one track per scene)",
+     "File (traccia completa, .srt, una traccia per scena)", "Archivos (pista completa, .srt, una pista por escena)"),
+    ("Moteur", "Engine", "Motore", "Motor"),
+    ("Vitesse", "Speed", "Velocità", "Velocidad"),
+    ("**Piper** : gratuit, hors ligne. La voix est téléchargée au premier usage.",
+     "**Piper**: free, offline. The voice is downloaded on first use.",
+     "**Piper**: gratuito, offline. La voce viene scaricata al primo utilizzo.",
+     "**Piper**: gratis, sin conexión. La voz se descarga en el primer uso."),
+    ("Voix", "Voice", "Voce", "Voz"),
+    ("Hauteur (demi-tons, négatif = plus grave)", "Pitch (semitones, negative = deeper)",
+     "Tono (semitoni, negativo = più grave)", "Tono (semitonos, negativo = más grave)"),
+    ("**ElevenLabs** : voix très naturelles et voix clonées. Payant, consomme tes crédits. "
+     "Clé : elevenlabs.io → Profile → API Keys.",
+     "**ElevenLabs**: very natural voices and cloned voices. Paid, uses your credits. "
+     "Key: elevenlabs.io → Profile → API Keys.",
+     "**ElevenLabs**: voci molto naturali e voci clonate. A pagamento, consuma i tuoi crediti. "
+     "Chiave: elevenlabs.io → Profile → API Keys.",
+     "**ElevenLabs**: voces muy naturales y voces clonadas. De pago, consume tus créditos. "
+     "Clave: elevenlabs.io → Profile → API Keys."),
+    ("Clé API", "API key", "Chiave API", "Clave API"),
+    ("Mémoriser la clé sur ce PC (voix_config.json)", "Remember the key on this PC (voix_config.json)",
+     "Memorizza la chiave su questo PC (voix_config.json)", "Recordar la clave en este PC (voix_config.json)"),
+    ("Charger mes voix", "Load my voices", "Carica le mie voci", "Cargar mis voces"),
+    ("Stabilité (bas = plus expressif)", "Stability (low = more expressive)", "Stabilità (basso = più espressivo)",
+     "Estabilidad (bajo = más expresivo)"),
+    ("Fidélité à la voix", "Voice similarity", "Fedeltà alla voce", "Fidelidad a la voz"),
+    ("Style / exagération", "Style / exaggeration", "Stile / enfasi", "Estilo / exageración"),
+    ("Remplacer la voix d'un clip existant", "Replace the voice of an existing clip",
+     "Sostituisci la voce di una clip esistente", "Reemplazar la voz de un clip existente"),
+    ("Pour une scène générée avec la mauvaise voix : la voix d'origine est retirée et la nouvelle est posée au moment "
+     "choisi, au même volume qu'un clip de référence.",
+     "For a scene generated with the wrong voice: the original voice is removed and the new one is placed at the "
+     "chosen time, at the same volume as a reference clip.",
+     "Per una scena generata con la voce sbagliata: la voce originale viene rimossa e la nuova viene inserita al "
+     "momento scelto, allo stesso volume di una clip di riferimento.",
+     "Para una escena generada con la voz equivocada: se quita la voz original y se coloca la nueva en el momento "
+     "elegido, al mismo volumen que un clip de referencia."),
+    ("Clip vidéo", "Video clip", "Clip video", "Clip de vídeo"),
+    ("Nouvelle voix (vide = dernière voix générée)", "New voice (empty = last generated voice)",
+     "Nuova voce (vuoto = ultima voce generata)", "Nueva voz (vacío = última voz generada)"),
+    ("Clip de référence pour le volume (optionnel)", "Reference clip for volume (optional)",
+     "Clip di riferimento per il volume (facoltativa)", "Clip de referencia para el volumen (opcional)"),
+    ("Début de la voix (s)", "Voice start (s)", "Inizio della voce (s)", "Inicio de la voz (s)"),
+    ("Garder le son d'origine (ambiance)", "Keep the original sound (ambience)", "Mantieni il suono originale (ambiente)",
+     "Conservar el sonido original (ambiente)"),
+    ("Remplacer", "Replace", "Sostituisci", "Reemplazar"),
+    ("Créer la voix off à partir de la colonne « texte » (réglages de l'onglet Voix off)",
+     "Create the voice-over from the “texte” column (Voice-over tab settings)",
+     "Crea la voce fuori campo dalla colonna «texte» (impostazioni della scheda Voce fuori campo)",
+     "Crear la voz en off a partir de la columna «texte» (ajustes de la pestaña Voz en off)"),
+    ("création de la voix off", "creating the voice-over", "creazione della voce fuori campo", "creando la voz en off"),
+    ("🎙 {name} : voix off générée ({dur:.1f} s)", "🎙 {name}: voice-over generated ({dur:.1f} s)",
+     "🎙 {name}: voce fuori campo generata ({dur:.1f} s)", "🎙 {name}: voz en off generada ({dur:.1f} s)"),
+    ("Clé API ElevenLabs manquante (onglet Voix off, ou variable ELEVENLABS_API_KEY).",
+     "ElevenLabs API key missing (Voice-over tab, or ELEVENLABS_API_KEY variable).",
+     "Chiave API ElevenLabs mancante (scheda Voce fuori campo, o variabile ELEVENLABS_API_KEY).",
+     "Falta la clave API de ElevenLabs (pestaña Voz en off, o variable ELEVENLABS_API_KEY)."),
+    ("clé API invalide", "invalid API key", "chiave API non valida", "clave API no válida"),
+    ("crédits insuffisants", "insufficient credits", "crediti insufficienti", "créditos insuficientes"),
+    ("trop de requêtes, réessaie dans un instant", "too many requests, try again in a moment",
+     "troppe richieste, riprova tra poco", "demasiadas solicitudes, inténtalo de nuevo en un momento"),
+    ("ElevenLabs a refusé la requête ({code}) : {detail}", "ElevenLabs refused the request ({code}): {detail}",
+     "ElevenLabs ha rifiutato la richiesta ({code}): {detail}", "ElevenLabs rechazó la solicitud ({code}): {detail}"),
+    ("Impossible de joindre ElevenLabs : {reason}", "Cannot reach ElevenLabs: {reason}",
+     "Impossibile raggiungere ElevenLabs: {reason}", "No se puede conectar con ElevenLabs: {reason}"),
+    ("Le texte est vide.", "The text is empty.", "Il testo è vuoto.", "El texto está vacío."),
 ]
 
 HELP = {
@@ -375,6 +504,12 @@ Si la ligne contient des images et une voix off, les images sont réparties auto
 - **srt** : fichier de sous-titres existant (par exemple exporté de ton générateur de voix).
 - **whisper** : transcription automatique au mot près, après `pip install faster-whisper`.
 Un fichier `.srt` est toujours créé à côté de la vidéo : tu peux l'envoyer sur YouTube.
+
+### Voix off
+Onglet **Voix off** : écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou
+**ElevenLabs** (ta clé API, voix très naturelles et minutage exact des sous-titres), puis « Utiliser dans l'onglet Montage ».
+En série, coche « Créer la voix off à partir de la colonne texte ». Une scène générée avec la mauvaise voix se corrige
+avec « Remplacer la voix d'un clip existant ».
 
 ### Conseils de performance
 Les rendus « aperçu » sont 3 à 5 fois plus rapides. Si tu as une carte NVIDIA, choisis l'encodeur « nvidia (nvenc) ».
@@ -399,6 +534,12 @@ If a row contains images and a voice-over, the images are spread automatically o
 - **whisper**: automatic word-level transcription, after `pip install faster-whisper`.
 A `.srt` file is always created next to the video: you can upload it to YouTube.
 
+### Voice-over
+**Voice-over** tab: write the text (scenes separated by `---`), choose **Piper** (free, offline) or
+**ElevenLabs** (your API key, very natural voices and exact subtitle timing), then “Use in the Editor tab”.
+In batch mode, tick “Create the voice-over from the texte column”. A scene generated with the wrong voice can be fixed
+with “Replace the voice of an existing clip”.
+
 ### Performance tips
 “Preview” renders are 3 to 5 times faster. If you have an NVIDIA card, choose the “nvidia (nvenc)” encoder.
 If the GPU encoder fails, the software automatically falls back to the CPU.
@@ -422,6 +563,12 @@ Se la riga contiene immagini e una voce fuori campo, le immagini vengono distrib
 - **whisper**: trascrizione automatica parola per parola, dopo `pip install faster-whisper`.
 Accanto al video viene sempre creato un file `.srt`: puoi caricarlo su YouTube.
 
+### Voce fuori campo
+Scheda **Voce fuori campo**: scrivi il testo (scene separate da `---`), scegli **Piper** (gratuito, offline) o
+**ElevenLabs** (la tua chiave API, voci molto naturali e sottotitoli con tempi esatti), poi «Usa nella scheda Montaggio».
+In serie, spunta «Crea la voce fuori campo dalla colonna texte». Una scena generata con la voce sbagliata si corregge
+con «Sostituisci la voce di una clip esistente».
+
 ### Consigli sulle prestazioni
 I rendering «anteprima» sono da 3 a 5 volte più veloci. Se hai una scheda NVIDIA, scegli l'encoder «nvidia (nvenc)».
 Se l'encoder GPU non funziona, il programma torna automaticamente alla CPU.
@@ -444,6 +591,12 @@ Si la fila contiene imágenes y una voz en off, las imágenes se reparten autom�
 - **srt**: un archivo de subtítulos existente (por ejemplo, exportado de tu generador de voz).
 - **whisper**: transcripción automática palabra por palabra, tras `pip install faster-whisper`.
 Siempre se crea un archivo `.srt` junto al vídeo: puedes subirlo a YouTube.
+
+### Voz en off
+Pestaña **Voz en off**: escribe el texto (escenas separadas por `---`), elige **Piper** (gratis, sin conexión) o
+**ElevenLabs** (tu clave API, voces muy naturales y subtítulos con tiempos exactos), y luego «Usar en la pestaña Edición».
+En serie, marca «Crear la voz en off a partir de la columna texte». Una escena generada con la voz equivocada se corrige
+con «Reemplazar la voz de un clip existente».
 
 ### Consejos de rendimiento
 Los renderizados de «vista previa» son de 3 a 5 veces más rápidos. Si tienes una tarjeta NVIDIA, elige el codificador «nvidia (nvenc)».
