@@ -1,0 +1,11 @@
+# Environnement Python (recréé par les lanceurs)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Données personnelles et fichiers générés : ne jamais publier
+medias/
+sorties/
+projets/
+cache/

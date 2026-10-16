@@ -1,0 +1,23 @@
+{
+  "name": "video_youtube_16x9",
+  "description": "Vidéo YouTube classique 16:9 : fondus enchaînés, ouverture et fermeture au noir, logo discret, musique basse.",
+  "description_en": "Classic 16:9 YouTube video: crossfades, fade in and out from black, discreet logo, low music.",
+  "description_it": "Video YouTube classico 16:9: dissolvenze incrociate, apertura e chiusura al nero, logo discreto, musica bassa.",
+  "description_es": "Vídeo clásico de YouTube 16:9: fundidos encadenados, apertura y cierre a negro, logo discreto, música baja.",
+  "format": "16:9",
+  "fit": "bandes",
+  "fps": 30,
+  "quality": "haute",
+  "transition": {"type": "fondu enchaîné", "duration": 0.5},
+  "fade_in": 0.8,
+  "fade_out": 1.2,
+  "normalize_audio": true,
+  "image_duration": 5.0,
+  "image_zoom": "zoom avant",
+  "music": {"volume": 0.1, "ducking": true},
+  "title": {"text": "", "start": 0.5, "end": 4.0,
+            "style": {"size": 80, "position": 0.82, "box": true, "uppercase": false}},
+  "subtitles": {"source": "aucun", "max_words": 7, "karaoke": false,
+                "style": {"size": 52, "position": 0.88, "box": true, "uppercase": false, "stroke_width": 0}},
+  "logo": {"position": "bas droite", "size": 0.08, "opacity": 0.7}
+}

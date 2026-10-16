@@ -1,0 +1,20 @@
+{
+  "name": "short_clip_parle",
+  "description": "Short 9:16 à partir d'une vidéo filmée : silences coupés, fond flou, sous-titres Whisper surlignés, titre en haut.",
+  "description_en": "9:16 Short from a filmed video: silences cut, blurred background, highlighted Whisper subtitles, title at the top.",
+  "description_it": "Short 9:16 da un video girato: silenzi tagliati, sfondo sfocato, sottotitoli Whisper evidenziati, titolo in alto.",
+  "description_es": "Short 9:16 a partir de un vídeo grabado: silencios cortados, fondo desenfocado, subtítulos Whisper resaltados, título arriba.",
+  "format": "9:16",
+  "fit": "flou",
+  "fps": 30,
+  "quality": "haute",
+  "transition": {"type": "aucune", "duration": 0.3},
+  "remove_silence": {"enabled": true, "threshold_db": -35, "min_silence": 0.4, "padding": 0.1},
+  "normalize_audio": true,
+  "music": {"volume": 0.08, "ducking": true},
+  "title": {"text": "", "start": 0.0, "end": 3.0,
+            "style": {"font": "Anton-Regular.ttf", "size": 100, "position": 0.14, "box": true, "uppercase": true}},
+  "subtitles": {"source": "whisper", "max_words": 3, "karaoke": true, "language": "fr", "whisper_model": "small",
+                "style": {"font": "Montserrat.ttf", "weight": 800, "size": 78, "position": 0.72,
+                          "highlight_mode": "fond", "highlight_color": "#7C3AED", "uppercase": true}}
+}

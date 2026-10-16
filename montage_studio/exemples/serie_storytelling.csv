@@ -1,0 +1,3 @@
+id;medias;titre;texte;voix_off;musique
+histoire_01;histoires/01/*.jpg;Titre de l histoire 1;Colle ici le script de la narration. Il sera découpé en sous-titres synchronisés sur la voix off.;histoires/01/voix.mp3;musiques/fond.mp3
+histoire_02;histoires/02;Titre de l histoire 2;Deuxième script. Une ligne du tableau égale une vidéo terminée.;histoires/02/voix.mp3;musiques/fond.mp3

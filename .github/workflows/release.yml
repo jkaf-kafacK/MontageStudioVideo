@@ -1,0 +1,33 @@
+# Publie une version téléchargeable (ZIP) quand on pousse une étiquette comme v1.0.0.
+#   git tag v1.0.0
+#   git push origin v1.0.0
+name: Publier une version
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fabriquer le ZIP de l'application
+        run: |
+          git archive --format=zip --prefix=montage_studio/ \
+            -o "montage_studio-${GITHUB_REF_NAME}.zip" "HEAD:montage_studio"
+
+      - name: Créer la version sur GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: montage_studio-${{ github.ref_name }}.zip
+          generate_release_notes: true
+          body: |
+            ## Installation (Windows)
+            1. Télécharger `montage_studio-${{ github.ref_name }}.zip` ci-dessous et le décompresser.
+            2. Installer [Python 3.12](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**.
+            3. Double-cliquer sur `lancer_windows.bat` (macOS / Linux : `./lancer_mac_linux.sh`).
