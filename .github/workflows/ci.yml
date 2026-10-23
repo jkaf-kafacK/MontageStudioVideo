@@ -22,7 +22,7 @@ jobs:
       matrix:
         include:
           - { os: windows-latest, python: "3.12" }
-          - { os: ubuntu-latest, python: "3.10" }
+          - { os: ubuntu-latest, python: "3.11" }
           - { os: ubuntu-latest, python: "3.12" }
           - { os: macos-latest, python: "3.12" }
     steps:
@@ -38,6 +38,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt pytest
+          python -m pip install --no-deps -r overrides.txt
 
       - name: Lancer les tests
         env:
@@ -57,7 +58,14 @@ jobs:
       - name: Rechercher les failles connues (pip-audit)
         run: |
           python -m pip install pip-audit
-          pip-audit -r requirements.txt
+          # 1) versions exactes installées chez les utilisateurs par l'installateur Windows
+          pip-audit -r requirements.lock --no-deps --disable-pip
+          # 2) installation « développeur » (requirements.txt + overrides.txt)
+          python -m venv /tmp/audit
+          /tmp/audit/bin/python -m pip install -q --upgrade pip
+          /tmp/audit/bin/python -m pip install -q -r requirements.txt
+          /tmp/audit/bin/python -m pip install -q --no-deps -r overrides.txt
+          pip-audit --path "$(/tmp/audit/bin/python -c 'import site; print(site.getsitepackages()[0])')"
 
   installateur:
     name: Installateur Windows (compilation, installation, désinstallation)

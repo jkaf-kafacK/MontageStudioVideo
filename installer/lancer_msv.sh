@@ -14,7 +14,7 @@ if [ ! -x "$VENV/bin/python" ] || ! cmp -s "$APP/requirements.lock" "$VENV/requi
   echo "Montage Studio Video : première configuration (une seule fois, 2 à 5 minutes)..."
   rm -rf "$VENV"
   "$UV" venv --python 3.12 "$VENV"
-  "$UV" pip install --python "$VENV/bin/python" -r "$APP/requirements.lock"
+  "$UV" pip install --no-deps --python "$VENV/bin/python" -r "$APP/requirements.lock"
   cp "$APP/requirements.lock" "$VENV/requirements.lock"
 fi
 [ "${MSV_PREPARER_SEULEMENT:-0}" = "1" ] && exit 0

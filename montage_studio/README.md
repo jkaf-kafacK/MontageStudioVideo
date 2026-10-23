@@ -14,8 +14,8 @@ Interface dans le navigateur (Gradio), moteur FFmpeg, texte rendu avec Pillow : 
 | Système | Étapes |
 |---|---|
 | **Windows (recommandé)** | Télécharger **`MontageStudioVideo-<version>-Setup.exe`** dans les [Releases](https://github.com/jkaf-kafacK/MontageStudioVideo/releases), double-cliquer, puis lancer *Montage Studio Video* depuis le menu Démarrer. Pas besoin d'installer Python. |
-| **Windows (développeurs)** | 1. Installer [Python 3.10+](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**. 2. Double-cliquer sur `lancer_windows.bat`. |
-| **macOS / Linux** | 1. Avoir Python 3.10+. 2. Dans un terminal : `./lancer_mac_linux.sh` |
+| **Windows (développeurs)** | 1. Installer [Python 3.11+](https://www.python.org/downloads/) en cochant **« Add python.exe to PATH »**. 2. Double-cliquer sur `lancer_windows.bat`. |
+| **macOS / Linux** | 1. Avoir Python 3.11+. 2. Dans un terminal : `./lancer_mac_linux.sh` |
 
 Le premier lancement crée un environnement `.venv` et installe les dépendances (quelques minutes).
 **FFmpeg est fourni automatiquement** par le paquet `imageio-ffmpeg` : rien d'autre à installer.

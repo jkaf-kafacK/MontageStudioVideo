@@ -1,0 +1,6 @@
+# Versions imposées malgré les limites déclarées par d'autres paquets.
+#
+# Pillow 13.0.0 (16 octobre 2026) corrige 35 failles de sécurité de Pillow 12.3.0 (fichiers images piégés :
+# dépassements de mémoire, dénis de service). Gradio 6.x déclare encore « pillow<13 » par simple précaution :
+# toute la suite de tests passe avec Pillow 13. À retirer dès qu'une version de Gradio accepte Pillow 13.
+pillow>=13.0

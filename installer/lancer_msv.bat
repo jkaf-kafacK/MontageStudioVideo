@@ -28,7 +28,7 @@ echo  Telechargement de Python et des composants... Laisse cette fenetre ouverte
 echo.
 if exist "%VENV%" rmdir /s /q "%VENV%"
 "%UV%" venv --python 3.12 "%VENV%" || goto erreur
-"%UV%" pip install --python "%VENV%\Scripts\python.exe" -r "%APP%\requirements.lock" || goto erreur
+"%UV%" pip install --no-deps --python "%VENV%\Scripts\python.exe" -r "%APP%\requirements.lock" || goto erreur
 copy /y "%APP%\requirements.lock" "%VENV%\requirements.lock" >nul
 
 :lancer

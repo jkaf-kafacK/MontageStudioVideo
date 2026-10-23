@@ -1,6 +1,6 @@
 gradio>=6.0,<7
 imageio-ffmpeg>=0.5
-pillow>=10.1
+pillow>=10.1   # forcé en 13.0+ par overrides.txt (correctifs de sécurité)
 pandas>=2.0
 numpy>=1.24
 # Voix off gratuites hors ligne (Piper) : les voix sont téléchargées au premier usage
