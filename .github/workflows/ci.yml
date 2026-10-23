@@ -95,7 +95,14 @@ jobs:
           foreach ($f in "lancer_msv.bat","uv.exe","app\app.py","app\requirements.lock","app\VERSION") {
             if (-not (Test-Path "$app\$f")) { throw "Fichier manquant après installation : $f" }
           }
-          if (Test-Path "$app\app\tests") { throw "Les tests ne doivent pas être installés" }
+          foreach ($d in "tests","medias","sorties","projets","cache","modeles_voix") {
+            if (Test-Path "$app\app\$d") { throw "Ce dossier ne doit pas être installé : $d" }
+          }
+          if (Get-ChildItem "$app\app" -Recurse -Include *.patch,voix_config.json) { throw "Fichier indésirable installé" }
+          foreach ($f in "core\voice.py","templates\short_storytelling.json","fonts\Montserrat.ttf","assets\montage_studio.ico","LICENSE","TIERS.md") {
+            if (-not (Test-Path "$app\app\$f")) { throw "Fichier manquant après installation : $f" }
+          }
+          Write-Host "Fichiers installés :" (Get-ChildItem "$app" -Recurse -File).Count
 
       - name: Premier lancement (téléchargement de Python et des composants)
         run: |

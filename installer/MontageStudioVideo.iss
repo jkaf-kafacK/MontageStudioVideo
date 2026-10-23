@@ -56,9 +56,11 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ; Le code de l'application, sans les tests, les anciens lanceurs ni aucun fichier personnel.
+; Les dossiers sont exclus par leur nom (« \tests ») : tout leur contenu est ignoré et le dossier n'est pas créé.
+; Pas de « createallsubdirs » : il créerait les dossiers exclus, vides, dans l'installation.
 Source: "..\montage_studio\*"; DestDir: "{app}\app"; \
-  Excludes: "\tests\*,\.venv\*,__pycache__,*.pyc,.pytest_cache,\medias\*,\sorties\*,\projets\*,\cache\*,\modeles_voix\*,voix_config.json,*.patch,.gitignore,\lancer_windows.bat,\lancer_mac_linux.sh"; \
-  Flags: recursesubdirs createallsubdirs ignoreversion
+  Excludes: "\tests,\.venv,__pycache__,*.pyc,.pytest_cache,\medias,\sorties,\projets,\cache,\modeles_voix,voix_config.json,*.patch,.gitignore,\lancer_windows.bat,\lancer_mac_linux.sh"; \
+  Flags: recursesubdirs ignoreversion
 Source: "uv.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "lancer_msv.bat"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
