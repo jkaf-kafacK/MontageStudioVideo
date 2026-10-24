@@ -25,3 +25,6 @@ modeles_voix/
 *.wav
 *.ogg
 *.mp4
+# Vidéo de présentation : fichiers générés
+promo/build/
+promo/output/

@@ -4,7 +4,8 @@ Pipeline en 3 étapes :
   1. chaque segment (extrait vidéo ou image) est normalisé : coupe, vitesse, cadrage,
      fps, audio stéréo 48 kHz  -> fichiers intermédiaires identiques en format ;
   2. assemblage : concaténation ou transitions (xfade + acrossfade) ;
-  3. finition : titre, sous-titres, logo, fondus, voix off, musique avec ducking,
+  3. finition : calques (incrustations, textes animés), titre, sous-titres, logo, fondus, voix off,
+     musique avec ducking,
      normalisation du volume (-14 LUFS, cible YouTube), encodage final.
 """
 from __future__ import annotations
@@ -18,7 +19,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import ff, subs
+from . import ff, layers, subs
 from .i18n import _
 from .textimg import DEFAULT_STYLE, blank, render_text
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -55,6 +56,17 @@ QUALITY = {
               "final": ["-preset", "medium", "-crf", "18"], "abr": "192k"},
 }
 
+# Mouvement des images fixes. « Ken Burns » alterne quatre trajets (zoom + déplacement) d'une image à l'autre.
+MOTIONS = ["aucun", "zoom avant", "zoom arrière", "panoramique vers la droite", "panoramique vers la gauche",
+           "Ken Burns"]
+KEN_BURNS = [   # (zoom début, zoom fin, point visé au début (x, y), point visé à la fin (x, y)), 0 = gauche/haut
+    (1.0, 1.22, (0.5, 0.5), (0.75, 0.35)),
+    (1.22, 1.0, (0.25, 0.65), (0.5, 0.5)),
+    (1.0, 1.22, (0.5, 0.5), (0.25, 0.3)),
+    (1.22, 1.04, (0.8, 0.7), (0.4, 0.45)),
+]
+PAN_ZOOM = 1.18   # agrandissement pendant un panoramique (marge pour se déplacer)
+
 ENCODERS = {
     "cpu (x264)": None,
     "nvidia (nvenc)": ["-c:v", "h264_nvenc", "-preset", "p5", "-rc", "vbr", "-cq", "21", "-b:v", "0"],
@@ -76,7 +88,7 @@ DEFAULT_PROJECT = {
     "remove_silence": {"enabled": False, "threshold_db": -35, "min_silence": 0.45, "padding": 0.12},
     "normalize_audio": True,
     "image_duration": 3.0,
-    "image_zoom": "zoom avant",        # aucun | zoom avant | zoom arrière
+    "image_zoom": "zoom avant",        # voir MOTIONS ; une image peut avoir son propre mouvement (clip "zoom")
     "fit_images_to_voiceover": False,
     "voiceover": {"path": "", "volume": 1.0, "offset": 0.0},
     "music": {"path": "", "volume": 0.18, "ducking": True},
@@ -86,6 +98,8 @@ DEFAULT_PROJECT = {
                   "karaoke": True, "language": "fr", "whisper_model": "small",
                   "style": {}},
     "logo": {"path": "", "position": "haut droite", "size": 0.14, "opacity": 0.9},
+    "overlays": [],                    # incrustations image/vidéo, voir core/layers.py
+    "texts": [],                       # textes animés, voir core/layers.py
     # Voix off générée automatiquement en production en série (voir core/voice.py)
     "tts": {"enabled": False, "provider": "piper", "voice": "Pierre — homme, français",
             "model": "eleven_multilingual_v2", "speed": 1.0, "pitch": 0.0},
@@ -232,6 +246,7 @@ def _concat_path(p: Path) -> str:
 def _expand_clips(p: dict, log: list) -> list[dict]:
     segs = []
     rs = p["remove_silence"]
+    n_img = 0
     for c in p["clips"]:
         path = str(c.get("path") or "").strip()
         if not path:
@@ -240,9 +255,12 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
         if info.kind == "image":
             segs.append({"type": "image", "path": path,
                          "dur": _f(c.get("duration")) or _f(p["image_duration"]) or 3.0,
-                         "zoom": c.get("zoom") or p.get("image_zoom", "aucun"),
+                         "zoom": layers.norm_choice(c.get("zoom"), MOTIONS, "")
+                                 or layers.norm_choice(p.get("image_zoom"), MOTIONS, "aucun"),
+                         "kb": n_img,   # rang de l'image : choisit le trajet Ken Burns
                          "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
                          "crop": parse_crop(c.get("crop"))})
+            n_img += 1
         elif info.kind == "video":
             s = max(0.0, _f(c.get("start")))
             e = _f(c.get("end")) or info.duration
@@ -286,6 +304,26 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
 
 # --------------------------------------------------------------------------- étape 1 : normalisation
 
+def _motion(zoom: str, frames: int, kb: int = 0) -> Optional[tuple[str, str, str]]:
+    """Expressions zoompan (z, x, y) du mouvement d'une image fixe, ou None si elle reste immobile."""
+    if zoom in ("zoom avant", "zoom arrière"):
+        zmax = 1.15
+        rate = (zmax - 1) / frames
+        z = f"1+{rate:.6f}*on" if zoom == "zoom avant" else f"{zmax}-{rate:.6f}*on"
+        return z, "iw/2-(iw/zoom/2)", "ih/2-(ih/zoom/2)"
+    if zoom.startswith("panoramique"):
+        z0 = z1 = PAN_ZOOM
+        a, b = ((0.0, 0.5), (1.0, 0.5)) if zoom.endswith("droite") else ((1.0, 0.5), (0.0, 0.5))
+    elif zoom == "Ken Burns":
+        z0, z1, a, b = KEN_BURNS[kb % len(KEN_BURNS)]
+    else:
+        return None
+    e = f"(1-cos(PI*min(1,on/{max(1, frames - 1)})))/2"   # départ et arrivée en douceur
+    fx = f"({a[0]}+{b[0] - a[0]:.3f}*{e})"
+    fy = f"({a[1]}+{b[1] - a[1]:.3f}*{e})"
+    return f"{z0}+{z1 - z0:.3f}*{e}", f"(iw-iw/zoom)*{fx}", f"(ih-ih/zoom)*{fy}"
+
+
 def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit: str, log: list):
     dur = seg["dur"]
     common_out = ["-t", f"{dur:.3f}", "-r", str(fps), "-c:v", "libx264", *q["inter"], "-pix_fmt", "yuv420p",
@@ -296,17 +334,14 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
         # L'image est cadrée une seule fois avec Pillow, puis animée : bien plus rapide
         # que de recalculer le cadrage à chaque image.
         frames = max(1, int(round(dur * fps)))
-        zoom = seg.get("zoom", "aucun")
-        animated = zoom in ("zoom avant", "zoom arrière")
-        k = 2 if animated else 1
+        motion = _motion(seg.get("zoom", "aucun"), frames, seg.get("kb", 0))
+        k = 2 if motion else 1   # image deux fois plus grande : mouvement plus fluide (moins de « tremblement »)
         still = out.with_suffix(".png")
         fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"], seg.get("crop")).save(still)
         args = ["-i", str(still), *silent]
-        if animated:
-            zmax = 1.15
-            rate = (zmax - 1) / frames
-            z = f"1+{rate:.6f}*on" if zoom == "zoom avant" else f"{zmax}-{rate:.6f}*on"
-            fc = (f"[0:v]zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={frames}:"
+        if motion:
+            z, x, y = motion
+            fc = (f"[0:v]zoompan=z='{z}':x='{x}':y='{y}':d={frames}:"
                   f"s={W}x{H}:fps={fps},format=yuv420p,setsar=1[v]")
         else:
             fc = f"[0:v]loop=loop={frames}:size=1:start=0,setpts=N/{fps}/TB,format=yuv420p,setsar=1[v]"
@@ -515,6 +550,11 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
     idx = 1
     vf, af = [], []
     cur_v, cur_a = "0:v", "0:a"
+
+    # Calques : incrustations image/vidéo et textes animés (sous le titre et les sous-titres)
+    l_args, l_vf, cur_v, idx = layers.build(p, W, H, fps, T, work, idx, cur_v, log)
+    args += l_args
+    vf += l_vf
 
     # Titre
     title = p["title"]

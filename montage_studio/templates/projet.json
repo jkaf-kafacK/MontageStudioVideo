@@ -1,0 +1,82 @@
+{
+  "name": "projet",
+  "format": "16:9",
+  "fit": "flou",
+  "fps": 30,
+  "quality": "haute",
+  "encoder": "cpu (x264)",
+  "transition": {
+    "type": "aucune",
+    "duration": 0.4
+  },
+  "fade_in": 0,
+  "fade_out": 0,
+  "remove_silence": {
+    "enabled": false,
+    "threshold_db": -35,
+    "min_silence": 0.45,
+    "padding": 0.12
+  },
+  "normalize_audio": true,
+  "image_duration": 3,
+  "image_zoom": "zoom avant",
+  "fit_images_to_voiceover": false,
+  "voiceover": {
+    "path": "",
+    "volume": 1,
+    "offset": 0
+  },
+  "music": {
+    "path": "",
+    "volume": 0.18,
+    "ducking": true
+  },
+  "title": {
+    "text": "",
+    "start": 0,
+    "end": 3,
+    "style": {
+      "size": 96,
+      "position": 0.18,
+      "box": true,
+      "uppercase": true,
+      "font": "Montserrat.ttf",
+      "color": "#FFFFFF"
+    }
+  },
+  "subtitles": {
+    "source": "aucun",
+    "script": "",
+    "srt_path": "",
+    "max_words": 3,
+    "karaoke": true,
+    "language": "fr",
+    "whisper_model": "small",
+    "style": {
+      "font": "Montserrat.ttf",
+      "size": 72,
+      "color": "#FFFFFF",
+      "stroke_color": "#000000",
+      "highlight_color": "#FFD60A",
+      "stroke_width": 6,
+      "position": 0.72,
+      "highlight_mode": "couleur",
+      "box": false,
+      "uppercase": true
+    }
+  },
+  "logo": {
+    "path": "",
+    "position": "haut droite",
+    "size": 0.14,
+    "opacity": 0.9
+  },
+  "tts": {
+    "enabled": false,
+    "provider": "piper",
+    "voice": "Pierre — homme, français",
+    "model": "eleven_multilingual_v2",
+    "speed": 1.0,
+    "pitch": 0.0
+  }
+}

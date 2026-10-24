@@ -203,4 +203,243 @@ def test_interface_titre_jamais_rempli(clip):
         vals[list(app.FIELDS).index(k)] = None
     proj = app.collect(vals)
     assert proj["title"]["text"] == "" and proj["subtitles"]["script"] == ""
-    assert app.style_preview(app.df_from_rows([[1, str(clip), 0, 2, 1, 1, 0.5, None, ""]]), *vals) is not None
+    assert app.style_preview(app.df_from_rows([[1, str(clip), 0, 2, 1, 1, 0.5, None, "", ""]]), *vals) is not None
+
+
+# --------------------------------------------------------------------------- convertisseur de temps et logos
+
+@pytest.mark.parametrize("texte, secondes", [
+    ("90", 90), ("90,5", 90.5), ("1:30", 90), ("1:02:03.5", 3723.5), ("1h 2m 3s", 3723),
+    ("2,5 min", 150), ("1 ora 20 minuti", 4800), ("45 segundos", 45), ("3 heures", 10800),
+])
+def test_convertisseur_de_temps(texte, secondes):
+    from core.tools import format_time, parse_time
+
+    assert parse_time(texte) == pytest.approx(secondes)
+    assert parse_time(format_time(secondes)) == pytest.approx(secondes, abs=0.01)
+
+
+@pytest.mark.parametrize("texte", ["", "abc", "1:2:3:4", "5 kg"])
+def test_convertisseur_refuse(texte):
+    from core.tools import parse_time
+
+    with pytest.raises(ValueError):
+        parse_time(texte)
+
+
+def test_logo_msv_ajout_puis_retrait(clip, tmp_path):
+    from core import tools
+
+    avec = tools.add_msv_logo(str(clip), str(tmp_path / "avec.mp4"), "haut gauche", 0.2, 1.0)
+    box = tools.read_msv_logo_box(avec)
+    assert box is not None and box[2] == 128          # 20 % de 640 px
+    sans, exact = tools.remove_msv_logo(avec, str(tmp_path / "sans.mp4"))
+    assert exact and ff.probe(sans).has_audio
+    assert abs(ff.probe(sans).duration - ff.probe(clip).duration) < 0.1
+
+
+def test_effacer_logo_zone_au_bord(clip, tmp_path):
+    """Une zone qui touche le bord de l'image ne doit pas faire échouer FFmpeg (delogo exige 1 px de marge)."""
+    from core import tools
+
+    box = tools.box_from_percent(640, 360, 80, 0, 20, 15)   # coin haut droit, collé aux bords
+    for mode in ("effacer", "flouter"):
+        assert Path(tools.preview_remove_logo(str(clip), 1, box, mode)).exists()
+    out = tools.remove_logo(str(clip), str(tmp_path / "net.mp4"), box)
+    assert ff.probe(out).has_audio
+
+
+# --------------------------------------------------------------------------- calques et mouvement des photos
+
+def _pixel(video, t: float, xy_frac: tuple[float, float], tmp_path) -> tuple[int, int, int]:
+    from PIL import Image
+
+    png = tmp_path / f"img_{t}.png"
+    ff.run_ffmpeg(["-ss", str(t), "-i", str(video), "-frames:v", "1", str(png)])
+    img = Image.open(png).convert("RGB")
+    return img.getpixel((int(img.width * xy_frac[0]), int(img.height * xy_frac[1])))
+
+
+@pytest.fixture(scope="session")
+def fond_rouge(tmp_path_factory) -> Path:
+    out = tmp_path_factory.mktemp("calques") / "rouge.mp4"
+    subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+                    "color=c=red:size=640x360:rate=30:duration=3", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    str(out)], check=True)
+    return out
+
+
+@pytest.mark.parametrize("mouvement", ["zoom avant", "panoramique vers la droite", "panoramique vers la gauche",
+                                       "Ken Burns"])
+def test_mouvement_des_photos(tmp_path, mouvement):
+    from PIL import Image, ImageDraw
+
+    photo = tmp_path / "photo.png"
+    grad = Image.linear_gradient("L").resize((800, 600))
+    img = Image.merge("RGB", (grad, grad.transpose(Image.Transpose.ROTATE_90).resize((800, 600)),
+                              Image.new("L", (800, 600), 90)))   # rouge selon la hauteur, vert selon la largeur
+    ImageDraw.Draw(img).rectangle((300, 200, 500, 400), fill=(30, 200, 90))
+    img.save(photo)
+    res = render_project({"format": "16:9", "fit": "rogner", "clips": [{"path": str(photo), "duration": 2}],
+                          "image_zoom": "aucun" if mouvement != "Ken Burns" else mouvement,
+                          "normalize_audio": False}
+                         | ({"clips": [{"path": str(photo), "duration": 2, "zoom": mouvement}]}
+                            if mouvement != "Ken Burns" else {}),
+                         tmp_path / "photo.mp4", quality="aperçu")
+    assert abs(ff.probe(res["video"]).duration - 2) < 0.2
+    debut, fin = (_pixel(res["video"], t, (0.3, 0.3), tmp_path) for t in (0.05, 1.9))
+    assert debut != fin, "l'image doit bouger"
+
+
+def test_calque_image_position_et_fondu(fond_rouge, tmp_path):
+    from PIL import Image
+
+    blanc = tmp_path / "blanc.png"
+    Image.new("RGB", (400, 400), "white").save(blanc)
+    calque = {"path": str(blanc), "start": 1, "end": 2.5, "x": 50, "y": 50, "width": 30}
+    res = render_project({"format": "16:9", "fit": "bandes", "clips": [{"path": str(fond_rouge)}],
+                          "normalize_audio": False,
+                          "overlays": [{**calque, "animation": "fondu"}]},
+                         tmp_path / "fondu.mp4", quality="aperçu")
+    avant, entree, plein = (_pixel(res["video"], t, (0.5, 0.5), tmp_path) for t in (0.5, 1.15, 1.8))
+    assert avant[1] < 40                       # rouge : pas encore de calque
+    assert 60 < entree[1] < 220                # en plein fondu
+    assert plein[1] > 230                      # blanc
+    assert _pixel(res["video"], 1.8, (0.2, 0.5), tmp_path)[1] < 40   # hors du calque : toujours rouge
+
+
+def test_calques_video_et_textes_animes(fond_rouge, clip, tmp_path):
+    res = render_project({
+        "format": "9:16", "clips": [{"path": str(fond_rouge)}],
+        "overlays": [{"path": str(clip), "start": 0.5, "end": 2.5, "x": 50, "y": 30, "width": 60,
+                      "animation": "zoom"}],
+        "texts": [{"text": "Iscriviti!", "start": 0, "end": 1.5, "y": 80, "animation": "salita", "box": "sì"},
+                  {"text": "Zoom", "start": 1, "animation": "zoom", "color": "#FBBF24"},
+                  {"text": "ignoré", "start": 9, "animation": "fondu"}],
+    }, tmp_path / "calques.mp4", quality="aperçu")
+    assert abs(ff.probe(res["video"]).duration - 3) < 0.2
+    assert "ignoré" in res["log"]
+    assert _pixel(res["video"], 2.0, (0.5, 0.3), tmp_path)[1] > 60   # la vidéo incrustée couvre le fond rouge
+
+
+def test_tableaux_des_calques_toutes_langues(clip):
+    import app
+    from core.i18n import LANG
+
+    token = LANG.set("it")
+    try:
+        df = app.table_df("texts", [{"text": "Ciao", "animation": "montée", "box": True}])
+        assert df.iloc[0].tolist()[7] == "salita"
+        items = app.table_items("texts", df)
+        assert items[0]["animation"] == "montée" and items[0]["box"] is True and items[0]["end"] is None
+        ov = app.add_overlay(app.table_df("overlays", []), str(clip), 1, None, 50, 50, 40, 1, "dissolvenza")
+        assert app.table_items("overlays", ov)[0]["animation"] == "fondu"
+        rows = [[1, str(clip), 0, 2, 1, 1, 0.5, None, "", "panoramica a destra"],
+                [2, str(clip), 0, 2, 1, 1, 0.5, None, "", ""]]
+        clips = app.clips_from_df(app.df_from_rows(rows))
+        assert clips[0]["zoom"] == "panoramique vers la droite" and "zoom" not in clips[1]
+    finally:
+        LANG.reset(token)
+
+
+def test_apercu_au_moment_choisi_et_noms_de_couleurs(tmp_path):
+    """L'aperçu instantané ne montre que les calques visibles au moment choisi ; les couleurs se tapent en lettres."""
+    from PIL import Image
+
+    from core import layers
+
+    blanc = tmp_path / "blanc.png"
+    Image.new("RGB", (200, 200), "white").save(blanc)
+    fond = Image.new("RGB", (540, 960), (200, 0, 0))
+    calques = [{"path": str(blanc), "start": 2, "end": 8, "width": 40, "animation": "aucune"}]
+    centre = (270, 480)
+    assert layers.draw_layers(fond, calques, [], at=1).getpixel(centre)[1] == 0      # pas encore là
+    assert layers.draw_layers(fond, calques, [], at=5).getpixel(centre)[1] == 255    # visible
+    assert layers.draw_layers(fond, calques, [], at=8).getpixel(centre)[1] == 0      # déjà parti
+    assert layers.draw_layers(fond, calques, []).getpixel(centre)[1] == 255          # sans moment : tous
+    for nom, attendu in (("rosso", "#EF4444"), ("red", "#FF0000"), ("ff0000", "#ff0000"), ("???", "#FFFFFF"),
+                         ("rgba(255, 0, 0, 1)", "rgba(255, 0, 0, 1)")):
+        assert layers.norm_color(nom) == attendu
+
+
+# --------------------------------------------------------------------------- messages d'erreur (problème + que faire)
+
+@pytest.fixture()
+def journal(tmp_path, monkeypatch):
+    from core import errors
+
+    monkeypatch.setattr(errors, "LOG_FILE", tmp_path / "journal_erreurs.log")
+    return errors.LOG_FILE
+
+
+@pytest.mark.parametrize("exc, attendu", [
+    ("json", "JSON"),
+    ("ffmpeg_abime", "abîmé"),
+    ("ffmpeg_gpu", "cpu (x264)"),
+    ("introuvable", "introuvable"),
+    ("module", "faster-whisper"),
+    ("wave", "sherpa-onnx<2"),
+    ("bug", "journal_erreurs.log"),
+])
+def test_explications_des_erreurs(exc, attendu, journal):
+    import json
+    import wave
+
+    from core import errors, ff
+
+    exceptions = {
+        "json": lambda: json.loads("{\"clips\": [1, 2,]}"),
+        "ffmpeg_abime": lambda: (_ for _ in ()).throw(ff.FFmpegError("x.mp4: Invalid data found when processing")),
+        "ffmpeg_gpu": lambda: (_ for _ in ()).throw(ff.FFmpegError("Cannot load nvcuda.dll")),
+        "introuvable": lambda: open("n_existe_pas.mp4"),
+        "module": lambda: (_ for _ in ()).throw(ModuleNotFoundError("No module", name="faster_whisper")),
+        "wave": lambda: (_ for _ in ()).throw(wave.Error("sampling rate not specified")),
+        "bug": lambda: {}["clé"],
+    }
+    try:
+        exceptions[exc]()
+    except Exception as e:
+        probleme, solution = errors.explain(e)
+        assert probleme and solution
+        assert attendu in probleme + solution
+        msg = errors.user_message(e)
+        assert "💡" in msg and "<b>❌" in msg
+    assert journal.exists()   # le détail technique est gardé pour un rapport de bug
+
+
+def test_erreurs_de_sens_dans_la_timeline(clip, tmp_path):
+    import app
+    from core.errors import UserError
+
+    ligne = [1, str(clip), 0, 2, 1, 1, 0.5, None, "", ""]
+    with pytest.raises(UserError, match="avant le début"):
+        app.clips_from_df(app.df_from_rows([ligne[:2] + [2, 1] + ligne[4:]]))
+    with pytest.raises(UserError, match="après la fin du fichier"):
+        app.clips_from_df(app.df_from_rows([ligne[:2] + [99, None] + ligne[4:]]))
+    with pytest.raises(UserError, match="introuvable"):
+        app.clips_from_df(app.df_from_rows([[1, str(tmp_path / "parti.mp4")] + ligne[2:]]))
+    with pytest.raises(UserError, match="recadrage|Recadrage"):
+        app.clips_from_df(app.df_from_rows([ligne[:8] + ["10/0"] + ligne[9:]]))
+    with pytest.raises(UserError, match="disparaîtrait"):
+        app.add_text(app.table_df("texts", []), "Salut", 5, 2, 50, 50, 80, "#fff", False, "fondu")
+
+
+def test_action_qui_plante_donne_un_message_clair(journal):
+    import gradio as gr
+
+    import app
+
+    def action():
+        raise KeyError("x")
+
+    with pytest.raises(gr.Error) as err:
+        app.bind(action, "it")()
+    assert "Errore interno di MSV (KeyError)" in err.value.message and "Cosa fare" in err.value.message
+
+
+def test_piper_version_compatible():
+    from core import voice
+
+    if not voice.piper_available():
+        pytest.skip("sherpa-onnx absent")
+    assert voice.piper_problem() is None

@@ -30,9 +30,10 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import batch, ff, paths, subs, tools, voice
+from core import batch, errors, ff, layers, paths, subs, tools, voice
+from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
-from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, QUALITY, TRANSITIONS,
+from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
                          crop_text, fit_image, merge_defaults, parse_crop, render_project)
 from core.textimg import DEFAULT_STYLE, list_fonts, render_text
 from core.version import __version__
@@ -41,7 +42,15 @@ BASE = Path(__file__).resolve().parent          # code de l'application (lecture
 MEDIA_DIR, OUT_DIR, PROJ_DIR = paths.MEDIA_DIR, paths.OUT_DIR, paths.PROJ_DIR   # fichiers de l'utilisateur
 paths.ensure_dirs()
 
-COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img", "recadrage_%"]
+COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img", "recadrage_%",
+        "mouvement"]
+# Calques : colonnes affichées et clés correspondantes dans le projet (voir core/layers.py)
+TABLES = {
+    "overlays": (["fichier", "début", "fin", "x_%", "y_%", "largeur_%", "opacité", "animation"],
+                 ["path", "start", "end", "x", "y", "width", "opacity", "animation"], layers.norm_overlay),
+    "texts": (["texte", "début", "fin", "x_%", "y_%", "taille", "couleur", "animation", "fond"],
+              ["text", "start", "end", "x", "y", "size", "color", "animation", "box"], layers.norm_text),
+}
 FROM_MONTAGE = "(réglages de l'onglet Montage)"   # valeur interne ; seul le libellé affiché est traduit
 FONTS = list_fonts()
 
@@ -117,11 +126,47 @@ def df_from_rows(rows) -> pd.DataFrame:
     return pd.DataFrame(rows, columns=cols()) if rows else empty_df()
 
 
+def fail(e: BaseException) -> gr.Error:
+    """Erreur affichée à l'utilisateur : ce qui s'est passé, que faire, détail technique (voir core/errors.py)."""
+    return gr.Error(errors.user_message(e), duration=None, title=_("Un problème est survenu"))
+
+
+def check_clip(n: int, c: dict) -> None:
+    """Erreurs de sens dans une ligne de la timeline (n = numéro affiché de la ligne)."""
+    where = _("Ligne {n} de la timeline : ", n=n)
+    if not Path(c["path"]).is_file():
+        raise UserError(where + _("fichier introuvable ({name}).", name=Path(c["path"]).name),
+                        _("Le fichier a été déplacé, renommé ou supprimé : réimporte-le puis corrige la colonne "
+                          "« fichier » (ou retire la ligne)."))
+    kind = ff.media_kind(c["path"])
+    if kind not in ("video", "image"):
+        raise UserError(where + _("ce fichier n'est ni une vidéo ni une image ({name}).",
+                                          name=Path(c["path"]).name),
+                        _("Un fichier audio va dans « Audio » (voix off ou musique), pas dans la timeline."))
+    if not 0.1 <= c.get("speed", 1.0) <= 4:
+        raise UserError(where + _("vitesse {v:g} impossible.", v=c["speed"]),
+                        _("Écris une vitesse entre 0,1 et 4 (1 = normale, 2 = deux fois plus rapide)."))
+    if c.get("volume", 1.0) < 0:
+        raise UserError(where + _("volume négatif."), _("Écris un volume entre 0 (muet) et 2 (double)."))
+    if kind != "video":
+        return
+    start, end = c.get("start") or 0.0, c.get("end")
+    dur = ff.probe(c["path"]).duration
+    if dur and start >= dur:
+        raise UserError(where + _("le début ({s:g} s) est après la fin du fichier ({d:.1f} s).",
+                                          s=start, d=dur),
+                        _("Écris un début plus petit que {d:.1f} s (colonne « début »).", d=dur))
+    if end is not None and end <= start:
+        raise UserError(where + _("la fin ({e:g} s) est avant le début ({s:g} s).", e=end, s=start),
+                        _("Corrige les colonnes « début » et « fin » : la fin doit être plus grande que le début "
+                          "(laisse « fin » vide pour aller jusqu'au bout du fichier)."))
+
+
 def clips_from_df(df) -> list[dict]:
     rows = [r for r in to_rows(df) if len(r) >= 2 and str(r[1] or "").strip() not in ("", "nan")]
     rows.sort(key=lambda r: num(r[0], 9999))
     clips = []
-    for r in rows:
+    for n, r in enumerate(rows, 1):
         c = {"path": str(r[1]).strip()}
         for key, idx in (("start", 2), ("end", 3), ("speed", 4), ("volume", 5), ("crop_x", 6), ("duration", 7)):
             v = num(r[idx])
@@ -131,9 +176,16 @@ def clips_from_df(df) -> list[dict]:
             try:
                 crop = parse_crop(r[8])
             except ValueError as e:
-                raise gr.Error(str(e))
+                raise UserError(_("Ligne {n} de la timeline : ", n=n) + str(e),
+                                _("Écris le recadrage en % retirés de chaque bord, dans l'ordre "
+                                  "gauche/haut/droite/bas, par exemple 10/0/10/0 (ou laisse la case vide)."))
             if crop:
                 c["crop"] = crop
+        if len(r) > 9:
+            zoom = layers.norm_choice(r[9], MOTIONS, "")   # vide = réglage « Images fixes »
+            if zoom:
+                c["zoom"] = zoom
+        check_clip(n, c)
         clips.append(c)
     return clips
 
@@ -142,8 +194,24 @@ def df_from_clips(clips: list[dict]) -> pd.DataFrame:
     rows = []
     for i, c in enumerate(clips, 1):
         rows.append([i, c.get("path", ""), c.get("start"), c.get("end"), c.get("speed", 1.0),
-                     c.get("volume", 1.0), c.get("crop_x", 0.5), c.get("duration"), crop_text(c.get("crop"))])
+                     c.get("volume", 1.0), c.get("crop_x", 0.5), c.get("duration"), crop_text(c.get("crop")),
+                     _(c["zoom"]) if c.get("zoom") else ""])
     return df_from_rows(rows)
+
+
+def table_df(key: str, items) -> pd.DataFrame:
+    """Calques du projet -> tableau affiché (animation traduite)."""
+    names, keys, norm = TABLES[key]
+    rows = [[_(it[k]) if k == "animation" else it[k] for k in keys] for it in map(norm, items or []) if it]
+    return pd.DataFrame(rows, columns=[_(c) for c in names])
+
+
+def table_items(key: str, df) -> list[dict]:
+    """Tableau des calques -> liste du projet (lignes incomplètes ignorées, valeurs relues dans toutes les langues)."""
+    names, keys, norm = TABLES[key]
+    if isinstance(df, list) and df and isinstance(df[0], dict):   # déjà au format du projet
+        return [it for it in map(norm, df) if it]
+    return [it for it in (norm(dict(zip(keys, r))) for r in to_rows(df) if len(r) >= len(keys)) if it]
 
 
 def media_label(path: str) -> str:
@@ -187,6 +255,8 @@ def default_value(key: str):
 def collect(values) -> dict:
     proj = {}
     for key, v in zip(FIELDS.keys(), values):
+        if key in TABLES:
+            v = table_items(key, v)
         if key in FILE_FIELDS:
             v = persist(v) if v else ""
         if v is None and isinstance(default_value(key), str):
@@ -206,6 +276,8 @@ def project_values(proj: dict) -> list:
             v = default_value(key)
         if key in FILE_FIELDS:
             v = v if v and Path(v).exists() else None
+        if key in TABLES:
+            v = table_df(key, v)
         if key.startswith(("subtitles.style.", "title.style.")):
             base = SUB_STYLE if key.startswith("subtitles") else TITLE_STYLE
             v = get_path(p, key, base.get(key.split(".")[-1]))
@@ -303,7 +375,7 @@ def add_clip(df, path, start, end, left=0, top=0, right=0, bottom=0):
     rows = to_rows(df)
     is_img = ff.media_kind(path) == "image"
     rows.append([len(rows) + 1, path, None if is_img else num(start, 0), None if is_img else num(end),
-                 1.0, 1.0, 0.5, None, crop_text([left, top, right, bottom])])
+                 1.0, 1.0, 0.5, None, crop_text([left, top, right, bottom]), ""])
     return df_from_rows(rows)
 
 
@@ -311,7 +383,7 @@ def add_all(df, lib):
     rows = to_rows(df)
     for p in lib or []:
         if ff.media_kind(p) in ("video", "image"):
-            rows.append([len(rows) + 1, p, None, None, 1.0, 1.0, 0.5, None, ""])
+            rows.append([len(rows) + 1, p, None, None, 1.0, 1.0, 0.5, None, "", ""])
     return df_from_rows(rows)
 
 
@@ -328,6 +400,54 @@ def drop_last(df):
     return df_from_rows(rows)
 
 
+# --------------------------------------------------------------------------- actions : calques
+
+def add_overlay(df, path, start, end, x, y, width, opacity, anim):
+    if not path:
+        raise gr.Error(_("Choisis d'abord un média dans la médiathèque."))
+    if ff.media_kind(path) not in ("image", "video"):
+        raise gr.Error(_("Une incrustation doit être une image ou une vidéo."))
+    check_times(start, end)
+    item = {"path": path, "start": start, "end": end, "x": x, "y": y, "width": width, "opacity": opacity,
+            "animation": anim}
+    _added(item)
+    return table_df("overlays", table_items("overlays", df) + [item])
+
+
+def add_text(df, text, start, end, x, y, size, color, box, anim):
+    if not (text or "").strip():
+        raise gr.Error(_("Écris le texte à afficher."))
+    check_times(start, end)
+    item = {"text": text, "start": start, "end": end, "x": x, "y": y, "size": size, "color": color, "box": box,
+            "animation": anim}
+    _added(item)
+    return table_df("texts", table_items("texts", df) + [item])
+
+
+def check_times(start, end) -> None:
+    s, e = num(start, 0) or 0.0, num(end)
+    if s < 0:
+        raise UserError(_("L'heure d'apparition ne peut pas être négative."), _("Écris 0 ou plus dans « Apparaît à »."))
+    if e and e <= s:
+        raise UserError(_("Le calque disparaîtrait ({e:g} s) avant d'apparaître ({s:g} s).", e=e, s=s),
+                        _("Mets dans « Disparaît à » une heure plus grande que « Apparaît à », ou 0 pour garder le "
+                          "calque jusqu'à la fin."))
+
+
+def _added(item: dict) -> None:
+    s, e = num(item.get("start"), 0) or 0, num(item.get("end"))
+    gr.Info(_("Calque ajouté : visible de {s} s à {e} s.", s=f"{s:g}", e=f"{e:g}") if e
+            else _("Calque ajouté : visible de {s} s jusqu'à la fin.", s=f"{s:g}"))
+
+
+def drop_last_layer(key: str, df):
+    return table_df(key, table_items(key, df)[:-1])
+
+
+def layer_position(name):
+    return layers.POSITIONS.get(name, (50, 50))
+
+
 # --------------------------------------------------------------------------- actions : rendu
 
 def _render(df, values, quality, progress):
@@ -341,7 +461,7 @@ def _render(df, values, quality, progress):
     try:
         res = render_project(proj, out, progress=lambda f, m: progress(f, desc=m), quality=quality)
     except Exception as e:
-        raise gr.Error(str(e)[:900])
+        raise fail(e)
     files = [res["video"]] + ([res["srt"]] if res.get("srt") else [])
     msg = (_("✅ {name} : {dur:.1f} s de vidéo, rendue en {sec:.0f} s", name=Path(res["video"]).name,
                dur=res["duration"], sec=res["seconds"]) + f"\n📁 {res['video']}\n" + res["log"])
@@ -357,8 +477,28 @@ def render_final(df, *values, progress=gr.Progress()):
     return _render(df, values, proj_q, progress)
 
 
-def style_preview(df, *values):
-    """Aperçu instantané du titre et des sous-titres sur la première image de la timeline."""
+def clip_at(clips: list[dict], at: float, image_duration: float) -> tuple[dict, float]:
+    """Extrait de la timeline affiché au moment `at` de la vidéo finale, et le moment dans son fichier
+    (approximatif : sans les transitions ni les silences coupés)."""
+    t = 0.0
+    for c in clips:
+        if ff.media_kind(c["path"]) == "image":
+            d = c.get("duration") or image_duration or 3.0
+            if at < t + d:
+                return c, 0.0
+        else:
+            s, sp = c.get("start") or 0.0, c.get("speed") or 1.0
+            end = c.get("end") or ff.probe(c["path"]).duration
+            d = (end - s) / sp
+            if at < t + d:
+                return c, s + (at - t) * sp
+        t += d
+    return clips[-1], clips[-1].get("start") or 0.0
+
+
+def style_preview(df, *values, at=None):
+    """Aperçu instantané du titre, des sous-titres et des calques, au moment `at` de la vidéo
+    (None : première image, avec tous les calques)."""
     proj = collect(values)
     W, H = FORMATS[proj["format"]]
     W, H = W // 2, H // 2
@@ -366,17 +506,19 @@ def style_preview(df, *values):
     base = None
     if clips:
         try:
-            c = clips[0]
+            c, t = clip_at(clips, at, proj["image_duration"]) if at is not None else (clips[0], clips[0].get("start", 0))
             src = c["path"]
             if ff.media_kind(src) == "video":
-                src = tools.grab_frame(src, c.get("start", 0) or 0, height=0)
+                src = tools.grab_frame(src, t or 0, height=0)
             base = fit_image(src, W, H, proj["fit"], c.get("crop_x", 0.5) or 0.5, crop=c.get("crop"))
         except Exception:
             base = None
     if base is None:
         base = Image.linear_gradient("L").resize((W, H)).convert("RGB")
-    img = base.convert("RGBA")
-    if (proj["title"].get("text") or "").strip():
+    img = layers.draw_layers(base, proj["overlays"], proj["texts"], at)
+    title = proj["title"]
+    shown = at is None or num(title.get("start"), 0) <= at <= (num(title.get("end")) or 3.0)
+    if (title.get("text") or "").strip() and shown:
         img = render_text(proj["title"]["text"], W, H, {**DEFAULT_STYLE, **proj["title"]["style"]}, base=img)
     st = proj["subtitles"]
     sample = (st.get("script") or _("Voici un exemple de sous-titres")).split()
@@ -384,6 +526,10 @@ def style_preview(df, *values):
     img = render_text(sample, W, H, {**DEFAULT_STYLE, **st["style"]}, base=img,
                       highlight_index=1 if st.get("karaoke") and len(sample.split()) > 1 else None)
     return img.convert("RGB")
+
+
+def style_preview_at(df, at, *values):
+    return style_preview(df, *values, at=max(0.0, num(at, 0.0)))
 
 
 # --------------------------------------------------------------------------- actions : projets & modèles
@@ -501,6 +647,89 @@ def tool_audio(file):
     return str(out)
 
 
+def convert_time(text):
+    """Convertisseur de temps : un texte (90, 1:30, 1h 2m 3s…) -> tableau secondes / minutes / heures."""
+    if not (text or "").strip():
+        return ""
+    try:
+        sec = tools.parse_time(text)
+    except ValueError:
+        return "⚠ " + _("Format non reconnu. Exemples : 90 · 1:30 · 1:02:03 · 1h 2m 3s · 2,5 min")
+    return (f"| | |\n|---|---|\n| {_('Secondes')} | **{sec:g}** |\n| {_('Minutes')} | {sec / 60:.4g} |\n"
+            f"| {_('Heures')} | {sec / 3600:.4g} |\n| hh:mm:ss | **{tools.format_time(sec)}** |")
+
+
+def time_to_seconds(text):
+    try:
+        return round(tools.parse_time(text), 2)
+    except ValueError:
+        raise gr.Error(_("Format non reconnu. Exemples : 90 · 1:30 · 1:02:03 · 1h 2m 3s · 2,5 min"))
+
+
+def _logo_progress(progress):
+    msg = _("Traitement de la vidéo")
+    progress(0, desc=msg)
+    return lambda f: progress(f, desc=msg)
+
+
+def _draw_box(frame: str, box) -> Image.Image:
+    img = Image.open(frame).convert("RGB")
+    x, y, w, h = box
+    ImageDraw.Draw(img).rectangle((x, y, x + w, y + h), outline=(251, 191, 36), width=max(3, img.width // 250))
+    return img
+
+
+def logo_zone_preset(corner, w, h):
+    """Place la zone d'effacement dans un coin (marge de 2 %), sans changer sa taille."""
+    w, h = float(w or 0), float(h or 0)
+    return {"haut gauche": (2, 2), "haut droite": (98 - w, 2), "bas gauche": (2, 98 - h),
+            "bas droite": (98 - w, 98 - h), "centre": ((100 - w) / 2, (100 - h) / 2)}.get(corner, (2, 2))
+
+
+def tool_logo_preview(file, t, x, y, w, h, mode):
+    if not file:
+        raise gr.Error(_("Ajoute une vidéo."))
+    try:
+        W, H = tools._video_size(file)
+        box = tools.box_from_percent(W, H, x, y, w, h)
+        frame = tools.grab_frame(file, float(t or 0), height=0)
+        return _draw_box(frame, box), tools.preview_remove_logo(file, t, box, mode)
+    except Exception as e:
+        raise fail(e)
+
+
+def tool_remove_logo(file, x, y, w, h, mode, progress=gr.Progress()):
+    if not file:
+        raise gr.Error(_("Ajoute une vidéo."))
+    out = OUT_DIR / f"{Path(file).stem}_sans_logo.mp4"
+    try:
+        W, H = tools._video_size(file)
+        tools.remove_logo(file, str(out), tools.box_from_percent(W, H, x, y, w, h), mode, _logo_progress(progress))
+    except Exception as e:
+        raise fail(e)
+    return str(out), str(out)
+
+
+def tool_msv_logo(file, action, variant, position, size, opacity, mode, progress=gr.Progress()):
+    if not file:
+        raise gr.Error(_("Ajoute une vidéo."))
+    stem = Path(file).stem
+    try:
+        if action == "ajouter":
+            out = OUT_DIR / f"{stem}_logo_msv.mp4"
+            tools.add_msv_logo(file, str(out), position, size, opacity, variant, _logo_progress(progress))
+            msg = _("✅ Logo MSV ajouté : sa position est mémorisée dans la vidéo pour pouvoir l'enlever plus tard.")
+        else:
+            out = OUT_DIR / f"{stem}_sans_logo_msv.mp4"
+            _o, exact = tools.remove_msv_logo(file, str(out), position, size, variant, mode, _logo_progress(progress))
+            msg = (_("✅ Logo MSV enlevé (position exacte retrouvée dans la vidéo).") if exact else
+                   _("✅ Logo enlevé à la position choisie (cette vidéo ne contenait pas la position mémorisée : "
+                     "vérifie que position et taille correspondent)."))
+    except Exception as e:
+        raise fail(e)
+    return str(out), str(out), msg
+
+
 def tool_transcribe(file, lang, model, max_words, progress=gr.Progress()):
     if not subs.whisper_available():
         raise gr.Error(_("Whisper n'est pas installé. Lance : pip install faster-whisper"))
@@ -529,8 +758,9 @@ def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pi
             raise gr.Error(_("Choisis une voix ElevenLabs (bouton « Charger mes voix »)."))
         return "elevenlabs", el_voice, {"key": key or None, "model": voice.ELEVEN_MODELS.get(el_model, el_model),
                                         "stability": stab, "similarity": sim, "style": style, "speed": speed}
-    if not voice.piper_available():
-        raise gr.Error(_("Piper n'est pas installé : pip install sherpa-onnx"))
+    problem = voice.piper_problem()
+    if problem:
+        raise gr.Error(problem, duration=None)
     return "piper", piper_voice, {"pitch": pitch, "speed": speed}
 
 
@@ -540,7 +770,7 @@ def load_el_voices(key, remember):
             voice.save_config(elevenlabs_key=key.strip())
         voices = voice.eleven_voices(key or None)
     except Exception as e:
-        raise gr.Error(str(e)[:900])
+        raise fail(e)
     gr.Info(_("{n} voix trouvées sur ton compte ElevenLabs.", n=len(voices)))
     return gr.Dropdown(choices=voices, value=voices[0][1] if voices else None)
 
@@ -565,7 +795,7 @@ def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, p
         res = voice.generate(script, out, name=slug(name or "voix"), provider=provider, voice=v,
                              gap=float(gap), max_words=int(max_words), **options)
     except Exception as e:
-        raise gr.Error(str(e)[:900])
+        raise fail(e)
     lines = [_("✅ Voix créée : {dur:.1f} s, {n} scène(s)", dur=sum(res["durations"]), n=len(res["scenes"]))]
     lines += [_("   scène {i} : {dur:.2f} s", i=i + 1, dur=d) for i, d in enumerate(res["durations"])]
     lines.append(_("Sous-titres : minutage exact (ElevenLabs)") if provider == "elevenlabs"
@@ -589,7 +819,7 @@ def tool_replace_voice(video, new_voice, last, at, keep, ref):
         voice.replace_clip_voice(video, src, str(out), at=float(at or 0), keep_original=float(keep or 0),
                                  match_level_of=ref or None)
     except Exception as e:
-        raise gr.Error(str(e)[:900])
+        raise fail(e)
     return str(out), str(out)
 
 
@@ -724,6 +954,10 @@ def bind(fn, lang: str):
         token = LANG.set(lang)
         try:
             return fn(*args, **kwargs)
+        except gr.Error:
+            raise
+        except Exception as e:   # erreur de saisie, de fichier ou bug : message « problème + que faire »
+            raise fail(e) from e
         finally:
             LANG.reset(token)
     return wrapper
@@ -787,19 +1021,93 @@ def _build_ui(lang: str) -> gr.Blocks:
                             with gr.Row():
                                 crop_t = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Haut (%)"))
                                 crop_b = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Bas (%)"))
+                        with gr.Accordion("⏱ " + _("Convertisseur de temps"), open=False):
+                            with gr.Row():
+                                tc_in = gr.Textbox(label=_("Durée à convertir"), scale=3,
+                                                   placeholder="1:30 · 90 · 1h 2m 3s · 2,5 min")
+                                tc_start = gr.Button(_("→ Début"), size="sm", scale=1)
+                                tc_end = gr.Button(_("→ Fin"), size="sm", scale=1)
+                            tc_out = gr.Markdown()
                     with gr.Group():
                         section("3", "Timeline", "les cellules sont modifiables")
                         timeline = gr.Dataframe(
                             value=empty_df(), headers=cols(), interactive=True, wrap=True,
                             datatype=["number", "str", "number", "number", "number", "number", "number", "number",
-                                      "str"],
+                                      "str", "str"],
                             column_count=(len(COLS), "fixed"),
+                            column_widths=["6%", "30%", "8%", "8%", "8%", "8%", "8%", "8%", "8%", "8%"],
                         )
                         with gr.Row():
                             add_all_btn = gr.Button(_("Ajouter toute la médiathèque"), size="sm")
                             tidy_btn = gr.Button(_("Trier et renuméroter"), size="sm")
                             drop_btn = gr.Button(_("Retirer la dernière ligne"), size="sm")
                             clear_btn = gr.Button(_("Vider"), size="sm", variant="stop")
+                    with gr.Group():
+                        section("4", "Calques", "incrustations et textes animés")
+                        gr.Markdown(_("Par-dessus le montage, sous le titre et les sous-titres. Les heures sont celles "
+                                      "de la vidéo finale ; « disparaît à » vide ou 0 = jusqu'à la fin."))
+                        gr.Markdown(_("Les champs servent à ajouter un nouveau calque. Pour changer un calque déjà "
+                                      "ajouté (heures, position, couleur…), modifie sa ligne dans le tableau."))
+                        with gr.Tabs():
+                            with gr.Tab("🖼 " + _("Image ou vidéo incrustée")):
+                                with gr.Row():
+                                    ov_media = gr.Dropdown(label=_("Média"), choices=[], interactive=True, scale=3,
+                                                           info=_("capture d'écran, sticker, photo ou vidéo "
+                                                                  "(picture-in-picture, sans son)"))
+                                    ov_anim = gr.Dropdown(opts(layers.ANIMATIONS), value="zoom",
+                                                          label=_("Entrée animée"), scale=2)
+                                with gr.Row():
+                                    ov_start = gr.Number(value=0, label=_("Apparaît à (s)"), precision=2, min_width=90)
+                                    ov_end = gr.Number(value=None, label=_("Disparaît à (s)"), precision=2,
+                                                       min_width=90)
+                                    ov_width = gr.Slider(5, 100, value=45, step=1, label=_("Largeur (%)"))
+                                    ov_op = gr.Slider(0.1, 1, value=1, step=0.05, label=_("Opacité"))
+                                with gr.Row():
+                                    ov_pos = gr.Dropdown(opts(layers.POSITIONS), value="centre",
+                                                         label=_("Position rapide"), scale=2)
+                                    ov_x = gr.Slider(0, 100, value=50, step=1, label=_("Centre X (%)"))
+                                    ov_y = gr.Slider(0, 100, value=50, step=1, label=_("Centre Y (%)"))
+                                ov_add = gr.Button(_("Ajouter l'incrustation"), variant="primary", size="sm")
+                                ov_names = TABLES["overlays"][0]
+                                ov_table = reg("overlays", gr.Dataframe(
+                                    value=table_df("overlays", []), headers=[_(c) for c in ov_names], interactive=True,
+                                    wrap=True, column_count=(len(ov_names), "fixed"),
+                                    column_widths=["37%", "9%", "9%", "9%", "9%", "9%", "9%", "9%"],
+                                    datatype=["str", "number", "number", "number", "number", "number", "number",
+                                              "str"]))
+                                with gr.Row():
+                                    ov_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                                    ov_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                            with gr.Tab("✏️ " + _("Texte animé")):
+                                with gr.Row():
+                                    tx_text = gr.Textbox(label=_("Texte"), placeholder=_("Abonne-toi !"), scale=3)
+                                    tx_anim = gr.Dropdown(opts(layers.ANIMATIONS), value="montée",
+                                                          label=_("Entrée animée"), scale=2)
+                                with gr.Row():
+                                    tx_start = gr.Number(value=0, label=_("Apparaît à (s)"), precision=2, min_width=90)
+                                    tx_end = gr.Number(value=None, label=_("Disparaît à (s)"), precision=2,
+                                                       min_width=90)
+                                    tx_size = gr.Slider(24, 220, value=90, step=2, label=_("Taille"))
+                                with gr.Row():
+                                    tx_color = gr.ColorPicker(value="#FFFFFF", label=_("Couleur du texte"),
+                                                              info=_("clique sur le carré de couleur"))
+                                    tx_box = gr.Checkbox(value=False, label=_("Fond derrière le texte"))
+                                with gr.Row():
+                                    tx_pos = gr.Dropdown(opts(layers.POSITIONS), value="haut",
+                                                         label=_("Position rapide"), scale=2)
+                                    tx_x = gr.Slider(0, 100, value=50, step=1, label=_("Centre X (%)"))
+                                    tx_y = gr.Slider(0, 100, value=12, step=1, label=_("Centre Y (%)"))
+                                tx_add = gr.Button(_("Ajouter le texte"), variant="primary", size="sm")
+                                tx_names = TABLES["texts"][0]
+                                tx_table = reg("texts", gr.Dataframe(
+                                    value=table_df("texts", []), headers=[_(c) for c in tx_names], interactive=True,
+                                    wrap=True, column_count=(len(tx_names), "fixed"),
+                                    column_widths=["28%", "8%", "8%", "8%", "8%", "9%", "11%", "11%", "9%"],
+                                    datatype=["str", "number", "number", "number", "number", "number", "str", "str",
+                                              "bool"]))
+                                with gr.Row():
+                                    tx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                                    tx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
 
                 # ---------------- colonne droite : réglages
                 with gr.Column(scale=2):
@@ -844,8 +1152,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                     with gr.Accordion(_("Images fixes"), open=False):
                         reg("image_duration", gr.Slider(1, 12, value=DEF["image_duration"], step=0.5,
                                                         label=_("Durée par image (s)")))
-                        reg("image_zoom", gr.Radio(opts(["aucun", "zoom avant", "zoom arrière"]), value=DEF["image_zoom"],
-                                                   label=_("Mouvement (effet Ken Burns)")))
+                        reg("image_zoom", gr.Dropdown(opts(MOTIONS), value=DEF["image_zoom"],
+                                                      label=_("Mouvement (effet Ken Burns)"),
+                                                      info=_("pour une seule image : colonne « mouvement » de la "
+                                                             "timeline")))
                         reg("fit_images_to_voiceover", gr.Checkbox(value=False,
                             label=_("Répartir les images sur toute la durée de la voix off")))
 
@@ -909,8 +1219,12 @@ def _build_ui(lang: str) -> gr.Blocks:
                             reg("logo.size", gr.Slider(0.05, 0.4, value=0.14, step=0.01, label=_("Taille")))
                             reg("logo.opacity", gr.Slider(0.1, 1, value=0.9, step=0.05, label=_("Opacité")))
 
-                    style_btn = gr.Button(_("Aperçu du texte (instantané)"))
-                    style_img = gr.Image(label=_("Aperçu du titre et des sous-titres"), height=380, visible=True,
+                    with gr.Row(equal_height=True):
+                        style_btn = gr.Button(_("Aperçu du texte et des calques (instantané)"), scale=3)
+                        preview_t = gr.Number(value=0, label=_("Moment de l'aperçu (s)"), precision=2, scale=1,
+                                              min_width=110)
+                    style_img = gr.Image(label=_("Aperçu du titre, des sous-titres et des calques"), height=380,
+                                         visible=True,
                                          interactive=False)
 
             vals = list(FIELDS.values())
@@ -1067,6 +1381,45 @@ def _build_ui(lang: str) -> gr.Blocks:
                     tr_btn = gr.Button(_("Transcrire"))
                     tr_out = gr.File(label=_("Fichier .srt"))
                     tr_txt = gr.Textbox(label=_("Texte"), lines=6, elem_classes="mono")
+            with gr.Row(equal_height=False):
+                with gr.Column():
+                    section("E", "Effacer un logo", "logo, filigrane, texte")
+                    gr.Markdown(_("Utilise cet outil uniquement sur des vidéos dont tu détiens les droits "
+                                  "(par exemple pour retirer ton ancien logo)."))
+                    rl_file = gr.File(label=_("Vidéo"), type="filepath", height=80)
+                    with gr.Row():
+                        rl_corner = gr.Radio(opts(tools.LOGO_POSITIONS), value="haut droite", label=_("Zone rapide"))
+                        rl_mode = gr.Radio(opts(["effacer", "flouter"]), value="effacer", label=_("Méthode"))
+                    with gr.Row():
+                        rl_x = gr.Slider(0, 99, value=81, step=0.5, label="X (%)")
+                        rl_y = gr.Slider(0, 99, value=2, step=0.5, label="Y (%)")
+                    with gr.Row():
+                        rl_w = gr.Slider(1, 100, value=17, step=0.5, label=_("Largeur (%)"))
+                        rl_h = gr.Slider(1, 100, value=12, step=0.5, label=_("Hauteur (%)"))
+                    with gr.Row():
+                        rl_t = gr.Number(value=1.0, label=_("Moment (s)"), precision=2)
+                        rl_prev = gr.Button(_("Aperçu"))
+                    with gr.Row():
+                        rl_img_zone = gr.Image(label=_("Zone choisie"), interactive=False)
+                        rl_img_after = gr.Image(label=_("Après effacement"), interactive=False)
+                    rl_btn = gr.Button(_("Effacer sur toute la vidéo"), variant="primary")
+                    rl_vid = gr.Video(label=_("Résultat"), height=320)
+                    rl_out = gr.File(label=_("Télécharger"))
+                with gr.Column():
+                    section("F", "Logo MSV", "ajouter ou enlever ton logo")
+                    ml_file = gr.File(label=_("Vidéo"), type="filepath", height=80)
+                    with gr.Row():
+                        ml_action = gr.Radio(opts(["ajouter", "enlever"]), value="ajouter", label=_("Action"))
+                        ml_variant = gr.Radio(opts(list(tools.MSV_LOGOS)), value="icône", label=_("Modèle de logo"))
+                    with gr.Row():
+                        ml_pos = gr.Dropdown(opts(tools.LOGO_POSITIONS), value="bas droite", label=_("Position"))
+                        ml_size = gr.Slider(0.05, 0.4, value=0.12, step=0.01, label=_("Taille"))
+                        ml_op = gr.Slider(0.1, 1, value=0.85, step=0.05, label=_("Opacité"))
+                    ml_mode = gr.Radio(opts(["effacer", "flouter"]), value="effacer", label=_("Méthode (pour enlever)"))
+                    ml_btn = gr.Button(_("Appliquer"), variant="primary")
+                    ml_info = gr.Markdown()
+                    ml_vid = gr.Video(label=_("Résultat"), height=320)
+                    ml_out = gr.File(label=_("Télécharger"))
 
         with gr.Tab(_("Aide")):
             gr.Markdown(help_text())
@@ -1076,8 +1429,9 @@ def _build_ui(lang: str) -> gr.Blocks:
         gr.HTML(f"<div id='pied'>{pied} · v{__version__}</div>")
 
         # ------------------------------------------------------------- événements
-        up.upload(L(import_files), [up, lib], [lib, media_dd, up])
-        folder_btn.click(L(import_folder), [folder_in, lib], [lib, media_dd])
+        lib_choices = lambda lb: gr.Dropdown(choices=[(media_label(p), p) for p in lb or []])   # noqa: E731
+        up.upload(L(import_files), [up, lib], [lib, media_dd, up]).then(lib_choices, lib, ov_media)
+        folder_btn.click(L(import_folder), [folder_in, lib], [lib, media_dd]).then(lib_choices, lib, ov_media)
         crop_sl = [crop_l, crop_t, crop_r, crop_b]
         media_dd.change(L(inspect_media), [media_dd] + crop_sl,
                         [frame_img, cursor, media_info, start_n, end_n, frame_src])
@@ -1094,7 +1448,21 @@ def _build_ui(lang: str) -> gr.Blocks:
         drop_btn.click(L(drop_last), timeline, timeline)
         clear_btn.click(L(empty_df), None, timeline)
 
-        style_btn.click(L(style_preview), [timeline] + vals, style_img)
+        style_btn.click(L(style_preview_at), [timeline, preview_t] + vals, style_img)
+        preview_t.submit(L(style_preview_at), [timeline, preview_t] + vals, style_img)
+        ov_pos.change(layer_position, ov_pos, [ov_x, ov_y])
+        tx_pos.change(layer_position, tx_pos, [tx_x, tx_y])
+        # après l'ajout : aperçu au moment où le nouveau calque apparaît
+        ov_add.click(L(add_overlay), [ov_table, ov_media, ov_start, ov_end, ov_x, ov_y, ov_width, ov_op, ov_anim],
+                     ov_table).success(lambda s: num(s, 0), ov_start, preview_t) \
+            .then(L(style_preview_at), [timeline, preview_t] + vals, style_img)
+        tx_add.click(L(add_text), [tx_table, tx_text, tx_start, tx_end, tx_x, tx_y, tx_size, tx_color, tx_box,
+                                   tx_anim], tx_table).success(lambda s: num(s, 0), tx_start, preview_t) \
+            .then(L(style_preview_at), [timeline, preview_t] + vals, style_img)
+        ov_drop.click(L(functools.partial(drop_last_layer, "overlays")), ov_table, ov_table)
+        tx_drop.click(L(functools.partial(drop_last_layer, "texts")), tx_table, tx_table)
+        ov_clear.click(L(lambda: table_df("overlays", [])), None, ov_table)
+        tx_clear.click(L(lambda: table_df("texts", [])), None, tx_table)
         prev_btn.click(L(render_preview), [timeline] + vals, [out_video, out_files, out_log])
         final_btn.click(L(render_final), [timeline] + vals, [out_video, out_files, out_log])
 
@@ -1126,6 +1494,17 @@ def _build_ui(lang: str) -> gr.Blocks:
         qs_btn.click(L(tool_quick_short), [qs_file, qs_fit, qs_max, qs_sil], [qs_vid, qs_out])
         au_btn.click(L(tool_audio), au_file, au_out)
         tr_btn.click(L(tool_transcribe), [tr_file, tr_lang, tr_model, tr_words], [tr_out, tr_txt])
+
+        tc_in.change(L(convert_time), tc_in, tc_out, show_progress="hidden")
+        tc_start.click(L(time_to_seconds), tc_in, start_n)
+        tc_end.click(L(time_to_seconds), tc_in, end_n)
+
+        rl_corner.change(logo_zone_preset, [rl_corner, rl_w, rl_h], [rl_x, rl_y])
+        rl_prev.click(L(tool_logo_preview), [rl_file, rl_t, rl_x, rl_y, rl_w, rl_h, rl_mode],
+                      [rl_img_zone, rl_img_after])
+        rl_btn.click(L(tool_remove_logo), [rl_file, rl_x, rl_y, rl_w, rl_h, rl_mode], [rl_vid, rl_out])
+        ml_btn.click(L(tool_msv_logo), [ml_file, ml_action, ml_variant, ml_pos, ml_size, ml_op, ml_mode],
+                     [ml_vid, ml_out, ml_info])
     return demo
 
 

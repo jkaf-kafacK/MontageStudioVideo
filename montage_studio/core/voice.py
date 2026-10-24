@@ -22,6 +22,7 @@ import wave
 from pathlib import Path
 
 from . import ff, subs
+from .errors import PIPER_CMD, PIPER_FIX, UserError
 from .i18n import _
 
 from .paths import VOICE_CONFIG as CONFIG_FILE, VOICE_MODELS_DIR as MODELS_DIR  # noqa: E402
@@ -159,11 +160,20 @@ def eleven_tts(text: str, voice_id: str, out_mp3: str | Path, key: str | None = 
 # --------------------------------------------------------------------------- Piper (local)
 
 def piper_available() -> bool:
+    return piper_problem() is None
+
+
+def piper_problem() -> str | None:
+    """Pourquoi Piper ne peut pas parler (message pour l'utilisateur), ou None s'il est prêt."""
     try:
-        import sherpa_onnx  # noqa: F401
-        return True
+        import sherpa_onnx
     except Exception:
-        return False
+        return _("Piper n'est pas installé. Dans le dossier de l'application, lance : {cmd}", cmd=PIPER_CMD)
+    major = str(getattr(sherpa_onnx, "__version__", "1")).split(".")[0]
+    if major.isdigit() and int(major) >= 2:   # 2.x : plus de phonétiseur intégré, les voix Piper restent muettes
+        return _("La version {v} de sherpa-onnx ne sait plus faire parler les voix Piper. Remets la version "
+                 "compatible : {cmd}", v=sherpa_onnx.__version__, cmd=PIPER_CMD)
+    return None
 
 
 def _piper_model(name: str) -> Path:
@@ -202,6 +212,8 @@ def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1
             num_threads=max(1, (os.cpu_count() or 2) // 2)))
         _tts_cache[name] = sherpa_onnx.OfflineTts(cfg)
     audio = _tts_cache[name].generate(text, sid=sid, speed=speed)
+    if audio.sample_rate <= 0 or len(audio.samples) == 0:
+        raise UserError(_("La voix Piper n'a produit aucun son pour « {text} ».", text=text[:60]), _(PIPER_FIX, cmd=PIPER_CMD))
     raw = Path(out_wav).with_suffix(".brut.wav")
     s = np.clip(np.array(audio.samples, dtype=np.float32), -1, 1)
     with wave.open(str(raw), "wb") as w:

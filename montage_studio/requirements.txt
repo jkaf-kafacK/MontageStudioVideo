@@ -4,7 +4,8 @@ pillow>=10.1   # forcé en 13.0+ par overrides.txt (correctifs de sécurité)
 pandas>=2.0
 numpy>=1.24
 # Voix off gratuites hors ligne (Piper) : les voix sont téléchargées au premier usage
-sherpa-onnx>=1.10
+# sherpa-onnx 2.x n'a plus le phonétiseur espeak-ng intégré : les voix Piper y restent muettes
+sherpa-onnx>=1.10,<2
 
 # Optionnel : sous-titres automatiques au mot près (Whisper)
 # faster-whisper>=1.0
