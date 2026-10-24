@@ -6,7 +6,7 @@ import re
 import shutil
 import subprocess
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -63,6 +63,14 @@ class MediaInfo:
     fps: float = 0.0
     has_audio: bool = False
     has_video: bool = False
+    # pistes de sous-titres intégrées : {"index": n° parmi les sous-titres, "lang": "ita", "codec": "mov_text",
+    # "text": True si c'est du texte (les sous-titres en image, DVD/Blu-ray, ne sont pas exploitables)}
+    subtitles: list = field(default_factory=list)
+
+
+# Formats de sous-titres intégrés qui contiennent du texte (lisibles et convertibles en .srt)
+TEXT_SUB_CODECS = {"subrip", "srt", "mov_text", "ass", "ssa", "webvtt", "text", "sami", "microdvd", "subviewer",
+                   "realtext", "jacosub", "mpl2", "pjs", "vplayer", "stl"}
 
 
 _probe_cache: dict = {}
@@ -100,6 +108,12 @@ def probe(path: str | Path) -> MediaInfo:
                 info.fps = float(fm.group(1))
         elif "Stream #" in line and "Audio:" in line:
             info.has_audio = True
+        elif "Stream #" in line and "Subtitle:" in line:
+            lm = re.search(r"Stream #\d+:\d+(?:\[\w+\])?\((\w+)\)", line)
+            cm = re.search(r"Subtitle:\s*(\w+)", line)
+            codec = cm.group(1).lower() if cm else "?"
+            info.subtitles.append({"index": len(info.subtitles), "lang": (lm.group(1) if lm else "und").lower(),
+                                   "codec": codec, "text": codec in TEXT_SUB_CODECS})
 
     # Vidéos de téléphone filmées en portrait : métadonnée de rotation
     if re.search(r"rotation of -?90", err) or re.search(r"rotate\s*:\s*(90|270)", err):

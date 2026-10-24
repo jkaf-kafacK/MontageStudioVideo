@@ -28,12 +28,12 @@ import gradio as gr
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from core import batch, ff, paths, subs, tools, voice
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
-from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, QUALITY, TRANSITIONS,
-                         fit_image, merge_defaults, render_project)
+from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, QUALITY, TRANSITIONS,
+                         crop_text, fit_image, merge_defaults, parse_crop, render_project)
 from core.textimg import DEFAULT_STYLE, list_fonts, render_text
 from core.version import __version__
 
@@ -41,7 +41,7 @@ BASE = Path(__file__).resolve().parent          # code de l'application (lecture
 MEDIA_DIR, OUT_DIR, PROJ_DIR = paths.MEDIA_DIR, paths.OUT_DIR, paths.PROJ_DIR   # fichiers de l'utilisateur
 paths.ensure_dirs()
 
-COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img"]
+COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img", "recadrage_%"]
 FROM_MONTAGE = "(réglages de l'onglet Montage)"   # valeur interne ; seul le libellé affiché est traduit
 FONTS = list_fonts()
 
@@ -127,6 +127,13 @@ def clips_from_df(df) -> list[dict]:
             v = num(r[idx])
             if v is not None:
                 c[key] = v
+        if len(r) > 8:
+            try:
+                crop = parse_crop(r[8])
+            except ValueError as e:
+                raise gr.Error(str(e))
+            if crop:
+                c["crop"] = crop
         clips.append(c)
     return clips
 
@@ -135,7 +142,7 @@ def df_from_clips(clips: list[dict]) -> pd.DataFrame:
     rows = []
     for i, c in enumerate(clips, 1):
         rows.append([i, c.get("path", ""), c.get("start"), c.get("end"), c.get("speed", 1.0),
-                     c.get("volume", 1.0), c.get("crop_x", 0.5), c.get("duration")])
+                     c.get("volume", 1.0), c.get("crop_x", 0.5), c.get("duration"), crop_text(c.get("crop"))])
     return df_from_rows(rows)
 
 
@@ -182,6 +189,8 @@ def collect(values) -> dict:
     for key, v in zip(FIELDS.keys(), values):
         if key in FILE_FIELDS:
             v = persist(v) if v else ""
+        if v is None and isinstance(default_value(key), str):
+            v = default_value(key)   # zone de texte jamais remplie : le navigateur envoie None, on garde ""
         if key == "fps":
             v = int(v or 30)
         set_path(proj, key, v)
@@ -226,28 +235,67 @@ def import_folder(folder, lib):
     return lib, gr.Dropdown(choices=[(media_label(p), p) for p in lib], value=lib[-1] if lib else None)
 
 
-def inspect_media(path):
+def show_crop(frame, left, top, right, bottom):
+    """Image du curseur avec la zone gardée encadrée et le reste assombri."""
+    if not frame or not Path(frame).exists():
+        return None
+    img = Image.open(frame).convert("RGB")
+    crop = parse_crop([left, top, right, bottom])
+    if not crop:
+        return img
+    W, H = img.size
+    box = (round(W * crop["left"] / 100), round(H * crop["top"] / 100),
+           round(W * (1 - crop["right"] / 100)) - 1, round(H * (1 - crop["bottom"] / 100)) - 1)
+    shade = Image.new("L", img.size, 150)
+    ImageDraw.Draw(shade).rectangle(box, fill=0)
+    img = Image.composite(Image.new("RGB", img.size, (0, 0, 0)), img, shade)
+    ImageDraw.Draw(img).rectangle(box, outline=(251, 191, 36), width=max(2, W // 300))
+    return img
+
+
+def crop_preset(path, ratio, left, top, right, bottom):
+    """Recadrage centré qui garde la plus grande zone possible au format demandé (9:16, 1:1…)."""
+    if not path or ratio == "libre":
+        return left, top, right, bottom
+    info = ff.probe(path)
+    if not info.width or not info.height:
+        return left, top, right, bottom
+    rw, rh = (float(x) for x in ratio.split(":"))
+    target, src = rw / rh, info.width / info.height
+    if src > target:   # trop large : on retire à gauche et à droite
+        side = round((1 - target / src) / 2 * 100, 1)
+        return min(side, MAX_CROP * 100), 0, min(side, MAX_CROP * 100), 0
+    side = round((1 - src / target) / 2 * 100, 1)   # trop haut : on retire en haut et en bas
+    return 0, min(side, MAX_CROP * 100), 0, min(side, MAX_CROP * 100)
+
+
+def inspect_media(path, left=0, top=0, right=0, bottom=0):
     if not path:
-        return None, gr.Slider(maximum=1, value=0), _("Choisis un média."), 0, 0
+        return None, gr.Slider(maximum=1, value=0), _("Choisis un média."), 0, 0, None
     info = ff.probe(path)
     if info.kind == "audio":
         return None, gr.Slider(maximum=max(1, info.duration), value=0), \
-            _("Fichier audio ({dur:.1f} s) : utilise-le comme voix off ou musique.", dur=info.duration), 0, info.duration
+            _("Fichier audio ({dur:.1f} s) : utilise-le comme voix off ou musique.", dur=info.duration), 0, \
+            info.duration, None
     frame = tools.grab_frame(path, 0)
     dur = info.duration if info.kind == "video" else 0
     txt = (f"**{Path(path).name}** · {info.width}×{info.height} · "
            + (f"{dur:.2f} s · {_('avec son') if info.has_audio else _('sans son')}" if info.kind == "video"
               else _("image fixe")))
-    return frame, gr.Slider(maximum=max(0.1, round(dur, 2)), value=0, step=0.04), txt, 0, round(dur, 2)
+    if info.subtitles:
+        txt += " · 💬 " + _("sous-titres : {langs}", langs=", ".join(t["lang"] for t in info.subtitles))
+    return (show_crop(frame, left, top, right, bottom), gr.Slider(maximum=max(0.1, round(dur, 2)), value=0, step=0.04),
+            txt, 0, round(dur, 2), frame)
 
 
-def seek(path, t):
+def seek(path, t, left=0, top=0, right=0, bottom=0):
     if not path:
-        return None
-    return tools.grab_frame(path, float(t or 0))
+        return None, None
+    frame = tools.grab_frame(path, float(t or 0))
+    return show_crop(frame, left, top, right, bottom), frame
 
 
-def add_clip(df, path, start, end):
+def add_clip(df, path, start, end, left=0, top=0, right=0, bottom=0):
     if not path:
         raise gr.Error(_("Choisis d'abord un média dans la médiathèque."))
     if ff.media_kind(path) == "audio":
@@ -255,7 +303,7 @@ def add_clip(df, path, start, end):
     rows = to_rows(df)
     is_img = ff.media_kind(path) == "image"
     rows.append([len(rows) + 1, path, None if is_img else num(start, 0), None if is_img else num(end),
-                 1.0, 1.0, 0.5, None])
+                 1.0, 1.0, 0.5, None, crop_text([left, top, right, bottom])])
     return df_from_rows(rows)
 
 
@@ -263,7 +311,7 @@ def add_all(df, lib):
     rows = to_rows(df)
     for p in lib or []:
         if ff.media_kind(p) in ("video", "image"):
-            rows.append([len(rows) + 1, p, None, None, 1.0, 1.0, 0.5, None])
+            rows.append([len(rows) + 1, p, None, None, 1.0, 1.0, 0.5, None, ""])
     return df_from_rows(rows)
 
 
@@ -322,13 +370,13 @@ def style_preview(df, *values):
             src = c["path"]
             if ff.media_kind(src) == "video":
                 src = tools.grab_frame(src, c.get("start", 0) or 0, height=0)
-            base = fit_image(src, W, H, proj["fit"], c.get("crop_x", 0.5) or 0.5)
+            base = fit_image(src, W, H, proj["fit"], c.get("crop_x", 0.5) or 0.5, crop=c.get("crop"))
         except Exception:
             base = None
     if base is None:
         base = Image.linear_gradient("L").resize((W, H)).convert("RGB")
     img = base.convert("RGBA")
-    if str(proj["title"].get("text", "")).strip():
+    if (proj["title"].get("text") or "").strip():
         img = render_text(proj["title"]["text"], W, H, {**DEFAULT_STYLE, **proj["title"]["style"]}, base=img)
     st = proj["subtitles"]
     sample = (st.get("script") or _("Voici un exemple de sous-titres")).split()
@@ -724,11 +772,27 @@ def _build_ui(lang: str) -> gr.Blocks:
                                     set_start = gr.Button(_("Début = curseur"), size="sm")
                                     set_end = gr.Button(_("Fin = curseur"), size="sm")
                                 add_btn = gr.Button(_("Ajouter l'extrait à la timeline"), variant="primary", size="sm")
+                        frame_src = gr.State(None)   # image du curseur sans la zone de recadrage
+                        with gr.Accordion(_("Recadrer l'image"), open=False):
+                            gr.Markdown(_("Retire des bords de l'image (en %). Le recadrage est enregistré avec "
+                                          "l'extrait quand tu l'ajoutes à la timeline (colonne recadrage_% : "
+                                          "gauche/haut/droite/bas, modifiable)."))
+                            with gr.Row():
+                                crop_ratio = gr.Radio(opts(["libre", "9:16", "1:1", "4:5", "16:9"]), value="libre",
+                                                      label=_("Proportions"), scale=4)
+                                crop_reset = gr.Button(_("Réinitialiser"), size="sm", scale=1)
+                            with gr.Row():
+                                crop_l = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Gauche (%)"))
+                                crop_r = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Droite (%)"))
+                            with gr.Row():
+                                crop_t = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Haut (%)"))
+                                crop_b = gr.Slider(0, MAX_CROP * 100, value=0, step=0.5, label=_("Bas (%)"))
                     with gr.Group():
                         section("3", "Timeline", "les cellules sont modifiables")
                         timeline = gr.Dataframe(
                             value=empty_df(), headers=cols(), interactive=True, wrap=True,
-                            datatype=["number", "str", "number", "number", "number", "number", "number", "number"],
+                            datatype=["number", "str", "number", "number", "number", "number", "number", "number",
+                                      "str"],
                             column_count=(len(COLS), "fixed"),
                         )
                         with gr.Row():
@@ -800,7 +864,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                         reg("title.style.box", gr.Checkbox(value=TITLE_STYLE["box"], label=_("Fond derrière le titre")))
 
                     with gr.Accordion(_("Sous-titres"), open=False):
-                        reg("subtitles.source", gr.Radio(opts(["aucun", "script", "srt", "whisper"]), value="aucun",
+                        reg("subtitles.source", gr.Radio(opts(["aucun", "script", "srt", "whisper", "vidéo"]), value="aucun",
                                                          label=_("Source")))
                         reg("subtitles.script", gr.Textbox(label=_("Script (mode « script »)"), lines=4,
                                                            placeholder=_("Colle ici le texte lu par la voix off.")))
@@ -811,7 +875,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                             reg("subtitles.karaoke", gr.Checkbox(value=True, label=_("Surligner le mot prononcé")))
                         with gr.Row():
                             reg("subtitles.language", gr.Dropdown(["fr", "en", "it", "es", "de", ""], value=lang,
-                                                                  label=_("Langue (Whisper)")))
+                                                                  label=_("Langue (Whisper, piste de la vidéo)")))
                             reg("subtitles.whisper_model", gr.Dropdown(["tiny", "base", "small", "medium", "large-v3"],
                                                                        value="small", label=_("Modèle Whisper")))
                         with gr.Row():
@@ -1014,11 +1078,17 @@ def _build_ui(lang: str) -> gr.Blocks:
         # ------------------------------------------------------------- événements
         up.upload(L(import_files), [up, lib], [lib, media_dd, up])
         folder_btn.click(L(import_folder), [folder_in, lib], [lib, media_dd])
-        media_dd.change(L(inspect_media), media_dd, [frame_img, cursor, media_info, start_n, end_n])
-        cursor.release(L(seek), [media_dd, cursor], frame_img)
+        crop_sl = [crop_l, crop_t, crop_r, crop_b]
+        media_dd.change(L(inspect_media), [media_dd] + crop_sl,
+                        [frame_img, cursor, media_info, start_n, end_n, frame_src])
+        cursor.release(L(seek), [media_dd, cursor] + crop_sl, [frame_img, frame_src])
+        for sl in crop_sl:
+            sl.change(show_crop, [frame_src] + crop_sl, frame_img, show_progress="hidden")
+        crop_ratio.change(L(crop_preset), [media_dd, crop_ratio] + crop_sl, crop_sl)
+        crop_reset.click(lambda: (0, 0, 0, 0, "libre"), None, crop_sl + [crop_ratio])
         set_start.click(lambda t: t, cursor, start_n)
         set_end.click(lambda t: t, cursor, end_n)
-        add_btn.click(L(add_clip), [timeline, media_dd, start_n, end_n], timeline)
+        add_btn.click(L(add_clip), [timeline, media_dd, start_n, end_n] + crop_sl, timeline)
         add_all_btn.click(L(add_all), [timeline, lib], timeline)
         tidy_btn.click(L(tidy), timeline, timeline)
         drop_btn.click(L(drop_last), timeline, timeline)

@@ -5,3 +5,23 @@
 installer/uv.exe
 dist/
 montage_studio/VERSION
+# Environnement Python (recréé par les lanceurs)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Données personnelles et fichiers générés : ne jamais publier
+medias/
+sorties/
+projets/
+cache/
+
+# Voix off : clé API ElevenLabs et voix Piper téléchargées (ne jamais publier)
+voix_config.json
+modeles_voix/
+
+*.mp3
+*.wav
+*.ogg
+*.mp4

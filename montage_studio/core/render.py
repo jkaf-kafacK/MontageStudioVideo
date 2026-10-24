@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import copy
 import json
+import re
 import shutil
 import tempfile
 import time
@@ -155,9 +156,60 @@ def _fit(inp: str, out: str, W: int, H: int, mode: str, cx: float = 0.5, cy: flo
             f"[{out}bg][{out}fg]overlay=(W-w)/2:(H-h)/2[{out}]")
 
 
-def fit_image(path: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5) -> Image.Image:
-    """Cadre une image fixe au format W×H (rogner, bandes noires ou fond flou)."""
+MAX_CROP = 0.45   # on ne retire jamais plus de 45 % d'un côté (il reste toujours au moins 10 % de l'image)
+
+
+def parse_crop(value) -> Optional[dict]:
+    """Recadrage d'un extrait : pourcentage retiré de chaque bord, {"left", "top", "right", "bottom"}.
+
+    Accepte un dict, une liste [g, h, d, b] ou un texte « 10/0/10/5 » (aussi « 10;0;10;5 » ou « 10 0 10 5 »).
+    Renvoie None s'il n'y a rien à retirer.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        vals = [value.get(k, 0) for k in ("left", "top", "right", "bottom")]
+    elif isinstance(value, (list, tuple)):
+        vals = list(value)
+    else:
+        txt = str(value).strip()
+        if not txt or txt.lower() == "nan":
+            return None
+        parts = [x for x in re.split(r"[;/|\s]+", txt) if x]
+        if len(parts) != 4:
+            parts = [x for x in txt.split(",") if x.strip()]
+        vals = [x.replace(",", ".") for x in parts]
+    if len(vals) != 4:
+        raise ValueError(_("Recadrage invalide : « {v} » (attendu : gauche/haut/droite/bas en %, ex. 10/0/10/0)",
+                           v=value))
+    nums = [min(MAX_CROP * 100, max(0.0, _f(v))) for v in vals]
+    if not any(nums):
+        return None
+    return dict(zip(("left", "top", "right", "bottom"), (round(v, 2) for v in nums)))
+
+
+def crop_text(crop: Optional[dict]) -> str:
+    """{"left": 10, ...} -> « 10/0/10/5 » (affichage dans la timeline)."""
+    c = parse_crop(crop)
+    if not c:
+        return ""
+    return "/".join(f"{c[k]:g}" for k in ("left", "top", "right", "bottom"))
+
+
+def _crop_fractions(crop) -> Optional[tuple[float, float, float, float]]:
+    c = parse_crop(crop)
+    return tuple(c[k] / 100 for k in ("left", "top", "right", "bottom")) if c else None
+
+
+def fit_image(path: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5,
+              crop=None) -> Image.Image:
+    """Cadre une image fixe au format W×H (rogner, bandes noires ou fond flou), après recadrage éventuel."""
     img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
+    fr = _crop_fractions(crop)
+    if fr:
+        l, t, r, b = fr
+        img = img.crop((round(img.width * l), round(img.height * t),
+                        round(img.width * (1 - r)), round(img.height * (1 - b))))
     if mode == "rogner":
         return ImageOps.fit(img, (W, H), Image.LANCZOS, centering=(cx, cy))
     fg = ImageOps.contain(img, (W, H), Image.LANCZOS)
@@ -181,7 +233,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
     segs = []
     rs = p["remove_silence"]
     for c in p["clips"]:
-        path = str(c.get("path", "")).strip()
+        path = str(c.get("path") or "").strip()
         if not path:
             continue
         info = ff.probe(path)
@@ -189,7 +241,8 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
             segs.append({"type": "image", "path": path,
                          "dur": _f(c.get("duration")) or _f(p["image_duration"]) or 3.0,
                          "zoom": c.get("zoom") or p.get("image_zoom", "aucun"),
-                         "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5))})
+                         "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
+                         "crop": parse_crop(c.get("crop"))})
         elif info.kind == "video":
             s = max(0.0, _f(c.get("start")))
             e = _f(c.get("end")) or info.duration
@@ -211,6 +264,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
                              "volume": _f(c.get("volume", 1.0)) if c.get("volume") is not None else 1.0,
                              "mute": mute, "has_audio": info.has_audio,
                              "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
+                             "crop": parse_crop(c.get("crop")),
                              "dur": (b - a) / speed})
         else:
             log.append(_("⚠ Fichier ignoré dans la timeline (audio ou inconnu) : {name}", name=Path(path).name))
@@ -246,7 +300,7 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
         animated = zoom in ("zoom avant", "zoom arrière")
         k = 2 if animated else 1
         still = out.with_suffix(".png")
-        fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"]).save(still)
+        fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"], seg.get("crop")).save(still)
         args = ["-i", str(still), *silent]
         if animated:
             zmax = 1.15
@@ -261,7 +315,14 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
         src_dur = seg["end"] - seg["start"]
         args = ["-ss", f"{seg['start']:.3f}", "-t", f"{src_dur:.3f}", "-i", seg["path"]]
         sp = seg["speed"]
-        fc = (f"[0:v]setpts=(PTS-STARTPTS)/{sp:.4f},fps={fps}[pre];"
+        fr = _crop_fractions(seg.get("crop"))
+        crop = ""
+        if fr:
+            l, t, r, b = fr
+            # dimensions paires (exigées par H.264), positions arrondies au pixel
+            crop = (f",crop=trunc(iw*{1 - l - r:.4f}/2)*2:trunc(ih*{1 - t - b:.4f}/2)*2"
+                    f":trunc(iw*{l:.4f}):trunc(ih*{t:.4f})")
+        fc = (f"[0:v]setpts=(PTS-STARTPTS)/{sp:.4f},fps={fps}{crop}[pre];"
               + _fit("pre", "fit", W, H, fit, seg["crop_x"], seg["crop_y"])
               + ";[fit]format=yuv420p,setsar=1[v]")
         if seg["has_audio"] and not seg["mute"]:
@@ -277,6 +338,22 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
 
 
 # --------------------------------------------------------------------------- étape 2 : assemblage
+
+def _transition_overlap(tr_name: str, td: float, durs: list[float]) -> float:
+    """Chevauchement réel entre deux segments (0 sans transition)."""
+    if not TRANSITIONS.get(tr_name) or len(durs) < 2:
+        return 0.0
+    return max(0.1, min(td, min(durs) * 0.45))
+
+
+def _segment_starts(p: dict, durs: list[float]) -> list[float]:
+    """Moment où chaque segment commence dans la vidéo assemblée."""
+    ov = _transition_overlap(p["transition"]["type"], _f(p["transition"]["duration"]), durs)
+    starts, t = [], 0.0
+    for d in durs:
+        starts.append(t)
+        t += d - ov
+    return starts
 
 def _assemble(parts: list[Path], durs: list[float], out: Path, tr_name: str, td: float,
               fps: int, q: dict, log: list, on_p) -> float:
@@ -297,7 +374,7 @@ def _assemble(parts: list[Path], durs: list[float], out: Path, tr_name: str, td:
         on_p(1.0)
         return sum(durs)
     else:
-        td = max(0.1, min(td, min(durs) * 0.45))
+        td = _transition_overlap(tr_name, td, durs)
         fc_parts = [f"[{i}:v]settb=AVTB,fps={fps}[sv{i}]" for i in range(n)]
         cur_v, cur_a, acc = "sv0", "0:a", durs[0]
         for i in range(1, n):
@@ -318,13 +395,49 @@ def _assemble(parts: list[Path], durs: list[float], out: Path, tr_name: str, td:
 
 # --------------------------------------------------------------------------- sous-titres
 
-def _build_cues(p: dict, assembled: Path, T: float, work: Path, log: list) -> list[dict]:
+def _embedded_cues(segs: list[dict], starts: list[float], language: str | None, log: list) -> list[dict]:
+    """Reprend les sous-titres intégrés aux vidéos de la timeline, recalés sur le montage
+    (coupe, vitesse, silences retirés, transitions)."""
+    per_file: dict[str, list[dict]] = {}
+    out = []
+    for seg, t0 in zip(segs, starts):
+        if seg["type"] != "video":
+            continue
+        path = seg["path"]
+        name = Path(path).name
+        if path not in per_file:
+            per_file[path] = []
+            track = subs.pick_track(ff.probe(path).subtitles, language)
+            if track is None:
+                log.append(_("⚠ Aucune piste de sous-titres dans {name}", name=name))
+            elif not track["text"]:
+                log.append(_("⚠ Sous-titres en image dans {name} : non pris en charge, utilise Whisper", name=name))
+            else:
+                try:
+                    per_file[path] = subs.extract_embedded(path, track["index"])
+                    log.append(_("💬 {n} sous-titres repris de {name} (piste {lang})",
+                                 n=len(per_file[path]), name=name, lang=track["lang"]))
+                except Exception as e:  # piste illisible : on continue sans
+                    log.append(f"⚠ {name} : {str(e)[:200]}")
+        a, b, sp = seg["start"], seg["end"], seg["speed"]
+        for c in per_file[path]:
+            s, e = max(c["start"], a), min(c["end"], b)
+            if e - s < 0.05:
+                continue
+            os_, oe = t0 + (s - a) / sp, t0 + (e - a) / sp
+            out.append({"start": os_, "end": oe, "text": c["text"],
+                        "words": subs.estimate_word_times(c["text"], os_, oe)})
+    return sorted(out, key=lambda c: c["start"])
+
+
+def _build_cues(p: dict, assembled: Path, T: float, work: Path, log: list,
+                segs: list[dict] | None = None, starts: list[float] | None = None) -> list[dict]:
     st = p["subtitles"]
     src = st.get("source", "aucun")
     vo = p["voiceover"]
     vo_off = _f(vo.get("offset"))
     mw = int(st.get("max_words") or 3)
-    if src == "script" and st.get("script", "").strip():
+    if src == "script" and (st.get("script") or "").strip():
         if vo.get("path"):
             start, end = vo_off, min(T, vo_off + ff.probe(vo["path"]).duration)
         else:
@@ -332,6 +445,8 @@ def _build_cues(p: dict, assembled: Path, T: float, work: Path, log: list) -> li
         return subs.from_script(st["script"], start + 0.05, end - 0.05, max_words=mw)
     if src == "srt" and st.get("srt_path"):
         return subs.parse_srt(st["srt_path"])
+    if src == "vidéo":
+        return _embedded_cues(segs or [], starts or [], st.get("language"), log)
     if src == "whisper":
         if not subs.whisper_available():
             log.append(_("⚠ Whisper non installé (pip install faster-whisper) : sous-titres ignorés"))
@@ -403,7 +518,7 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
 
     # Titre
     title = p["title"]
-    if str(title.get("text", "")).strip():
+    if (title.get("text") or "").strip():   # « or "" » : un titre None ne doit pas devenir le texte "None"
         png = work / "title.png"
         render_text(title["text"], W, H, {**DEFAULT_STYLE, **title.get("style", {})}, png)
         args += ["-i", str(png)]
@@ -540,7 +655,7 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
         T = ff.probe(assembled).duration or sum(durs)
 
         prog(0.61, _("Sous-titres"))
-        cues = _build_cues(p, assembled, T, work, log)
+        cues = _build_cues(p, assembled, T, work, log, segs, _segment_starts(p, durs))
         sub_track = _subtitle_track(cues, p, W, H, T, work) if cues else None
         srt_out = None
         if cues:

@@ -9,6 +9,7 @@ Colonnes CSV reconnues (séparateur , ; ou tabulation, en-têtes insensibles à 
     voix_off  fichier audio de narration
     musique   fichier audio de fond
     debut,fin portion à garder des vidéos (secondes)
+    recadrage % retiré de chaque bord : gauche/haut/droite/bas (ex. 10/0/10/0)
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ from typing import Callable, Optional
 
 from . import ff
 from .i18n import _
-from .render import merge_defaults, render_project
+from .render import merge_defaults, parse_crop, render_project
 
 MEDIA_EXT = ff.VIDEO_EXT | ff.IMAGE_EXT
 
@@ -84,8 +85,11 @@ def build_project(template: dict, row: dict, base: Path) -> dict:
     medias = resolve_media(row.get("medias", ""), base)
     debut, fin = row.get("debut", ""), row.get("fin", "")
     clips = []
+    crop = parse_crop(row.get("recadrage"))   # colonne optionnelle, ex. « 10/0/10/0 »
     for m in medias:
         c = {"path": m}
+        if crop:
+            c["crop"] = crop
         if ff.media_kind(m) == "video":
             if debut:
                 c["start"] = float(debut.replace(",", "."))

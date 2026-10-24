@@ -142,6 +142,7 @@ def render_text(
     highlight_index : indice du mot à mettre en avant (mode karaoké).
     """
     st = {**DEFAULT_STYLE, **(style or {})}
+    text = "" if text is None else str(text)   # champ vide envoyé comme None par l'interface
     if st.get("uppercase"):
         text = text.upper()
     words = text.split()

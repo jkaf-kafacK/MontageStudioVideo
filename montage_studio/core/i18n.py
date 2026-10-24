@@ -483,6 +483,40 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Impossible de joindre ElevenLabs : {reason}", "Cannot reach ElevenLabs: {reason}",
      "Impossibile raggiungere ElevenLabs: {reason}", "No se puede conectar con ElevenLabs: {reason}"),
     ("Le texte est vide.", "The text is empty.", "Il testo è vuoto.", "El texto está vacío."),
+    # ---- recadrage de l'image et sous-titres intégrés à la vidéo
+    ("recadrage_%", "crop_%", "ritaglio_%", "recorte_%"),
+    ("Recadrer l'image", "Crop the frame", "Ritaglia l'inquadratura", "Recortar el encuadre"),
+    ("Retire des bords de l'image (en %). Le recadrage est enregistré avec l'extrait quand tu l'ajoutes à la "
+     "timeline (colonne recadrage_% : gauche/haut/droite/bas, modifiable).",
+     "Removes edges of the frame (in %). The crop is saved with the clip when you add it to the timeline "
+     "(crop_% column: left/top/right/bottom, editable).",
+     "Rimuove i bordi dell'immagine (in %). Il ritaglio viene salvato con la clip quando la aggiungi alla "
+     "timeline (colonna ritaglio_%: sinistra/alto/destra/basso, modificabile).",
+     "Quita bordes de la imagen (en %). El recorte se guarda con el fragmento al añadirlo a la línea de tiempo "
+     "(columna recorte_%: izquierda/arriba/derecha/abajo, editable)."),
+    ("Gauche (%)", "Left (%)", "Sinistra (%)", "Izquierda (%)"),
+    ("Haut (%)", "Top (%)", "Alto (%)", "Arriba (%)"),
+    ("Droite (%)", "Right (%)", "Destra (%)", "Derecha (%)"),
+    ("Bas (%)", "Bottom (%)", "Basso (%)", "Abajo (%)"),
+    ("Proportions", "Aspect ratio", "Proporzioni", "Proporciones"),
+    ("libre", "free", "libero", "libre"),
+    ("Réinitialiser", "Reset", "Reimposta", "Restablecer"),
+    ("vidéo", "video track", "traccia del video", "pista del vídeo"),
+    ("Langue (Whisper, piste de la vidéo)", "Language (Whisper, video track)", "Lingua (Whisper, traccia del video)",
+     "Idioma (Whisper, pista del vídeo)"),
+    ("sous-titres : {langs}", "subtitles: {langs}", "sottotitoli: {langs}", "subtítulos: {langs}"),
+    ("Recadrage invalide : « {v} » (attendu : gauche/haut/droite/bas en %, ex. 10/0/10/0)",
+     "Invalid crop: “{v}” (expected: left/top/right/bottom in %, e.g. 10/0/10/0)",
+     "Ritaglio non valido: «{v}» (atteso: sinistra/alto/destra/basso in %, es. 10/0/10/0)",
+     "Recorte no válido: «{v}» (se espera: izquierda/arriba/derecha/abajo en %, p. ej. 10/0/10/0)"),
+    ("⚠ Aucune piste de sous-titres dans {name}", "⚠ No subtitle track in {name}",
+     "⚠ Nessuna traccia di sottotitoli in {name}", "⚠ No hay pista de subtítulos en {name}"),
+    ("⚠ Sous-titres en image dans {name} : non pris en charge, utilise Whisper",
+     "⚠ Image-based subtitles in {name}: not supported, use Whisper",
+     "⚠ Sottotitoli in formato immagine in {name}: non supportati, usa Whisper",
+     "⚠ Subtítulos en imagen en {name}: no compatibles, usa Whisper"),
+    ("💬 {n} sous-titres repris de {name} (piste {lang})", "💬 {n} subtitles taken from {name} ({lang} track)",
+     "💬 {n} sottotitoli presi da {name} (traccia {lang})", "💬 {n} subtítulos tomados de {name} (pista {lang})"),
 ]
 
 HELP = {
@@ -490,12 +524,13 @@ HELP = {
 ### Démarrage rapide
 1. **Médiathèque** : importe tes vidéos et images (ou indique un dossier de ton PC).
 2. **Inspecteur** : choisis un média, déplace le curseur, fixe le début et la fin, puis ajoute l'extrait à la timeline.
+   « Recadrer l'image » retire des bords (en %) ou garde une zone au format 9:16, 1:1, 4:5 ou 16:9.
 3. **Timeline** : modifie directement les cellules (ordre, vitesse 0,5 à 4, volume 0 à 2, cadrage_x 0 = gauche, 1 = droite).
 4. **Réglages** à droite, puis **Aperçu rapide** (demi-résolution, très rapide) et **Exporter la vidéo**.
 
 ### Shorts en série
 Prépare un modèle (onglet Montage → « Enregistrer comme modèle », ou un des modèles fournis), puis un tableau CSV
-où **une ligne = une vidéo**. Colonnes : `id; medias; titre; texte; srt; voix_off; musique; debut; fin`.
+où **une ligne = une vidéo**. Colonnes : `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`.
 Dans `medias`, sépare les fichiers par `|`, indique un dossier entier, ou un motif comme `images/*.jpg`.
 Si la ligne contient des images et une voix off, les images sont réparties automatiquement sur la durée de la voix.
 
@@ -503,6 +538,8 @@ Si la ligne contient des images et une voix off, les images sont réparties auto
 - **script** : colle le texte, il est découpé et minuté automatiquement (sur la durée de la voix off s'il y en a une).
 - **srt** : fichier de sous-titres existant (par exemple exporté de ton générateur de voix).
 - **whisper** : transcription automatique au mot près, après `pip install faster-whisper`.
+- **vidéo** : active les sous-titres déjà intégrés au fichier vidéo (MP4, MKV), dans la langue choisie ;
+  ils restent synchronisés même après coupe, changement de vitesse ou suppression des silences.
 Un fichier `.srt` est toujours créé à côté de la vidéo : tu peux l'envoyer sur YouTube.
 
 ### Voix off
@@ -519,12 +556,13 @@ En cas d'échec de l'encodeur GPU, le logiciel repasse automatiquement sur le CP
 ### Quick start
 1. **Media library**: import your videos and images (or enter a folder on your PC).
 2. **Inspector**: choose a file, move the cursor, set the start and end, then add the clip to the timeline.
+   “Crop the frame” removes edges (in %) or keeps a 9:16, 1:1, 4:5 or 16:9 area.
 3. **Timeline**: edit the cells directly (order, speed 0.5 to 4, volume 0 to 2, crop_x 0 = left, 1 = right).
 4. **Settings** on the right, then **Quick preview** (half resolution, very fast) and **Export video**.
 
 ### Batch Shorts
 Prepare a template (Editor tab → “Save settings as batch template”, or one of the bundled templates), then a CSV table
-where **one row = one video**. Columns: `id; medias; titre; texte; srt; voix_off; musique; debut; fin`
+where **one row = one video**. Columns: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
 (column names stay in French). In `medias`, separate files with `|`, give a whole folder, or a pattern like `images/*.jpg`.
 If a row contains images and a voice-over, the images are spread automatically over the length of the voice.
 
@@ -532,6 +570,8 @@ If a row contains images and a voice-over, the images are spread automatically o
 - **script**: paste the text; it is split and timed automatically (over the voice-over length if there is one).
 - **srt**: an existing subtitle file (for example exported from your voice generator).
 - **whisper**: automatic word-level transcription, after `pip install faster-whisper`.
+- **video track**: turns on the subtitles already embedded in the video file (MP4, MKV), in the chosen language;
+  they stay in sync even after trimming, speed changes or silence removal.
 A `.srt` file is always created next to the video: you can upload it to YouTube.
 
 ### Voice-over
@@ -548,12 +588,13 @@ If the GPU encoder fails, the software automatically falls back to the CPU.
 ### Avvio rapido
 1. **Libreria media**: importa i tuoi video e immagini (oppure indica una cartella del tuo PC).
 2. **Ispettore**: scegli un file, sposta il cursore, imposta inizio e fine, poi aggiungi la clip alla timeline.
+   «Ritaglia l'inquadratura» rimuove i bordi (in %) o tiene una zona in formato 9:16, 1:1, 4:5 o 16:9.
 3. **Timeline**: modifica direttamente le celle (ordine, velocità da 0,5 a 4, volume da 0 a 2, inquadratura_x 0 = sinistra, 1 = destra).
 4. **Impostazioni** a destra, poi **Anteprima rapida** (metà risoluzione, molto veloce) ed **Esporta il video**.
 
 ### Shorts in serie
 Prepara un modello (scheda Montaggio → «Salva le impostazioni come modello di serie», oppure uno dei modelli forniti),
-poi una tabella CSV in cui **una riga = un video**. Colonne: `id; medias; titre; texte; srt; voix_off; musique; debut; fin`
+poi una tabella CSV in cui **una riga = un video**. Colonne: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
 (i nomi delle colonne restano in francese). In `medias`, separa i file con `|`, indica un'intera cartella o un motivo come `images/*.jpg`.
 Se la riga contiene immagini e una voce fuori campo, le immagini vengono distribuite automaticamente sulla durata della voce.
 
@@ -561,6 +602,8 @@ Se la riga contiene immagini e una voce fuori campo, le immagini vengono distrib
 - **script**: incolla il testo, viene diviso e sincronizzato automaticamente (sulla durata della voce fuori campo, se presente).
 - **srt**: un file di sottotitoli esistente (ad esempio esportato dal tuo generatore di voce).
 - **whisper**: trascrizione automatica parola per parola, dopo `pip install faster-whisper`.
+- **traccia del video**: attiva i sottotitoli già presenti nel file video (MP4, MKV), nella lingua scelta;
+  restano sincronizzati anche dopo taglio, cambio di velocità o rimozione dei silenzi.
 Accanto al video viene sempre creato un file `.srt`: puoi caricarlo su YouTube.
 
 ### Voce fuori campo
@@ -577,12 +620,13 @@ Se l'encoder GPU non funziona, il programma torna automaticamente alla CPU.
 ### Inicio rápido
 1. **Biblioteca de medios**: importa tus vídeos e imágenes (o indica una carpeta de tu PC).
 2. **Inspector**: elige un archivo, mueve el cursor, fija el inicio y el final, y añade el fragmento a la línea de tiempo.
+   «Recortar el encuadre» quita bordes (en %) o conserva una zona en formato 9:16, 1:1, 4:5 o 16:9.
 3. **Línea de tiempo**: edita las celdas directamente (orden, velocidad de 0,5 a 4, volumen de 0 a 2, encuadre_x 0 = izquierda, 1 = derecha).
 4. **Ajustes** a la derecha, luego **Vista previa rápida** (media resolución, muy rápida) y **Exportar el vídeo**.
 
 ### Shorts en serie
 Prepara una plantilla (pestaña Edición → «Guardar los ajustes como plantilla de serie», o una de las plantillas incluidas),
-y luego una tabla CSV donde **una fila = un vídeo**. Columnas: `id; medias; titre; texte; srt; voix_off; musique; debut; fin`
+y luego una tabla CSV donde **una fila = un vídeo**. Columnas: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
 (los nombres de las columnas se quedan en francés). En `medias`, separa los archivos con `|`, indica una carpeta entera o un patrón como `images/*.jpg`.
 Si la fila contiene imágenes y una voz en off, las imágenes se reparten automáticamente durante la voz.
 
@@ -590,6 +634,8 @@ Si la fila contiene imágenes y una voz en off, las imágenes se reparten autom�
 - **script**: pega el texto; se divide y se sincroniza automáticamente (con la duración de la voz en off, si la hay).
 - **srt**: un archivo de subtítulos existente (por ejemplo, exportado de tu generador de voz).
 - **whisper**: transcripción automática palabra por palabra, tras `pip install faster-whisper`.
+- **pista del vídeo**: activa los subtítulos ya incluidos en el archivo de vídeo (MP4, MKV), en el idioma elegido;
+  se mantienen sincronizados incluso tras cortar, cambiar la velocidad o quitar los silencios.
 Siempre se crea un archivo `.srt` junto al vídeo: puedes subirlo a YouTube.
 
 ### Voz en off

@@ -7,6 +7,7 @@ Les mots minutés servent au mode karaoké (mot surligné).
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 _TS = r"(\d+):(\d+):(\d+)[,.](\d+)"
@@ -80,6 +81,10 @@ def from_script(text: str, start: float, end: float, max_words: int = 3) -> list
 def parse_srt(path_or_text: str) -> list[dict]:
     p = Path(path_or_text)
     raw = p.read_text(encoding="utf-8-sig", errors="replace") if len(path_or_text) < 1000 and p.is_file() else path_or_text
+    return parse_srt_text(raw)
+
+
+def parse_srt_text(raw: str) -> list[dict]:
     cues = []
     for block in re.split(r"\n\s*\n", raw.replace("\r", "").strip()):
         lines = [l for l in block.split("\n") if l.strip()]
@@ -112,6 +117,40 @@ def shift(cues: list[dict], offset: float) -> list[dict]:
          "words": [(w, s + offset, e + offset) for w, s, e in c["words"]]}
         for c in cues
     ]
+
+
+# --------------------------------------------------------------------------- sous-titres intégrés à la vidéo
+
+# Codes de langue à 2 lettres (réglage de l'interface) -> codes à 3 lettres des pistes vidéo (ISO 639-2)
+LANG3 = {"fr": ("fre", "fra"), "en": ("eng",), "it": ("ita",), "es": ("spa",), "de": ("ger", "deu"),
+         "pt": ("por",), "nl": ("dut", "nld")}
+
+
+def pick_track(tracks: list[dict], language: str | None = None) -> dict | None:
+    """Choisit la piste de sous-titres : texte dans la langue demandée, sinon la première piste texte,
+    sinon la première piste (en image, signalée comme non exploitable par l'appelant)."""
+    if not tracks:
+        return None
+    text = [t for t in tracks if t["text"]]
+    wanted = LANG3.get((language or "").lower()[:2], ())
+    for t in text:
+        if t["lang"] in wanted:
+            return t
+    return text[0] if text else tracks[0]
+
+
+def extract_embedded(path: str, track_index: int) -> list[dict]:
+    """Lit une piste de sous-titres intégrée (MP4, MKV…) et la renvoie sous forme de cues."""
+    from . import ff
+
+    res = subprocess.run(
+        [ff.ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-i", str(path),
+         "-map", f"0:s:{int(track_index)}", "-f", "srt", "-"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if res.returncode != 0:
+        raise RuntimeError(res.stderr.strip()[-500:])
+    return parse_srt_text(res.stdout)
 
 
 def whisper_available() -> bool:
