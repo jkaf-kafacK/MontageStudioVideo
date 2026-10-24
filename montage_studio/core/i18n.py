@@ -635,6 +635,73 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("clique sur le carré de couleur", "click the color square", "clicca sul quadrato colorato",
      "haz clic en el cuadrado de color"),
     ("Moment de l'aperçu (s)", "Preview time (s)", "Momento dell'anteprima (s)", "Momento de la vista previa (s)"),
+    # ---- scènes animées (core/scenes.py)
+    ("Scènes animées", "Animated scenes", "Scene animate", "Escenas animadas"),
+    ("Des scènes animées prêtes à l'emploi : remplis les textes, regarde l'aperçu, crée la vidéo puis ajoute-la à "
+     "la timeline. Mets un mot entre *étoiles* pour le colorer.",
+     "Ready-made animated scenes: fill in the texts, check the preview, create the video, then add it to the "
+     "timeline. Put a word between *asterisks* to color it.",
+     "Scene animate pronte all'uso: compila i testi, guarda l'anteprima, crea il video e poi aggiungilo alla "
+     "timeline. Metti una parola tra *asterischi* per colorarla.",
+     "Escenas animadas listas para usar: rellena los textos, mira la vista previa, crea el vídeo y añádelo a la "
+     "línea de tiempo. Pon una palabra entre *asteriscos* para colorearla."),
+    ("Scène", "Scene", "Scena", "Escena"),
+    ("Textes et média", "Texts and media", "Testi e media", "Textos y medio"),
+    ("Aperçu et création", "Preview and creation", "Anteprima e creazione", "Vista previa y creación"),
+    ("Type de scène", "Scene type", "Tipo di scena", "Tipo de escena"),
+    ("carte titre", "title card", "scheda titolo", "tarjeta de título"),
+    ("téléphone", "phone", "telefono", "teléfono"),
+    ("écran final", "end screen", "schermata finale", "pantalla final"),
+    ("Logo ou image qui arrive avec un rebond, étiquette, grand titre et trait de couleur. Idéal pour ouvrir une "
+     "vidéo.",
+     "Logo or image that bounces in, label, big title and a color line. Ideal to open a video.",
+     "Logo o immagine che entra con un rimbalzo, etichetta, titolo grande e una linea colorata. Ideale per aprire "
+     "un video.",
+     "Logo o imagen que entra con un rebote, etiqueta, título grande y una línea de color. Ideal para abrir un vídeo."),
+    ("Ta vidéo ou ton image dans un téléphone, avec un titre. Idéal pour montrer un extrait ou une appli.",
+     "Your video or image inside a phone, with a title. Ideal to show a clip or an app.",
+     "Il tuo video o la tua immagine dentro un telefono, con un titolo. Ideale per mostrare un estratto o un'app.",
+     "Tu vídeo o tu imagen dentro de un teléfono, con un título. Ideal para mostrar un fragmento o una app."),
+    ("Appel à l'action : titre, bouton qui se fait cliquer (« S'abonner » → « Abonné ») et badge « Lien en bio ».",
+     "Call to action: title, a button that gets clicked (“Subscribe” → “Subscribed”) and a “Link in bio” badge.",
+     "Invito all'azione: titolo, pulsante che viene cliccato (« Iscriviti » → « Iscritto ») e badge « Link in bio ».",
+     "Llamada a la acción: título, botón que se pulsa («Suscribirse» → «Suscrito») y distintivo «Link en la bio»."),
+    ("Durée (s)", "Duration (s)", "Durata (s)", "Duración (s)"),
+    ("Étiquette (petit texte au-dessus du titre)", "Label (small text above the title)",
+     "Etichetta (piccolo testo sopra il titolo)", "Etiqueta (texto pequeño encima del título)"),
+    ("Épisode 1", "Episode 1", "Episodio 1", "Episodio 1"),
+    ("Le *titre* de ta vidéo", "Your video *title*", "Il *titolo* del tuo video", "El *título* de tu vídeo"),
+    ("Sous-titre", "Subtitle", "Sottotitolo", "Subtítulo"),
+    ("Une phrase qui donne envie de regarder", "A line that makes people want to watch",
+     "Una frase che fa venire voglia di guardare", "Una frase que dé ganas de mirar"),
+    ("Logo, image ou vidéo", "Logo, image or video", "Logo, immagine o video", "Logo, imagen o vídeo"),
+    ("Carte titre et écran final : ton logo ou une image. Téléphone : la vidéo ou l'image affichée dans l'écran.",
+     "Title card and end screen: your logo or an image. Phone: the video or image shown on the screen.",
+     "Scheda titolo e schermata finale: il tuo logo o un'immagine. Telefono: il video o l'immagine mostrati "
+     "sullo schermo.",
+     "Tarjeta de título y pantalla final: tu logo o una imagen. Teléfono: el vídeo o la imagen que se ve en la "
+     "pantalla."),
+    ("Texte du bouton", "Button text", "Testo del pulsante", "Texto del botón"),
+    ("S'abonner", "Subscribe", "Iscriviti", "Suscribirse"),
+    ("Texte après le clic (vide = pas de clic)", "Text after the click (empty = no click)",
+     "Testo dopo il clic (vuoto = nessun clic)", "Texto después del clic (vacío = sin clic)"),
+    ("Abonné", "Subscribed", "Iscritto", "Suscrito"),
+    ("Badge en bas", "Bottom badge", "Badge in basso", "Distintivo abajo"),
+    ("Lien en bio", "Link in bio", "Link in bio", "Link en la bio"),
+    ("Fond", "Background", "Sfondo", "Fondo"),
+    ("Lumières du fond", "Background lights", "Luci dello sfondo", "Luces del fondo"),
+    ("Accent (*mots*, bouton)", "Accent (*words*, button)", "Accento (*parole*, pulsante)",
+     "Acento (*palabras*, botón)"),
+    ("Actualiser l'aperçu", "Refresh preview", "Aggiorna l'anteprima", "Actualizar la vista previa"),
+    ("Créer la scène (vidéo)", "Create the scene (video)", "Crea la scena (video)", "Crear la escena (vídeo)"),
+    ("Ajouter à la timeline", "Add to timeline", "Aggiungi alla timeline", "Añadir a la línea de tiempo"),
+    ("Création de la scène", "Creating the scene", "Creazione della scena", "Creando la escena"),
+    ("Scène créée : {name}", "Scene created: {name}", "Scena creata: {name}", "Escena creada: {name}"),
+    ("Scène ajoutée à la fin de la timeline (onglet Montage).", "Scene added at the end of the timeline (Editor tab).",
+     "Scena aggiunta alla fine della timeline (scheda Montaggio).",
+     "Escena añadida al final de la línea de tiempo (pestaña Edición)."),
+    ("Crée d'abord la scène (bouton « Créer la scène »).", "Create the scene first (“Create the scene” button).",
+     "Crea prima la scena (pulsante « Crea la scena »).", "Crea primero la escena (botón «Crear la escena»)."),
     # ---- messages d'erreur : problème + que faire (core/errors.py)
     ("Un problème est survenu", "Something went wrong", "Si è verificato un problema", "Se ha producido un problema"),
     ("Que faire : ", "What to do: ", "Cosa fare: ", "Qué hacer: "),
@@ -888,6 +955,12 @@ Si la ligne contient des images et une voix off, les images sont réparties auto
   ils restent synchronisés même après coupe, changement de vitesse ou suppression des silences.
 Un fichier `.srt` est toujours créé à côté de la vidéo : tu peux l'envoyer sur YouTube.
 
+### Scènes animées
+Onglet **Scènes animées** : **carte titre** (logo qui rebondit, grand titre, trait de couleur), **téléphone** (ta vidéo
+ou ton image dans un téléphone) et **écran final** (bouton « S'abonner » qui se fait cliquer, badge « Lien en bio »).
+Remplis les textes (un mot entre \*étoiles\* prend la couleur d'accent), choisis le format et les couleurs, regarde
+l'aperçu, clique sur « Créer la scène » puis « Ajouter à la timeline ».
+
 ### Calques et photos animées
 - **Image ou vidéo incrustée** (section 4) : capture d'écran, sticker, logo ou vidéo par-dessus le montage
   (picture-in-picture). Choisis le média dans la médiathèque, les heures d'apparition, la position (centre en %),
@@ -936,6 +1009,12 @@ If a row contains images and a voice-over, the images are spread automatically o
   they stay in sync even after trimming, speed changes or silence removal.
 A `.srt` file is always created next to the video: you can upload it to YouTube.
 
+### Animated scenes
+**Animated scenes** tab: **title card** (bouncing logo, big title, color line), **phone** (your video or image inside a
+phone) and **end screen** (a “Subscribe” button that gets clicked, “Link in bio” badge). Fill in the texts (a word
+between \*asterisks\* takes the accent color), pick the format and colors, check the preview, click “Create the
+scene” then “Add to timeline”.
+
 ### Layers and animated photos
 - **Image or video overlay** (section 4): screenshot, sticker, logo or video on top of the edit (picture-in-picture).
   Pick the media from the library, when it appears, its position (center in %), width and entrance animation:
@@ -982,6 +1061,12 @@ Se la riga contiene immagini e una voce fuori campo, le immagini vengono distrib
 - **traccia del video**: attiva i sottotitoli già presenti nel file video (MP4, MKV), nella lingua scelta;
   restano sincronizzati anche dopo taglio, cambio di velocità o rimozione dei silenzi.
 Accanto al video viene sempre creato un file `.srt`: puoi caricarlo su YouTube.
+
+### Scene animate
+Scheda **Scene animate**: **scheda titolo** (logo che rimbalza, titolo grande, linea colorata), **telefono** (il tuo
+video o la tua immagine dentro un telefono) e **schermata finale** (pulsante « Iscriviti » che viene cliccato, badge
+« Link in bio »). Compila i testi (una parola tra \*asterischi\* prende il colore d'accento), scegli formato e colori,
+guarda l'anteprima, clicca su « Crea la scena » e poi su « Aggiungi alla timeline ».
 
 ### Livelli e foto animate
 - **Immagine o video sovrapposto** (sezione 4): screenshot, sticker, logo o video sopra il montaggio
@@ -1030,6 +1115,12 @@ Si la fila contiene imágenes y una voz en off, las imágenes se reparten autom�
 - **pista del vídeo**: activa los subtítulos ya incluidos en el archivo de vídeo (MP4, MKV), en el idioma elegido;
   se mantienen sincronizados incluso tras cortar, cambiar la velocidad o quitar los silencios.
 Siempre se crea un archivo `.srt` junto al vídeo: puedes subirlo a YouTube.
+
+### Escenas animadas
+Pestaña **Escenas animadas**: **tarjeta de título** (logo que rebota, título grande, línea de color), **teléfono** (tu
+vídeo o tu imagen dentro de un teléfono) y **pantalla final** (botón «Suscribirse» que se pulsa, distintivo «Link en la
+bio»). Rellena los textos (una palabra entre \*asteriscos\* toma el color de acento), elige formato y colores, mira la
+vista previa, pulsa «Crear la escena» y después «Añadir a la línea de tiempo».
 
 ### Capas y fotos animadas
 - **Imagen o vídeo superpuesto** (sección 4): captura de pantalla, sticker, logo o vídeo encima del montaje

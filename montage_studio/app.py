@@ -30,7 +30,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import batch, errors, ff, layers, paths, subs, tools, voice
+from core import batch, errors, ff, layers, paths, scenes, subs, tools, voice
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
@@ -614,6 +614,54 @@ def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_n
                                  progress=lambda f, m: progress(f, desc=m), tts=tts)
     head = _("{ok}/{n} vidéos dans {out}", ok=len([f for f in files if f.endswith(".mp4")]), n=len(rows), out=out) + "\n\n"
     return files or None, head + log
+
+
+# --------------------------------------------------------------------------- actions : scènes animées
+
+SCENE_INFO = {
+    "carte titre": "Logo ou image qui arrive avec un rebond, étiquette, grand titre et trait de couleur. "
+                   "Idéal pour ouvrir une vidéo.",
+    "téléphone": "Ta vidéo ou ton image dans un téléphone, avec un titre. Idéal pour montrer un extrait ou une appli.",
+    "écran final": "Appel à l'action : titre, bouton qui se fait cliquer (« S'abonner » → « Abonné ») et badge "
+                   "« Lien en bio ».",
+}
+
+
+def scene_spec(kind, fmt, dur, chip, title, sub, media, btn, done, badge, bg, glow, accent) -> dict:
+    return {"scene": kind, "format": fmt, "duration": num(dur, 4.0), "chip": chip or "", "title": title or "",
+            "subtitle": sub or "", "media": persist(media) if media else "", "button": btn or "",
+            "button_done": done or "", "badge": badge or "", "background": bg, "glow": glow, "accent": accent}
+
+
+def scene_kind_changed(kind):
+    """Description de la scène ; les champs du bouton ne servent qu'à l'écran final."""
+    return _(SCENE_INFO.get(kind, "")), gr.Group(visible=kind == "écran final")
+
+
+def scene_preview(t, *args):
+    spec = scene_spec(*args)
+    return scenes.preview(spec, min(num(t, 0) or 0.0, spec["duration"]))
+
+
+def scene_render(*args, progress=gr.Progress()):
+    spec = scene_spec(*args)
+    msg = _("Création de la scène")
+    progress(0, desc=msg)
+    name = slug(re.sub(r"[*]", "", spec["title"]))[:40] or "scene"
+    out = OUT_DIR / "scenes" / f"{name}_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+    scenes.render_scene(spec, out, progress=lambda f, _m: progress(f, desc=msg))
+    gr.Info(_("Scène créée : {name}", name=out.name))
+    return str(out), str(out), str(out)
+
+
+def scene_to_timeline(path, df, lib):
+    if not path or not Path(path).is_file():
+        raise gr.Error(_("Crée d'abord la scène (bouton « Créer la scène »)."))
+    rows = to_rows(df)
+    rows.append([len(rows) + 1, path, 0.0, None, 1.0, 1.0, 0.5, None, "", ""])
+    lib = list(lib or []) + ([path] if path not in (lib or []) else [])
+    gr.Info(_("Scène ajoutée à la fin de la timeline (onglet Montage)."))
+    return df_from_rows(rows), lib, gr.Dropdown(choices=[(media_label(x), x) for x in lib])
 
 
 # --------------------------------------------------------------------------- actions : outils
@@ -1246,6 +1294,59 @@ def _build_ui(lang: str) -> gr.Blocks:
                     save_tpl_btn = gr.Button(_("Enregistrer les réglages comme modèle de série"))
                     tpl_dd_m = gr.Dropdown(template_choices(), value=FROM_MONTAGE, label=_("Modèle"))
                     load_tpl_btn = gr.Button(_("Appliquer ce modèle aux réglages"))
+
+        # ------------------------------------------------------------- scènes animées
+        with gr.Tab(_("Scènes animées")):
+            gr.Markdown(_("Des scènes animées prêtes à l'emploi : remplis les textes, regarde l'aperçu, crée la vidéo "
+                          "puis ajoute-la à la timeline. Mets un mot entre *étoiles* pour le colorer.")
+                        .replace("*", "\\*"))   # étoiles affichées telles quelles, pas en italique
+            sc_last = gr.State(None)
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Scène")
+                    sc_kind = gr.Radio(opts(scenes.SCENES), value="carte titre", label=_("Type de scène"))
+                    sc_info = gr.Markdown(_(SCENE_INFO["carte titre"]))
+                    with gr.Row():
+                        sc_fmt = gr.Radio(list(scenes.FORMATS), value="9:16", label=_("Format"))
+                        sc_dur = gr.Slider(2, 12, value=4, step=0.5, label=_("Durée (s)"))
+                    section("2", "Textes et média")
+                    sc_chip = gr.Textbox(label=_("Étiquette (petit texte au-dessus du titre)"),
+                                         value=_("Épisode 1"))
+                    sc_title = gr.Textbox(label=_("Titre"), value=_("Le *titre* de ta vidéo"))
+                    sc_sub = gr.Textbox(label=_("Sous-titre"), value=_("Une phrase qui donne envie de regarder"))
+                    sc_media = gr.File(label=_("Logo, image ou vidéo"), type="filepath", height=90,
+                                       file_types=sorted(ff.IMAGE_EXT | ff.VIDEO_EXT))
+                    gr.Markdown(_("Carte titre et écran final : ton logo ou une image. Téléphone : la vidéo ou "
+                                  "l'image affichée dans l'écran."))
+                    with gr.Group(visible=False) as sc_final:
+                        with gr.Row():
+                            sc_btn = gr.Textbox(label=_("Texte du bouton"), value=_("S'abonner"))
+                            sc_done = gr.Textbox(label=_("Texte après le clic (vide = pas de clic)"),
+                                                 value=_("Abonné"))
+                            sc_badge = gr.Textbox(label=_("Badge en bas"), value=_("Lien en bio"))
+                    with gr.Row():
+                        sc_bg = gr.ColorPicker(value=scenes.DEFAULT["background"], label=_("Fond"))
+                        sc_glow = gr.ColorPicker(value=scenes.DEFAULT["glow"], label=_("Lumières du fond"))
+                        sc_accent = gr.ColorPicker(value=scenes.DEFAULT["accent"],
+                                                   label=_("Accent (*mots*, bouton)"))
+                with gr.Column(scale=2):
+                    section("3", "Aperçu et création")
+                    sc_img = gr.Image(label=_("Aperçu"), height=460, interactive=False)
+                    sc_t = gr.Slider(0, 12, value=2.5, step=0.1, label=_("Moment de l'aperçu (s)"))
+                    sc_prev = gr.Button(_("Actualiser l'aperçu"))
+                    sc_make = gr.Button(_("Créer la scène (vidéo)"), variant="primary", size="lg")
+                    sc_vid = gr.Video(label=_("Scène"), height=360)
+                    sc_file = gr.File(label=_("Télécharger"))
+                    sc_add = gr.Button(_("Ajouter à la timeline"), variant="secondary")
+            sc_inputs = [sc_kind, sc_fmt, sc_dur, sc_chip, sc_title, sc_sub, sc_media, sc_btn, sc_done, sc_badge,
+                         sc_bg, sc_glow, sc_accent]
+            sc_kind.change(L(scene_kind_changed), sc_kind, [sc_info, sc_final]) \
+                .then(L(scene_preview), [sc_t] + sc_inputs, sc_img)
+            for ev in (sc_prev.click, sc_t.release, sc_fmt.change, sc_media.change):
+                ev(L(scene_preview), [sc_t] + sc_inputs, sc_img)
+            sc_make.click(L(scene_render), sc_inputs, [sc_vid, sc_file, sc_last])
+            sc_add.click(L(scene_to_timeline), [sc_last, timeline, lib], [timeline, lib, media_dd]) \
+                .then(lambda lb: gr.Dropdown(choices=[(media_label(x), x) for x in lb or []]), lib, ov_media)
 
         # ------------------------------------------------------------- voix off
         with gr.Tab(_("Voix off")):

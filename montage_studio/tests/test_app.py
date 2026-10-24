@@ -443,3 +443,30 @@ def test_piper_version_compatible():
     if not voice.piper_available():
         pytest.skip("sherpa-onnx absent")
     assert voice.piper_problem() is None
+
+
+# --------------------------------------------------------------------------- scènes animées
+
+@pytest.mark.parametrize("fmt", ["9:16", "16:9", "1:1", "4:5"])
+@pytest.mark.parametrize("scene", ["carte titre", "téléphone", "écran final"])
+def test_apercu_des_scenes(scene, fmt, clip):
+    from core import scenes
+
+    titre = "Un titre *très* long " * 6   # doit être réduit pour tenir dans l'image
+    img = scenes.preview({"scene": scene, "format": fmt, "title": titre, "subtitle": "Sous-titre", "chip": "Ep. 1",
+                          "media": str(clip), "button": "S'abonner", "button_done": "Abonné", "badge": "Lien en bio"},
+                         3.0)
+    assert img.size == scenes.FORMATS[fmt]
+    assert img.getbbox() is not None
+
+
+def test_scene_video_puis_timeline(clip, tmp_path):
+    import app
+    from core import scenes
+
+    out = scenes.render_scene({"scene": "téléphone", "format": "1:1", "duration": 1.5, "title": "Test",
+                               "media": str(clip)}, tmp_path / "scene.mp4")
+    info = ff.probe(out)
+    assert (info.width, info.height) == (1080, 1080) and abs(info.duration - 1.5) < 0.1 and info.has_audio
+    df, lib, _dd = app.scene_to_timeline(out, app.empty_df(), [])
+    assert app.clips_from_df(df)[0]["path"] == out and lib == [out]
