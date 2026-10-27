@@ -94,7 +94,7 @@ code, kbd { font-family: var(--font-mono); font-size: 0.88em; background: var(--
 .facts b { font-family: var(--font-display); color: var(--violet); font-weight: 800; margin-right: 4px; }
 .reel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .reel figure { margin: 0; }
-.reel img, .phones img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 14px;
+.reel img, .phones img { display: block; width: 100%; height: auto; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 14px;
   background: var(--shot-bg); border: 1px solid var(--line); }
 .reel figcaption, .phones figcaption { font-size: 0.76rem; line-height: 1.35; color: var(--muted); margin-top: 6px; }
 .reel figcaption b, .phones figcaption b { display: block; color: var(--ink); font-weight: 600; }
@@ -189,6 +189,7 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
         <li><b>4</b>langues</li>
         <li><b>100 %</b>local</li>
       </ul>
+      <p class="muted" style="margin-top:14px">Version PDF : <a href="MSV_documentation_FR.pdf">français</a> · <a href="MSV_documentation_EN.pdf">English</a></p>
     </div>
     <div class="reel" aria-label="Images d'un Short produit par MSV">
       <figure><img src="img/resultat_1.webp" alt="Intro animée : logo, titre « Le secret du lac gelé »" width="540" height="960"><figcaption><b>0 – 3 s</b>Intro animée</figcaption></figure>
