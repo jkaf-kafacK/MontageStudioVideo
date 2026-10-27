@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Montage Studio Video · Documentation</title>
+<meta name="description" content="Documentation de Montage Studio Video (MSV) : logiciel de montage local pour Shorts, Reels, TikTok et vidéos YouTube. Installation, montage pas à pas, scènes animées, voix off, production en série.">
+<meta property="og:title" content="Montage Studio Video · Documentation">
+<meta property="og:description" content="Documentation de Montage Studio Video (MSV) : logiciel de montage local pour Shorts, Reels, TikTok et vidéos YouTube. Installation, montage pas à pas, scènes animées, voix off, production en série.">
+<meta property="og:type" content="website">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<style>body { margin: 0; } img { max-width: 100%; } [hidden] { display: none !important; }</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Montserrat:wght@600;700;800&display=swap">
+<style>
+/* Mise en page : sommaire fixe à gauche, documentation à droite ; captures réelles de l'application en figures. */
+:root {
+  --bg: #F7F6FB;
+  --surface: #FFFFFF;
+  --ink: #18141F;
+  --muted: #5D576E;
+  --line: #E3DFED;
+  --violet: #6D28D9;
+  --violet-soft: #EFE9FC;
+  --amber: #A85F05;
+  --amber-fill: #FBBF24;
+  --code-bg: #F1EEF8;
+  --shot-bg: #0E0E12;
+  --font-display: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Cascadia Code", Consolas, monospace;
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.2rem;
+  --step-2: 1.55rem;
+  --step-3: 2.1rem;
+  --step-4: clamp(2.3rem, 5vw, 3.4rem);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F0D14; --surface: #17151F; --ink: #EDEAF5; --muted: #A7A1B9; --line: #2B2737;
+    --violet: #B49CFB; --violet-soft: #241D38; --amber: #FBBF24; --amber-fill: #FBBF24;
+    --code-bg: #1E1B29; --shot-bg: #0A0A0D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F0D14; --surface: #17151F; --ink: #EDEAF5; --muted: #A7A1B9; --line: #2B2737;
+  --violet: #B49CFB; --violet-soft: #241D38; --amber: #FBBF24; --amber-fill: #FBBF24;
+  --code-bg: #1E1B29; --shot-bg: #0A0A0D; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: var(--step-0);
+  line-height: 1.65; -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 1200px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 32px 64px;
+}
+a { color: var(--violet); text-underline-offset: 3px; }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; border-radius: 4px; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.2; text-wrap: balance; letter-spacing: -0.015em; }
+h2 { font-size: var(--step-3); font-weight: 800; margin: 0 0 12px; }
+h3 { font-size: var(--step-1); font-weight: 700; margin: 32px 0 8px; }
+p, li { max-width: 68ch; }
+p { margin: 0 0 14px; }
+ul, ol { padding-left: 1.3em; margin: 0 0 16px; }
+li { margin-bottom: 6px; }
+strong { font-weight: 600; }
+code, kbd { font-family: var(--font-mono); font-size: 0.88em; background: var(--code-bg); padding: 1px 6px; border-radius: 5px; }
+.eyebrow { font-family: var(--font-display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--amber); margin: 0 0 8px; }
+.muted { color: var(--muted); }
+
+/* ---- en-tête */
+.hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 40px; align-items: center;
+  padding-block: 16px 40px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 22px; }
+.brand svg { width: 56px; height: 56px; flex: none; }
+.brand span { font-family: var(--font-display); font-weight: 600; font-size: 0.78rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--muted); }
+.hero h1 { font-size: var(--step-4); font-weight: 800; margin: 0 0 16px; }
+.hero h1 em { font-style: normal; color: var(--amber); }
+.lede { font-size: var(--step-1); color: var(--muted); max-width: 46ch; margin-bottom: 26px; }
+.facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.facts li { margin: 0; font-size: var(--step--1); font-weight: 500; padding: 6px 12px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--surface); }
+.facts b { font-family: var(--font-display); color: var(--violet); font-weight: 800; margin-right: 4px; }
+.reel { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.reel figure { margin: 0; }
+.reel img, .phones img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 14px;
+  background: var(--shot-bg); border: 1px solid var(--line); }
+.reel figcaption, .phones figcaption { font-size: 0.76rem; line-height: 1.35; color: var(--muted); margin-top: 6px; }
+.reel figcaption b, .phones figcaption b { display: block; color: var(--ink); font-weight: 600; }
+
+/* ---- corps : sommaire + contenu */
+.layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; margin-top: 40px; }
+.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; font-size: var(--step--1); }
+.toc p { font-family: var(--font-display); font-weight: 700; font-size: 0.74rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+.toc ol { list-style: none; padding: 0; margin: 0; counter-reset: toc; }
+.toc li { margin: 0; counter-increment: toc; }
+.toc a { display: flex; gap: 10px; padding: 5px 0; color: var(--ink); text-decoration: none; border-left: 2px solid transparent;
+  padding-left: 10px; margin-left: -12px; }
+.toc a::before { content: counter(toc, decimal-leading-zero); font-family: var(--font-mono); color: var(--muted); font-size: 0.78rem; padding-top: 1px; }
+.toc a:hover { border-left-color: var(--violet); color: var(--violet); }
+.toc details summary { display: none; }
+main { min-width: 0; }
+main > section { padding-block: 8px 48px; border-bottom: 1px solid var(--line); margin-bottom: 48px; scroll-margin-top: 24px; }
+main > section:last-child { border-bottom: 0; }
+
+/* ---- figures */
+figure.shot { margin: 20px 0 26px; }
+figure.shot img { display: block; width: 100%; height: auto; border-radius: 12px; border: 1px solid var(--line); background: var(--shot-bg); }
+figure.shot.narrow { max-width: 560px; }
+figure.shot figcaption { font-size: var(--step--1); color: var(--muted); margin-top: 8px; max-width: 70ch; }
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; margin: 20px 0; }
+.pair figure.shot { margin: 0; }
+.phones { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 14px; margin: 20px 0 26px; }
+.phones figure { margin: 0; }
+.phones.three { grid-template-columns: repeat(3, minmax(0, 170px)); }
+
+/* ---- étapes, encadrés, tableaux */
+.steps { list-style: none; padding: 0; margin: 0; counter-reset: st; }
+.steps > li { counter-increment: st; position: relative; padding-left: 52px; margin-bottom: 34px; max-width: none; }
+.steps > li::before { content: counter(st); position: absolute; left: 0; top: 0; width: 34px; height: 34px; border-radius: 10px;
+  display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; color: #fff;
+  background: linear-gradient(135deg, #8B5CF6, #4338CA); }
+.steps > li > h3 { margin-top: 2px; }
+.note { border: 1px solid var(--line); background: var(--violet-soft); border-radius: 12px; padding: 14px 18px; margin: 18px 0; max-width: 72ch; }
+.note p:last-child { margin-bottom: 0; }
+.note strong { color: var(--violet); }
+.table-wrap { overflow-x: auto; margin: 16px 0 24px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: var(--step--1); }
+th, td { text-align: left; vertical-align: top; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+th { font-family: var(--font-display); font-weight: 700; font-size: 0.78rem; letter-spacing: 0.04em; color: var(--muted); background: var(--code-bg); }
+tr:last-child td { border-bottom: 0; }
+td code { white-space: nowrap; }
+pre.code { overflow-x: auto; background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px;
+  font-family: var(--font-mono); font-size: 0.85rem; line-height: 1.55; margin: 14px 0 22px; }
+pre.mermaid { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; overflow-x: auto; margin: 16px 0 24px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin: 18px 0 24px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.card h4 { font-family: var(--font-display); font-size: var(--step-0); margin: 0 0 6px; }
+.card p { font-size: var(--step--1); color: var(--muted); margin: 0; }
+.tag { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+  border: 1px solid var(--line); color: var(--muted); margin-left: 6px; vertical-align: 2px; }
+dl.faq dt { font-weight: 600; margin-top: 18px; }
+dl.faq dd { margin: 4px 0 0; color: var(--muted); max-width: 70ch; }
+footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
+
+@media (max-width: 960px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .toc { position: static; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 12px 16px; }
+  .toc details summary { display: block; cursor: pointer; font-family: var(--font-display); font-weight: 700; }
+  .toc details > p { display: none; }
+  .toc details[open] ol { margin-top: 10px; }
+}
+@media (max-width: 640px) {
+  .pair { grid-template-columns: minmax(0, 1fr); }
+  .reel { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .phones.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .steps > li { padding-left: 0; padding-top: 44px; }
+}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="hero">
+    <div>
+      <div class="brand">
+        <svg viewBox="0 0 512 512" role="img" aria-label="Logo Montage Studio Video"><defs><linearGradient id="ms-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8B5CF6"/><stop offset="1" stop-color="#4338CA"/></linearGradient></defs><rect width="512" height="512" rx="116" fill="url(#ms-g)"/><g fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"><polyline points="198 140 138 140 138 372 198 372"/><polyline points="314 140 374 140 374 372 314 372"/></g><polygon points="218 186 218 326 328 256" fill="#FBBF24" stroke="#FBBF24" stroke-width="28" stroke-linejoin="round"/></svg>
+        <span>Documentation · version 1.3</span>
+      </div>
+      <h1>Montage Studio <em>Video</em></h1>
+      <p class="lede">Le logiciel de montage qui fabrique vos Shorts, Reels, TikTok et vidéos YouTube sur votre propre ordinateur, à la main ou en série, sans abonnement et sans envoyer vos fichiers sur Internet.</p>
+      <ul class="facts">
+        <li><b>4</b>formats d'image</li>
+        <li><b>7</b>scènes animées</li>
+        <li><b>3</b>moteurs de voix off</li>
+        <li><b>4</b>langues</li>
+        <li><b>100 %</b>local</li>
+      </ul>
+    </div>
+    <div class="reel" aria-label="Images d'un Short produit par MSV">
+      <figure><img src="img/resultat_1.webp" alt="Intro animée : logo, titre « Le secret du lac gelé »" width="540" height="960"><figcaption><b>0 – 3 s</b>Intro animée</figcaption></figure>
+      <figure><img src="img/resultat_2.webp" alt="Vidéo avec titre, sous-titres karaoké et logo" width="540" height="960"><figcaption><b>3 – 8 s</b>Titre, sous-titres, logo</figcaption></figure>
+      <figure><img src="img/resultat_3.webp" alt="Photo animée avec le texte « Abonne-toi ! »" width="540" height="960"><figcaption><b>8 – 11 s</b>Photo animée, texte</figcaption></figure>
+      <figure><img src="img/resultat_4.webp" alt="Écran final avec bouton Abonné" width="540" height="960"><figcaption><b>11 – 14,5 s</b>Écran final</figcaption></figure>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Sommaire">
+      <details open>
+        <summary>Sommaire</summary>
+        <p>Sommaire</p>
+        <ol>
+          <li><a href="#apercu">En bref</a></li>
+          <li><a href="#installation">Installation</a></li>
+          <li><a href="#interface">L'interface</a></li>
+          <li><a href="#montage">Monter une vidéo</a></li>
+          <li><a href="#scenes">Scènes animées</a></li>
+          <li><a href="#voix">Voix off</a></li>
+          <li><a href="#serie">Shorts en série</a></li>
+          <li><a href="#outils">Outils rapides</a></li>
+          <li><a href="#fonctionnement">Fonctionnement</a></li>
+          <li><a href="#confidentialite">Confidentialité</a></li>
+          <li><a href="#limites">Limites actuelles</a></li>
+          <li><a href="#faq">Questions fréquentes</a></li>
+        </ol>
+      </details>
+    </nav>
+
+    <main>
+      <!-- ============================================================ 1 -->
+      <section id="apercu">
+        <p class="eyebrow">En bref</p>
+        <h2>Un studio de montage complet, pensé pour les formats courts</h2>
+        <p>Montage Studio Video (MSV) s'adresse aux créateurs de contenu, aux petites équipes et aux entreprises qui publient régulièrement des vidéos sur les réseaux sociaux. Il réunit dans une seule application ce qui demande d'habitude plusieurs outils : le montage, les titres et sous-titres, la voix off, la musique, les scènes animées et la production en série.</p>
+        <p>Les quatre images ci-dessus viennent d'un Short de 14,5 secondes fabriqué entièrement par MSV : une intro animée, une vidéo avec titre et sous-titres karaoké, une photo animée, un écran final « Abonne-toi », le tout sur une musique générée. Il a été rendu en <strong>15,5 secondes</strong>, en 1080 × 1920, sur un ordinateur portable (Intel Core i7 de 13ᵉ génération).</p>
+        <div class="cards">
+          <div class="card"><h4>Montage à la main</h4><p>Coupez, recadrez, assemblez vos vidéos et photos, ajoutez titres, sous-titres, logo et transitions.</p></div>
+          <div class="card"><h4>Production en série</h4><p>Un tableau CSV ou un dossier devient des dizaines de vidéos au même style, sans intervention.</p></div>
+          <div class="card"><h4>Voix off et musique</h4><p>Voix de synthèse gratuites, ElevenLabs, ou votre propre voix clonée sur votre PC. Musique libre de droits générée à la bonne durée.</p></div>
+          <div class="card"><h4>Scènes animées</h4><p>Intro, écran final, liste, chiffres clés, avant / après, question choc : des animations prêtes à remplir.</p></div>
+        </div>
+      </section>
+
+      <!-- ============================================================ 2 -->
+      <section id="installation">
+        <p class="eyebrow">Installation</p>
+        <h2>Installer et lancer MSV</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Système</th><th>Comment l'installer</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Windows 10 ou 11</strong> (64 bits)</td><td>Lancer l'installateur <code>MontageStudioVideo-&lt;version&gt;-Setup.exe</code>, puis ouvrir <em>Montage Studio Video</em> depuis le menu Démarrer. Aucun droit administrateur n'est demandé et Python n'a pas besoin d'être installé.</td></tr>
+            <tr><td><strong>macOS et Linux</strong></td><td>Avec Python 3.11 ou plus récent, lancer le script <code>lancer_mac_linux.sh</code>.</td></tr>
+          </tbody>
+        </table></div>
+        <p>Au premier lancement, MSV télécharge ses composants (environ 400 Mo, une seule fois). L'outil de traitement vidéo FFmpeg est fourni : il n'y a rien d'autre à installer. L'application s'ouvre ensuite dans votre navigateur, à l'adresse <code>http://127.0.0.1:7860</code>, qui n'est accessible que depuis votre ordinateur.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Où sont vos fichiers (version installée)</th><th>Contenu</th></tr></thead>
+          <tbody>
+            <tr><td><code>Documents\Montage Studio Video</code></td><td>Vos médias importés, vos vidéos produites, vos projets et vos modèles</td></tr>
+            <tr><td><code>%LOCALAPPDATA%\MontageStudioVideo</code></td><td>Fichiers internes : composants, cache, voix téléchargées, clé ElevenLabs</td></tr>
+          </tbody>
+        </table></div>
+        <div class="note">
+          <p><strong>Configuration conseillée.</strong> Un ordinateur récent suffit pour le montage. Une carte graphique NVIDIA, Apple ou Intel accélère l'export. Le clonage de votre propre voix fonctionne au mieux avec une carte NVIDIA ; la documentation a été réalisée sur un portable Core i7 13ᵉ génération, 16 Go de mémoire, RTX 4060.</p>
+          <p>Tant que l'installateur n'est pas signé numériquement, Windows peut afficher « Windows a protégé votre ordinateur » : cliquez sur <em>Informations complémentaires</em> puis <em>Exécuter quand même</em>.</p>
+        </div>
+      </section>
+
+      <!-- ============================================================ 3 -->
+      <section id="interface">
+        <p class="eyebrow">Prise en main</p>
+        <h2>L'interface</h2>
+        <p>Tout se passe dans une seule fenêtre, organisée en six onglets. Le sélecteur en haut à droite change la langue de l'interface : français, anglais, italien ou espagnol.</p>
+        <figure class="shot">
+          <img src="img/interface.webp" alt="Interface de MSV : onglets, médiathèque, inspecteur et réglages" width="1600" height="1111" loading="lazy">
+          <figcaption>L'onglet Montage : la médiathèque et l'inspecteur à gauche, les réglages du projet à droite.</figcaption>
+        </figure>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Onglet</th><th>À quoi il sert</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Montage</strong></td><td>Assembler une vidéo : importer, couper, recadrer, ajouter calques, titre, sous-titres, audio, puis exporter.</td></tr>
+            <tr><td><strong>Scènes animées</strong></td><td>Créer des séquences animées (intro, écran final, liste…) et les ajouter au montage.</td></tr>
+            <tr><td><strong>Voix off</strong></td><td>Transformer un texte en voix, avec ses sous-titres synchronisés.</td></tr>
+            <tr><td><strong>Shorts en série</strong></td><td>Produire automatiquement une vidéo par ligne d'un tableau ou par fichier d'un dossier.</td></tr>
+            <tr><td><strong>Outils rapides</strong></td><td>Miniature YouTube, conversion en Short, extraction du son, transcription, retrait de logo.</td></tr>
+            <tr><td><strong>Aide</strong></td><td>Le mode d'emploi résumé, dans la langue choisie.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- ============================================================ 4 -->
+      <section id="montage">
+        <p class="eyebrow">Onglet Montage</p>
+        <h2>Monter une vidéo, étape par étape</h2>
+        <ol class="steps">
+          <li>
+            <h3>Importer vos médias</h3>
+            <p>Glissez vos vidéos, photos et sons dans la <strong>médiathèque</strong>, ou indiquez un dossier de votre ordinateur pour tout importer d'un coup. Les fichiers glissés sont copiés dans le dossier de travail de MSV et restent disponibles d'une séance à l'autre ; un dossier indiqué est utilisé sur place, sans copie.</p>
+          </li>
+          <li>
+            <h3>Choisir le début et la fin de chaque extrait</h3>
+            <p>Dans l'<strong>inspecteur</strong>, déplacez le curseur image par image, puis fixez le début et la fin avec « Début = curseur » et « Fin = curseur ». Deux aides complètent l'inspecteur :</p>
+            <ul>
+              <li><strong>Recadrer l'image</strong> : retirez des bords (en %), ou gardez d'un clic la plus grande zone au format 9:16, 1:1, 4:5 ou 16:9. La zone gardée s'affiche encadrée sur l'image.</li>
+              <li><strong>Convertisseur de temps</strong> : tapez « 1h 2m 3s », « 1:30 » ou « 2,5 min », MSV donne l'équivalent en secondes, minutes et heures, et peut le reporter dans le début ou la fin.</li>
+            </ul>
+            <figure class="shot narrow">
+              <img src="img/inspecteur.webp" alt="Inspecteur avec recadrage 9:16 et convertisseur de temps" width="1110" height="1710" loading="lazy">
+              <figcaption>Inspecteur : recadrage aux proportions 9:16 et convertisseur de temps (1 h 2 min 3 s = 3 723 s).</figcaption>
+            </figure>
+          </li>
+          <li>
+            <h3>Organiser la timeline et ajouter des calques</h3>
+            <p>Chaque extrait devient une ligne de la <strong>timeline</strong>. Les cellules se modifient directement : ordre, début, fin, vitesse (de 0,1 à 4), volume, position du cadrage, durée d'une photo, recadrage et mouvement d'une photo.</p>
+            <p>La section <strong>Calques</strong> ajoute des éléments par-dessus la vidéo, avec leurs heures d'apparition et de disparition :</p>
+            <ul>
+              <li><strong>Image ou vidéo incrustée</strong> : logo, sticker, capture d'écran ou vidéo en « picture-in-picture ». Les images opaques et les vidéos ont des coins arrondis.</li>
+              <li><strong>Texte animé</strong> : autant de textes que nécessaire, avec taille, couleur, fond et position.</li>
+              <li>Chaque calque a une entrée animée au choix : <em>fondu</em>, <em>montée</em> ou <em>zoom</em> avec un léger rebond.</li>
+            </ul>
+            <figure class="shot narrow">
+              <img src="img/timeline_calques.webp" alt="Timeline avec trois extraits et section Calques avec un texte animé" width="1110" height="1785" loading="lazy">
+              <figcaption>Timeline de trois extraits (deux vidéos et une photo) et un texte animé « Abonne-toi ! » qui monte en bas de l'image.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <h3>Régler le format et le cadrage</h3>
+            <p>Choisissez le format de sortie : <strong>9:16</strong> (1080 × 1920, Shorts, Reels, TikTok), <strong>16:9</strong> (1920 × 1080, YouTube), <strong>1:1</strong> (1080 × 1080) ou <strong>4:5</strong> (1080 × 1350). Quand une vidéo n'a pas les bonnes proportions, trois cadrages sont possibles :</p>
+            <div class="phones three">
+              <figure><img src="img/cadrage_flou.webp" alt="Cadrage flou" width="540" height="960" loading="lazy"><figcaption><b>Flou</b>Image entière sur fond flouté</figcaption></figure>
+              <figure><img src="img/cadrage_rogner.webp" alt="Cadrage rogner" width="540" height="960" loading="lazy"><figcaption><b>Rogner</b>Plein écran, côtés coupés</figcaption></figure>
+              <figure><img src="img/cadrage_bandes.webp" alt="Cadrage bandes" width="540" height="960" loading="lazy"><figcaption><b>Bandes</b>Barres noires</figcaption></figure>
+            </div>
+            <p>Les mêmes réglages définissent les <strong>transitions</strong> entre extraits (fondu enchaîné, fondu au noir, dissolution, glissement à gauche ou vers le haut, balayage, zoom, cercle), leur durée, et l'ouverture ou la fermeture au noir.</p>
+            <p>Pour les photos, le <strong>mouvement</strong> (effet Ken Burns) anime l'image : zoom avant ou arrière, panoramique vers la gauche ou la droite, ou « Ken Burns », qui combine zoom lent et déplacement avec un trajet différent à chaque photo. La colonne « mouvement » de la timeline règle une photo précise.</p>
+            <figure class="shot narrow">
+              <img src="img/reglages_format.webp" alt="Réglages Format et rendu" width="750" height="1620" loading="lazy">
+              <figcaption>Format, cadrage, images par seconde, qualité, encodeur et transitions.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <h3>Ajouter le son : voix off, musique, nettoyage</h3>
+            <ul>
+              <li><strong>Voix off</strong> : un fichier audio, son volume et son décalage. Elle peut venir de l'onglet Voix off en un clic.</li>
+              <li><strong>Musique de fond</strong> : votre fichier, bouclé sur toute la vidéo, ou une <strong>musique générée</strong> libre de droits, composée sur votre PC à la durée exacte de la vidéo. Quatre ambiances : calme, inspirant, énergique, suspense. Le bouton « Écouter 12 s » en donne un extrait.</li>
+              <li><strong>Ducking</strong> : la musique baisse automatiquement quand quelqu'un parle.</li>
+              <li><strong>Normalisation</strong> du volume à -14 LUFS, le niveau visé par YouTube.</li>
+              <li><strong>Suppression des silences</strong> : les blancs d'une vidéo filmée sont coupés automatiquement (seuil et durée réglables).</li>
+            </ul>
+            <figure class="shot narrow">
+              <img src="img/reglages_audio.webp" alt="Réglages audio avec musique générée" width="750" height="960" loading="lazy">
+              <figcaption>Musique générée « inspirant », musique baissée pendant la voix, volume normalisé.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <h3>Titre et sous-titres</h3>
+            <p>Le <strong>titre</strong> s'affiche aux heures choisies, avec sa police, sa couleur, sa taille, sa position et un bandeau optionnel. Les <strong>sous-titres</strong> ont cinq sources possibles :</p>
+            <div class="table-wrap"><table>
+              <thead><tr><th>Source</th><th>Fonctionnement</th></tr></thead>
+              <tbody>
+                <tr><td><strong>script</strong></td><td>Vous collez le texte ; MSV le découpe et le minute automatiquement, sur la durée de la voix off s'il y en a une.</td></tr>
+                <tr><td><strong>srt</strong></td><td>Un fichier de sous-titres existant, par exemple celui produit par l'onglet Voix off.</td></tr>
+                <tr><td><strong>whisper</strong></td><td>Transcription automatique au mot près de ce qui est dit (module optionnel à installer une fois).</td></tr>
+                <tr><td><strong>vidéo</strong></td><td>Les sous-titres déjà intégrés au fichier (MP4, MKV), dans la langue choisie, recalés après les coupes.</td></tr>
+                <tr><td><strong>aucun</strong></td><td>Pas de sous-titres.</td></tr>
+              </tbody>
+            </table></div>
+            <p>Le mode <strong>karaoké</strong> met en couleur le mot prononcé. Le nombre de mots par sous-titre, la police, les couleurs, le contour, la position et les majuscules se règlent. Un fichier <code>.srt</code> est toujours exporté à côté de la vidéo.</p>
+            <div class="pair">
+              <figure class="shot"><img src="img/sous_titres.webp" alt="Réglages des sous-titres" width="750" height="1815" loading="lazy"><figcaption>Source « script », karaoké et style.</figcaption></figure>
+              <figure class="shot"><img src="img/apercu_texte.webp" alt="Aperçu instantané du titre, des sous-titres et des calques" width="750" height="765" loading="lazy"><figcaption>L'aperçu instantané montre le titre, les sous-titres et les calques visibles au moment choisi, sans attendre le rendu.</figcaption></figure>
+            </div>
+            <p>Un <strong>logo ou filigrane</strong> (PNG transparent conseillé) peut aussi être posé dans un des quatre coins ou au centre, avec sa taille et son opacité.</p>
+          </li>
+          <li>
+            <h3>Prévisualiser et exporter</h3>
+            <p><strong>Aperçu rapide</strong> fabrique la vidéo en demi-résolution, en quelques secondes, pour vérifier le montage. <strong>Exporter la vidéo</strong> produit le fichier final : MP4 (H.264 et AAC), prêt pour la publication, accompagné de son fichier <code>.srt</code>. Trois niveaux de qualité sont proposés (aperçu, standard, haute). L'export peut utiliser la carte graphique (NVIDIA, Apple ou Intel) ; si elle n'est pas disponible, MSV repasse automatiquement sur le processeur.</p>
+            <figure class="shot">
+              <img src="img/resultat.webp" alt="Résultat d'un aperçu rapide avec le journal" width="1600" height="748" loading="lazy">
+              <figcaption>Aperçu rapide : 12 secondes de vidéo rendues en 2 secondes, avec la musique générée. Le journal indique chaque étape.</figcaption>
+            </figure>
+            <p>Dans « Projets et modèles », un projet s'enregistre et se recharge, et ses réglages peuvent devenir un <strong>modèle</strong> réutilisable pour la production en série.</p>
+          </li>
+        </ol>
+      </section>
+
+      <!-- ============================================================ 5 -->
+      <section id="scenes">
+        <p class="eyebrow">Onglet Scènes animées</p>
+        <h2>Des animations prêtes à remplir</h2>
+        <p>Les scènes animées apportent le rendu « motion design » des vidéos professionnelles sans logiciel spécialisé. Vous choisissez une scène, remplissez ses textes, et MSV fabrique un clip vidéo au format de votre choix. Un mot écrit entre étoiles, comme <code>*suite*</code>, prend la couleur d'accent.</p>
+        <div class="phones" aria-label="Les sept scènes animées">
+          <figure><img src="img/scene_1.webp" alt="Scène carte titre" width="540" height="960" loading="lazy"><figcaption><b>Carte titre</b>Logo qui rebondit, titre, trait de couleur</figcaption></figure>
+          <figure><img src="img/scene_2.webp" alt="Scène téléphone" width="540" height="960" loading="lazy"><figcaption><b>Téléphone</b>Votre vidéo dans un téléphone</figcaption></figure>
+          <figure><img src="img/scene_3.webp" alt="Scène écran final" width="540" height="960" loading="lazy"><figcaption><b>Écran final</b>Bouton « S'abonner » cliqué</figcaption></figure>
+          <figure><img src="img/scene_4.webp" alt="Scène liste" width="540" height="960" loading="lazy"><figcaption><b>Liste</b>Points cochés un à un</figcaption></figure>
+          <figure><img src="img/scene_5.webp" alt="Scène chiffres clés" width="540" height="960" loading="lazy"><figcaption><b>Chiffres clés</b>Les nombres défilent</figcaption></figure>
+          <figure><img src="img/scene_6.webp" alt="Scène avant après" width="540" height="960" loading="lazy"><figcaption><b>Avant / après</b>Balayage entre deux médias</figcaption></figure>
+          <figure><img src="img/scene_7.webp" alt="Scène question choc" width="540" height="960" loading="lazy"><figcaption><b>Question choc</b>Mots qui tombent un à un</figcaption></figure>
+        </div>
+        <figure class="shot">
+          <img src="img/onglet_scenes.webp" alt="Onglet Scènes animées avec l'aperçu d'un écran final" width="1600" height="1690" loading="lazy">
+          <figcaption>Réglage d'un écran final : textes, logo, couleurs, durée et aperçu instantané à n'importe quel moment.</figcaption>
+        </figure>
+        <h3>Utiliser une scène</h3>
+        <ul>
+          <li><strong>Créer la scène</strong> fabrique un clip MP4 (une scène de 4 secondes en 1080 × 1920 prend environ 7 secondes), puis <strong>Ajouter à la timeline</strong> la place à la fin du montage.</li>
+          <li><strong>Utiliser comme intro / fin du projet</strong> ajoute la scène automatiquement à chaque rendu, au format du projet. La voix off, le titre et les sous-titres sont décalés pour commencer après l'intro.</li>
+          <li>Si le texte est long ou le format petit, la scène réduit sa taille d'elle-même pour que rien ne sorte de l'image.</li>
+        </ul>
+      </section>
+
+      <!-- ============================================================ 6 -->
+      <section id="voix">
+        <p class="eyebrow">Onglet Voix off</p>
+        <h2>Transformer un texte en voix</h2>
+        <p>Écrivez le texte de la narration. Une ligne contenant seulement <code>---</code> sépare les scènes : MSV produit une piste par scène, une piste complète et le fichier de sous-titres <code>.srt</code> synchronisé. Un bouton envoie la voix et ses sous-titres directement dans l'onglet Montage.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Moteur</th><th>Qualité</th><th>Coût</th><th>Où ça tourne</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Piper</strong></td><td>Correcte. 9 voix en français, anglais et espagnol, toutes autorisées pour un usage commercial.</td><td>Gratuit</td><td>Sur votre PC, hors ligne</td></tr>
+            <tr><td><strong>ElevenLabs</strong></td><td>Très naturelle, sous-titres minutés exactement, vos voix ElevenLabs disponibles.</td><td>Abonnement ElevenLabs</td><td>Service en ligne (clé API)</td></tr>
+            <tr><td><strong>Ma voix</strong> <span class="tag">clonage local</span></td><td>Très bonne : votre propre voix, recréée à partir d'un enregistrement de 10 à 60 secondes.</td><td>Gratuit</td><td>Sur votre PC, hors ligne</td></tr>
+          </tbody>
+        </table></div>
+        <figure class="shot">
+          <img src="img/onglet_voix.webp" alt="Onglet Voix off avec le moteur Ma voix" width="1600" height="1303" loading="lazy">
+          <figcaption>Le moteur « Ma voix » : liste de vos voix, expressivité, rythme et création d'une nouvelle voix.</figcaption>
+        </figure>
+        <h3>Cloner votre voix</h3>
+        <ol>
+          <li>Enregistrez 30 à 60 secondes de votre voix dans une pièce calme, avec le ton de vos vidéos.</li>
+          <li>Dans « Créer une nouvelle voix », ajoutez l'enregistrement, donnez un nom et cochez la case de consentement.</li>
+          <li>Choisissez ensuite la voix comme n'importe quelle autre. Deux réglages ajustent le résultat : l'<strong>expressivité</strong> et le <strong>rythme</strong>.</li>
+        </ol>
+        <div class="note">
+          <p><strong>Consentement et transparence.</strong> On ne clone que sa propre voix, ou celle d'une personne qui a donné son accord. Chaque audio produit porte un filigrane inaudible qui permet de reconnaître une voix de synthèse. L'enregistrement et la voix clonée restent sur votre ordinateur.</p>
+          <p>La première utilisation installe le moteur de clonage (environ 5 Go, une seule fois). Sur une carte NVIDIA RTX 4060, la première phrase prend environ 45 secondes (chargement du modèle compris), les suivantes quelques secondes.</p>
+        </div>
+        <p>L'encadré <strong>Remplacer la voix d'un clip existant</strong> corrige une scène déjà montée : la voix d'origine est retirée et la nouvelle est posée au moment choisi, au même volume qu'un clip de référence.</p>
+      </section>
+
+      <!-- ============================================================ 7 -->
+      <section id="serie">
+        <p class="eyebrow">Onglet Shorts en série</p>
+        <h2>Des dizaines de vidéos au même style</h2>
+        <p>Le principe : <strong>le modèle fixe le style, le tableau fixe le contenu</strong>. Une ligne du tableau donne une vidéo terminée. Le modèle peut être celui de l'onglet Montage ou un modèle fourni : Short à partir d'une vidéo filmée, Short narratif (storytelling), Short pour les tout-petits, vidéo YouTube 16:9.</p>
+        <figure class="shot">
+          <img src="img/onglet_serie.webp" alt="Onglet Shorts en série" width="1600" height="1096" loading="lazy">
+          <figcaption>Choix du modèle, du tableau CSV (ou d'un dossier de vidéos) et du dossier de sortie.</figcaption>
+        </figure>
+        <pre class="code">id;medias;titre;texte;voix_off;musique;intro;outro
+histoire_01;histoires/01/*.jpg;Le lac gelé;Ce soir, je vous raconte...;;auto:suspense;Le *secret* | épisode 1;Abonne-toi
+histoire_02;histoires/02;La cuve de Boston;Le 15 janvier 1919...;;auto:suspense;La *vague* | épisode 2;Abonne-toi</pre>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Colonne</th><th>Contenu</th></tr></thead>
+          <tbody>
+            <tr><td><code>id</code></td><td>Nom du fichier produit</td></tr>
+            <tr><td><code>medias</code></td><td>Fichiers séparés par <code>|</code>, un dossier entier, ou un motif comme <code>images/*.jpg</code></td></tr>
+            <tr><td><code>titre</code></td><td>Titre affiché au début</td></tr>
+            <tr><td><code>texte</code></td><td>Script des sous-titres ; MSV peut aussi en faire la voix off automatiquement</td></tr>
+            <tr><td><code>srt</code>, <code>voix_off</code></td><td>Fichier de sous-titres, fichier de narration</td></tr>
+            <tr><td><code>musique</code></td><td>Un fichier, ou <code>auto</code> / <code>auto:suspense</code> pour une musique générée</td></tr>
+            <tr><td><code>debut</code>, <code>fin</code></td><td>Portion à garder des vidéos (en secondes)</td></tr>
+            <tr><td><code>recadrage</code></td><td>% retirés de chaque bord : gauche/haut/droite/bas, par exemple <code>10/0/10/0</code></td></tr>
+            <tr><td><code>intro</code>, <code>outro</code></td><td>« Titre | sous-titre » d'une scène animée d'ouverture et de fin, dans le style du modèle</td></tr>
+          </tbody>
+        </table></div>
+        <p>Quand une ligne contient des photos et une voix off, les photos sont réparties automatiquement sur la durée de la voix. Le mode <strong>dossier</strong> transforme chaque vidéo d'un dossier en Short (durée maximale réglable, titre tiré du nom de fichier en option). Une ligne en erreur n'arrête pas la série : le rapport indique ce qui a réussi et ce qui a échoué.</p>
+      </section>
+
+      <!-- ============================================================ 8 -->
+      <section id="outils">
+        <p class="eyebrow">Onglet Outils rapides</p>
+        <h2>Les tâches courantes en un clic</h2>
+        <div class="pair">
+          <figure class="shot"><img src="img/outil_miniature.webp" alt="Création d'une miniature YouTube" width="960" height="1575" loading="lazy"><figcaption>Miniature YouTube : une image de la vidéo et un gros texte, en 16:9 (1280 × 720) ou 9:16.</figcaption></figure>
+          <figure class="shot"><img src="img/outil_logo.webp" alt="Effacer un logo avec aperçu avant et après" width="960" height="1335" loading="lazy"><figcaption>Effacer un logo : zone choisie, aperçu avant et après, puis traitement de toute la vidéo.</figcaption></figure>
+        </div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Outil</th><th>Ce qu'il fait</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Miniature YouTube</strong></td><td>Image tirée de la vidéo au moment choisi, texte avec police, taille, couleur et position.</td></tr>
+            <tr><td><strong>Vidéo → Short 9:16</strong></td><td>Conversion en un clic, avec cadrage au choix, durée maximale et silences coupés.</td></tr>
+            <tr><td><strong>Extraire l'audio</strong></td><td>Le son d'une vidéo en MP3.</td></tr>
+            <tr><td><strong>Transcrire en .srt</strong></td><td>Sous-titres automatiques d'un audio ou d'une vidéo avec Whisper (module optionnel).</td></tr>
+            <tr><td><strong>Effacer un logo</strong></td><td>Efface ou floute une zone (logo, filigrane, texte) sur toute la vidéo, avec aperçu. Réservé aux vidéos dont vous détenez les droits.</td></tr>
+            <tr><td><strong>Logo MSV</strong></td><td>Ajoute votre logo en mémorisant sa position dans la vidéo, ce qui permet de l'enlever proprement plus tard.</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- ============================================================ 9 -->
+      <section id="fonctionnement">
+        <p class="eyebrow">Sous le capot</p>
+        <h2>Comment une vidéo est fabriquée</h2>
+        <p>MSV s'appuie sur FFmpeg, l'outil de référence du traitement vidéo, et dessine textes et animations avec la bibliothèque Pillow. Le rendu est donc identique sous Windows, macOS et Linux. Chaque export suit ces étapes :</p>
+        <pre class="mermaid">
+flowchart LR
+  A["Vos médias<br/>vidéos, photos, sons"] --> B["1. Préparation<br/>coupe, vitesse, recadrage,<br/>cadrage au format"]
+  S["Scènes animées<br/>intro et fin"] --> B
+  B --> C["2. Assemblage<br/>transitions"]
+  C --> D["3. Habillage<br/>calques, titre,<br/>sous-titres, logo"]
+  D --> E["4. Son<br/>voix off, musique,<br/>ducking, -14 LUFS"]
+  E --> F["Vidéo MP4<br/>+ sous-titres .srt"]
+        </pre>
+        <ol>
+          <li><strong>Préparation</strong> : chaque extrait est coupé, accéléré ou ralenti, recadré et mis au format de sortie (flou, rogner ou bandes). Les photos sont animées. Les silences sont retirés si l'option est active. L'intro et la fin animées sont fabriquées à ce moment.</li>
+          <li><strong>Assemblage</strong> : les extraits sont mis bout à bout, avec les transitions choisies sur l'image et sur le son.</li>
+          <li><strong>Habillage</strong> : les calques, le titre, les sous-titres et le logo sont posés par-dessus, chacun à ses heures.</li>
+          <li><strong>Son</strong> : la voix off et la musique sont mélangées ; la musique baisse quand quelqu'un parle et le volume est normalisé.</li>
+        </ol>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Caractéristique</th><th>Valeur</th></tr></thead>
+          <tbody>
+            <tr><td>Formats de sortie</td><td>9:16 (1080 × 1920), 16:9 (1920 × 1080), 1:1 (1080 × 1080), 4:5 (1080 × 1350)</td></tr>
+            <tr><td>Fichier produit</td><td>MP4, vidéo H.264, son AAC, lecture rapide sur le web (« faststart »), sous-titres <code>.srt</code></td></tr>
+            <tr><td>Images par seconde</td><td>24, 25, 30 ou 60</td></tr>
+            <tr><td>Volume</td><td>Normalisé à -14 LUFS (niveau YouTube)</td></tr>
+            <tr><td>Accélération matérielle</td><td>NVIDIA NVENC, Apple VideoToolbox, Intel Quick Sync, avec repli automatique sur le processeur</td></tr>
+            <tr><td>Langues de l'interface</td><td>Français, anglais, italien, espagnol</td></tr>
+            <tr><td>Automatisation</td><td>Ligne de commande pour rendre un projet, une série CSV, un dossier ou une voix off</td></tr>
+          </tbody>
+        </table></div>
+        <h3>Des erreurs expliquées</h3>
+        <p>Quand quelque chose ne va pas, MSV ne montre pas un message technique. Il dit ce qui s'est passé et ce qu'il faut faire, par exemple :</p>
+        <div class="note">
+          <p><strong>Ligne 1 de la timeline : la fin (2 s) est avant le début (5 s).</strong></p>
+          <p>Que faire : corrigez les colonnes « début » et « fin » ; la fin doit être plus grande que le début (laissez « fin » vide pour aller jusqu'au bout du fichier).</p>
+        </div>
+        <p>Les erreurs de saisie (heure mal écrite, recadrage, fichier CSV), les valeurs impossibles (fichier introuvable, fin avant le début) et les problèmes de l'ordinateur (fichier abîmé ou ouvert ailleurs, disque plein, Internet) ont chacun leur explication. Les détails techniques sont gardés dans un journal, utile en cas de demande d'assistance.</p>
+      </section>
+
+      <!-- ============================================================ 10 -->
+      <section id="confidentialite">
+        <p class="eyebrow">Confidentialité et sécurité</p>
+        <h2>Vos fichiers restent chez vous</h2>
+        <ul>
+          <li><strong>Traitement 100 % local</strong> : montage, rendu, voix Piper, voix clonée et musique générée fonctionnent sur votre ordinateur, même hors ligne.</li>
+          <li><strong>Aucune statistique d'usage</strong> n'est envoyée.</li>
+          <li><strong>Internet n'est utilisé que si vous le choisissez</strong> : pour ElevenLabs, et pour le premier téléchargement d'une voix Piper, du modèle Whisper ou du moteur de clonage.</li>
+          <li><strong>Application fermée aux autres sites</strong> : l'interface n'est accessible que depuis votre ordinateur et refuse les requêtes venant d'autres sites web, ainsi que l'affichage dans une page tierce.</li>
+          <li><strong>Fichiers internes protégés</strong> : le code de l'application, votre clé ElevenLabs et vos voix clonées ne peuvent pas être téléchargés depuis l'interface.</li>
+        </ul>
+      </section>
+
+      <!-- ============================================================ 11 -->
+      <section id="limites">
+        <p class="eyebrow">Limites actuelles</p>
+        <h2>Ce que MSV ne fait pas (encore)</h2>
+        <ul>
+          <li>Pas de timeline graphique à glisser-déposer avec lecture en direct : le montage se fait dans un tableau, avec un aperçu instantané et un aperçu vidéo rapide.</li>
+          <li>Les animations sont des modèles prêts à l'emploi (scènes, entrées de calques) : il n'y a pas d'animation libre image par image comme dans un logiciel de motion design.</li>
+          <li>La transcription Whisper est un module optionnel à installer une fois.</li>
+          <li>Le clonage de voix demande environ 5 Go et donne ses meilleurs temps avec une carte graphique NVIDIA.</li>
+          <li>La musique générée propose quatre ambiances ; pour un morceau précis, utilisez votre propre fichier.</li>
+        </ul>
+      </section>
+
+      <!-- ============================================================ 12 -->
+      <section id="faq">
+        <p class="eyebrow">Questions fréquentes</p>
+        <h2>Questions fréquentes</h2>
+        <dl class="faq">
+          <dt>Faut-il une connexion Internet ?</dt>
+          <dd>Seulement pour l'installation et les premiers téléchargements (composants, voix, modèles). Ensuite, MSV fonctionne hors ligne, sauf si vous utilisez ElevenLabs.</dd>
+          <dt>Faut-il un abonnement ?</dt>
+          <dd>Non. MSV est un logiciel libre (licence GPL v3). Seul ElevenLabs, optionnel, est un service payant.</dd>
+          <dt>Puis-je publier les vidéos produites, y compris pour un usage commercial ?</dt>
+          <dd>Oui. Les voix Piper proposées ont toutes une licence qui autorise l'usage commercial, la musique générée est composée sur votre PC, et les polices fournies (Montserrat, Anton) sont sous licence libre SIL OFL. Vous restez responsable des droits sur vos propres médias.</dd>
+          <dt>Quelle durée de vidéo est possible ?</dt>
+          <dd>MSV est optimisé pour les formats courts, mais produit aussi des vidéos YouTube 16:9 de plusieurs minutes. Le temps de rendu dépend de la longueur et de la qualité choisie ; l'aperçu rapide permet de vérifier avant l'export final.</dd>
+          <dt>Mes projets sont-ils sauvegardés ?</dt>
+          <dd>Un projet s'enregistre en un clic (fichier <code>.json</code>) et se recharge plus tard. Ses réglages peuvent aussi devenir un modèle de série.</dd>
+          <dt>Peut-on automatiser la production ?</dt>
+          <dd>Oui, avec l'onglet Shorts en série ou la ligne de commande, qui rend un projet, une série CSV, un dossier ou une voix off sans ouvrir l'interface.</dd>
+        </dl>
+      </section>
+
+      <footer>
+        <p>Montage Studio Video · version 1.3 · logiciel libre sous licence GPL v3. Composants tiers : FFmpeg (GPL v3), Gradio (Apache 2.0), Pillow, NumPy, pandas, sherpa-onnx (Apache 2.0), Chatterbox (MIT). Captures réalisées avec l'interface en français et des médias de démonstration.</p>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<!-- Schéma « Comment une vidéo est fabriquée » : dessiné par Mermaid (version figée) -->
+<script type="module">
+  import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.esm.min.mjs";
+  const dark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? "dark" : "neutral", securityLevel: "strict" });
+</script>
+</body>
+</html>
