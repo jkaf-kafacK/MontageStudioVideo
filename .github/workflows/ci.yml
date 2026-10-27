@@ -5,6 +5,9 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+  # chaque lundi à 6 h : détecte les nouvelles failles même sans modification du code (e-mail si échec)
+  schedule:
+    - cron: "0 6 * * 1"
 
 permissions:
   contents: read
@@ -26,9 +29,9 @@ jobs:
           - { os: ubuntu-latest, python: "3.12" }
           - { os: macos-latest, python: "3.12" }
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: ${{ matrix.python }}
           cache: pip
@@ -49,9 +52,9 @@ jobs:
     name: Audit des dépendances
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
         with:
           python-version: "3.12"
 
@@ -59,6 +62,7 @@ jobs:
         run: |
           python -m pip install pip-audit
           # 1) versions exactes installées chez les utilisateurs par l'installateur Windows
+          #    En cas d'échec : python outils/maj_securite.py (corrige automatiquement)
           pip-audit -r requirements.lock --no-deps --disable-pip
           # 2) installation « développeur » (requirements.txt + overrides.txt)
           python -m venv /tmp/audit
@@ -78,7 +82,7 @@ jobs:
         working-directory: .
         shell: pwsh
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Préparer uv et la version de test
         run: |

@@ -1,9 +1,7 @@
 # Versions exactes installées par l'installateur Windows, avec empreintes SHA-256 (chaque paquet téléchargé
-# est exactement celui qui a été testé). Générées avec :
-#   uv pip compile requirements.txt --override overrides.txt --universal --python-version 3.12 \
-#     --exclude-newer <date d'il y a 2 semaines> --generate-hashes -o requirements.lock
-# Exceptions à la règle des 2 semaines, uniquement pour des correctifs de sécurité (octobre 2026) :
-#   pillow 13.0.0, certifi 2026.10.23, brotli 1.2.1, opentelemetry-api 1.45.1
+# est exactement celui qui a été testé). Ne pas modifier à la main : utiliser outils/maj_securite.py.
+# Paquets publiés avant le 2026-10-02 (règle des 2 semaines), sauf correctifs de sécurité :
+#   brotli (autorisé jusqu'au 2026-10-23), certifi (autorisé jusqu'au 2026-10-23), filelock (autorisé jusqu'au 2026-10-18), opentelemetry-api (autorisé jusqu'au 2026-10-23), pillow (autorisé jusqu'au 2026-10-23)
 annotated-doc==0.0.5 \
     --hash=sha256:117bac03a25ede5df5440e855b32d556049ca169ead221505badf432fed4b101 \
     --hash=sha256:c7e58ce09192557605d8bbd92836d7e1d520ac9580096042c0bfd197efacf1bb
@@ -240,9 +238,9 @@ fastapi==0.142.2 \
     --hash=sha256:06366626f2e70576367714d9ab2fe8472e6c8456dba69b399f9f797ab5e92570 \
     --hash=sha256:bd5f4d81f1e93a88bcd77caf4dfe3c2dbffc3805407a0007e9a114c18b3a670b
     # via gradio
-filelock==4.0.9 \
-    --hash=sha256:635e7d67fa92654eed444e75e9ca18426d34e77ad9c469bf4373f75a932f7b22 \
-    --hash=sha256:9287fd61b99a806e5202be29a83034c0808a1b9830e820537c2f5773981f7eeb
+filelock==4.2.2 \
+    --hash=sha256:1851d2f14ca2901e98069d68333b33ad7409f56904e17b48cc0c32a0db8ed73a \
+    --hash=sha256:b29ff2ae9140bb17b3bc77c648dc4f010d9ac0955eccabff4f2b01dde859f787
     # via huggingface-hub
 fsspec==2026.9.0 \
     --hash=sha256:0f08147951c8cb31d844c3547d631053b127863b60be04cf06e121333ee0e2fe \

@@ -174,3 +174,58 @@ def test_tous_les_textes_affiches_sont_traduits():
             if texte not in cles:
                 manquants.append(f"{f} : {texte}")
     assert not manquants, "\n".join(manquants)
+
+
+# --------------------------------------------------------------------------- ma voix (clonage local)
+
+@pytest.fixture()
+def dossier_voix(tmp_path, monkeypatch):
+    monkeypatch.setattr(voice, "CLONE_DIR", tmp_path / "voix_clonees")
+    return tmp_path
+
+
+def _enregistrement(path: Path, secondes: float) -> str:
+    """Faux enregistrement : un son avec une pause d'une seconde toutes les 4 secondes."""
+    expr = "if(lt(mod(t,4),3),0.3*sin(2*PI*220*t),0)"
+    subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i",
+                    f"aevalsrc='{expr}':s=48000:d={secondes}", str(path)], check=True)
+    return str(path)
+
+
+def test_creer_une_voix_clonee(dossier_voix):
+    nom = voice.create_clone_voice("Ma voix", _enregistrement(dossier_voix / "rec.wav", 30))
+    assert nom == "Ma voix" and voice.clone_voices() == ["Ma voix"]
+    ref = voice.CLONE_DIR / "Ma voix.wav"
+    assert 6 <= ff.probe(str(ref)).duration <= 15            # coupée sur une pause, pas au milieu d'un mot
+    assert (voice.CLONE_DIR / "Ma voix.json").exists()       # trace du consentement
+
+
+def test_voix_clonee_refusee_si_trop_courte_ou_sans_nom(dossier_voix):
+    court = _enregistrement(dossier_voix / "court.wav", 4)
+    with pytest.raises(ValueError, match="trop court"):
+        voice.create_clone_voice("Test", court)
+    with pytest.raises(ValueError, match="nom"):
+        voice.create_clone_voice("  ", court)
+
+
+def test_clonage_non_installe(tmp_path, monkeypatch):
+    monkeypatch.setattr(voice, "CLONE_VENV", tmp_path / "absent")
+    assert "Installer le clonage" in voice.clone_problem()
+
+
+def test_decoupage_des_longs_textes_pour_le_clonage():
+    from core.voice_clone_worker import chunks
+
+    texte = "Première phrase courte. " + "Une phrase très longue, avec des virgules, " * 12 + "Fin."
+    morceaux = chunks(texte)
+    assert all(len(m) <= 240 for m in morceaux) and len(morceaux) >= 3
+    assert " ".join(morceaux).split() == texte.split()     # aucun mot perdu
+
+
+@pytest.mark.skipif(os.environ.get("MSV_TEST_CLONAGE") != "1",
+                    reason="télécharge le modèle (≈ 3 Go) et demande une carte graphique : MSV_TEST_CLONAGE=1")
+def test_voix_clonee_genere_une_voix(dossier_voix, tmp_path):
+    voice.create_clone_voice("Test", _enregistrement(tmp_path / "rec.wav", 20))
+    res = voice.generate("Bonjour à tous.\n---\nCeci est un test.", tmp_path / "sortie", provider="clone",
+                         voice="Test")
+    assert len(res["scenes"]) == 2 and all(d > 0.5 for d in res["durations"])

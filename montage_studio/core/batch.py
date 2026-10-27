@@ -7,9 +7,13 @@ Colonnes CSV reconnues (séparateur , ; ou tabulation, en-têtes insensibles à 
     texte     script des sous-titres (minuté automatiquement, ou sur la voix off)
     srt       fichier de sous-titres (prioritaire sur « texte »)
     voix_off  fichier audio de narration
-    musique   fichier audio de fond
+    musique   fichier audio de fond, ou « auto » / « auto:suspense » (musique générée à la bonne durée ;
+              ambiances : calme, inspirant, énergique, suspense)
     debut,fin portion à garder des vidéos (secondes)
     recadrage % retiré de chaque bord : gauche/haut/droite/bas (ex. 10/0/10/0)
+    intro     scène animée d'ouverture : « Titre | sous-titre » (style repris du modèle s'il en a une,
+              sinon carte titre ; « non » = pas d'intro)
+    outro     écran final : « Titre | sous-titre » (bouton « S'abonner » par défaut ; « non » = pas de fin)
 """
 from __future__ import annotations
 
@@ -23,6 +27,8 @@ from typing import Callable, Optional
 
 from . import ff
 from .i18n import _
+from .layers import norm_choice
+from .music import MOODS
 from .render import merge_defaults, parse_crop, render_project
 
 MEDIA_EXT = ff.VIDEO_EXT | ff.IMAGE_EXT
@@ -112,9 +118,33 @@ def build_project(template: dict, row: dict, base: Path) -> dict:
         p["voiceover"]["path"] = str(_resolve(row["voix_off"], base))
         if any(ff.media_kind(m) == "image" for m in medias):
             p["fit_images_to_voiceover"] = True
-    if row.get("musique"):
-        p["music"]["path"] = str(_resolve(row["musique"], base))
+    music = row.get("musique", "")
+    if music.lower().startswith("auto"):   # « auto » ou « auto:suspense »
+        p["music"]["path"] = ""
+        p["music"]["auto"] = norm_choice(music.partition(":")[2], list(MOODS), "inspirant")
+    elif music:
+        p["music"]["path"] = str(_resolve(music, base))
+    for key in ("intro", "outro"):
+        value = row.get(key, "").strip()
+        if not value:
+            continue
+        if value.lower() in ("non", "no", "-", "0"):
+            p[key] = {"enabled": False}
+            continue
+        title, _sep, sub = value.partition("|")
+        spec = p.get(key) if (p.get(key) or {}).get("scene") else scene_defaults(key)
+        p[key] = {**spec, "enabled": True, "title": title.strip()}
+        if sub.strip():
+            p[key]["subtitle"] = sub.strip()
     return p
+
+
+def scene_defaults(key: str) -> dict:
+    """Intro (carte titre) ou fin (écran « S'abonner ») quand le modèle n'en définit pas."""
+    if key == "intro":
+        return {"scene": "carte titre", "duration": 3.0}
+    return {"scene": "écran final", "duration": 4.0, "button": _("S'abonner"), "button_done": _("Abonné"),
+            "badge": _("Lien en bio")}
 
 
 def run_batch(

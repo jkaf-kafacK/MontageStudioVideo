@@ -4,8 +4,9 @@ Pipeline en 3 étapes :
   1. chaque segment (extrait vidéo ou image) est normalisé : coupe, vitesse, cadrage,
      fps, audio stéréo 48 kHz  -> fichiers intermédiaires identiques en format ;
   2. assemblage : concaténation ou transitions (xfade + acrossfade) ;
+  0. intro et fin (scènes animées) fabriquées au format du projet et ajoutées à la timeline ;
   3. finition : calques (incrustations, textes animés), titre, sous-titres, logo, fondus, voix off,
-     musique avec ducking,
+     musique (fichier ou générée à la durée exacte) avec ducking,
      normalisation du volume (-14 LUFS, cible YouTube), encodage final.
 """
 from __future__ import annotations
@@ -91,7 +92,10 @@ DEFAULT_PROJECT = {
     "image_zoom": "zoom avant",        # voir MOTIONS ; une image peut avoir son propre mouvement (clip "zoom")
     "fit_images_to_voiceover": False,
     "voiceover": {"path": "", "volume": 1.0, "offset": 0.0},
-    "music": {"path": "", "volume": 0.18, "ducking": True},
+    "music": {"path": "", "volume": 0.18, "ducking": True,
+              "auto": "aucune"},           # musique générée si aucun fichier : voir core/music.py
+    "intro": {"enabled": False},       # scène animée d'ouverture (voir core/scenes.py)
+    "outro": {"enabled": False},       # scène animée de fin
     "title": {"text": "", "start": 0.0, "end": 3.0,
               "style": {"size": 96, "position": 0.18, "box": True, "uppercase": True}},
     "subtitles": {"source": "aucun", "script": "", "srt_path": "", "max_words": 3,
@@ -271,7 +275,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
             speed = _f(c.get("speed")) or 1.0
             mute = bool(c.get("mute"))
             ranges = [(s, e)]
-            if rs.get("enabled") and info.has_audio and not mute:
+            if rs.get("enabled") and info.has_audio and not mute and not c.get("scene"):
                 ranges = detect_speech_ranges(path, s, e, rs["threshold_db"], rs["min_silence"], rs["padding"])
                 gain = (e - s) - sum(b - a for a, b in ranges)
                 if gain > 0.05:
@@ -282,7 +286,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
                              "volume": _f(c.get("volume", 1.0)) if c.get("volume") is not None else 1.0,
                              "mute": mute, "has_audio": info.has_audio,
                              "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
-                             "crop": parse_crop(c.get("crop")),
+                             "crop": parse_crop(c.get("crop")), "scene": c.get("scene"),
                              "dur": (b - a) / speed})
         else:
             log.append(_("⚠ Fichier ignoré dans la timeline (audio ou inconnu) : {name}", name=Path(path).name))
@@ -292,7 +296,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
     imgs = [s for s in segs if s["type"] == "image"]
     if p.get("fit_images_to_voiceover") and vo.get("path") and imgs:
         vo_end = ff.probe(vo["path"]).duration + _f(vo.get("offset")) + 0.4
-        vid_total = sum(s["dur"] for s in segs if s["type"] == "video")
+        vid_total = sum(s["dur"] for s in segs if s["type"] == "video" and s.get("scene") != "outro")
         tr = TRANSITIONS.get(p["transition"]["type"])
         overlap = _f(p["transition"]["duration"]) * (len(segs) - 1) if tr else 0.0
         per = max(0.8, (vo_end - vid_total + overlap) / len(imgs))
@@ -436,7 +440,7 @@ def _embedded_cues(segs: list[dict], starts: list[float], language: str | None, 
     per_file: dict[str, list[dict]] = {}
     out = []
     for seg, t0 in zip(segs, starts):
-        if seg["type"] != "video":
+        if seg["type"] != "video" or seg.get("scene"):
             continue
         path = seg["path"]
         name = Path(path).name
@@ -476,10 +480,10 @@ def _build_cues(p: dict, assembled: Path, T: float, work: Path, log: list,
         if vo.get("path"):
             start, end = vo_off, min(T, vo_off + ff.probe(vo["path"]).duration)
         else:
-            start, end = 0.0, T
+            start, end = _f(p.get("_intro")), T - _f(p.get("_outro"))
         return subs.from_script(st["script"], start + 0.05, end - 0.05, max_words=mw)
     if src == "srt" and st.get("srt_path"):
-        return subs.parse_srt(st["srt_path"])
+        return subs.shift(subs.parse_srt(st["srt_path"]), _f(p.get("_intro")))
     if src == "vidéo":
         return _embedded_cues(segs or [], starts or [], st.get("language"), log)
     if src == "whisper":
@@ -649,6 +653,40 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
             raise
 
 
+# --------------------------------------------------------------------------- intro et fin
+
+from .music import MOODS  # noqa: E402
+
+
+def _add_scenes(p: dict, q: dict, fps: int, work: Path, log: list, prog) -> None:
+    """Fabrique l'intro et la fin (scènes animées) au format du projet et les ajoute à la timeline.
+    La voix off et le titre sont décalés de la durée de l'intro."""
+    from .scenes import render_scene
+
+    p["clips"] = list(p["clips"])   # copie : la timeline du projet d'origine ne change pas
+    for key in ("intro", "outro"):
+        sc = p.get(key) or {}
+        if not sc.get("enabled"):
+            continue
+        prog(0.01, _("Scène animée : {kind}", kind=_(sc.get("scene") or "carte titre")))
+        spec = {**sc, "format": p["format"], "fps": fps, "scale": q["scale"]}
+        path = render_scene(spec, work / f"{key}.mp4")
+        clip = {"path": path, "scene": key}
+        dur = max(1.0, min(30.0, _f(sc.get("duration")) or 4.0))   # même règle que Scene.D
+        if key == "intro":
+            p["clips"].insert(0, clip)
+            p["_intro"] = dur
+            p["voiceover"]["offset"] = _f(p["voiceover"].get("offset")) + dur
+            if (p["title"].get("text") or "").strip():
+                p["title"]["start"] = _f(p["title"].get("start")) + dur
+                p["title"]["end"] = (_f(p["title"].get("end")) or 3.0) + dur
+        else:
+            p["clips"].append(clip)
+            p["_outro"] = dur
+        log.append(_("🎬 {what} : {kind} ({dur:g} s)", what=_("Intro") if key == "intro" else _("Fin"),
+                     kind=_(sc.get("scene") or "carte titre"), dur=dur))
+
+
 # --------------------------------------------------------------------------- API publique
 
 def render_project(project: dict, out_path: str | Path, progress: Progress = None,
@@ -675,6 +713,7 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
     work = Path(tempfile.mkdtemp(prefix="rendu_", dir=cache))
     try:
         prog(0.01, _("Analyse des médias"))
+        _add_scenes(p, q, fps, work, log, prog)
         segs = _expand_clips(p, log)
         if not segs:
             raise ValueError(_("La timeline est vide : ajoute au moins une vidéo ou une image."))
@@ -693,6 +732,12 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
         _assemble(parts, durs, assembled, p["transition"]["type"], _f(p["transition"]["duration"]),
                   fps, q, log, lambda f: prog(0.48 + 0.12 * f, msg_asm))
         T = ff.probe(assembled).duration or sum(durs)
+        mood = p["music"].get("auto")
+        if not p["music"].get("path") and mood in MOODS:
+            from .music import generate
+            seed = sum(map(ord, str(p.get("name") or ""))) % 1000   # notes différentes d'une vidéo à l'autre
+            p["music"]["path"] = generate(work / "musique.wav", T + 0.5, mood, seed)
+            log.append(_("🎵 Musique générée : {mood}, {dur:.0f} s", mood=_(mood), dur=T))
 
         prog(0.61, _("Sous-titres"))
         cues = _build_cues(p, assembled, T, work, log, segs, _segment_starts(p, durs))

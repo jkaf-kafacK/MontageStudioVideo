@@ -35,6 +35,7 @@ from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
                          crop_text, fit_image, merge_defaults, parse_crop, render_project)
+from core.music import MOODS
 from core.textimg import DEFAULT_STYLE, list_fonts, render_text
 from core.version import __version__
 
@@ -586,11 +587,11 @@ def template_info(name):
 
 def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_name, quality, tpl,
                auto_v, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
-               *values, progress=gr.Progress()):
+               clone_voice, exag, cfg, *values, progress=gr.Progress()):
     tts = None
     if auto_v:
         provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch,
-                                              speed, key)
+                                              speed, key, clone_voice, exag, cfg)
         tts = {"provider": provider, "voice": v, **options}
     if tpl == FROM_MONTAGE or not tpl:
         template = collect(values)
@@ -618,24 +619,73 @@ def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_n
 
 # --------------------------------------------------------------------------- actions : scènes animées
 
+SCENE_EXAMPLES = {   # lignes proposées quand on choisit la scène (champ « Lignes »)
+    "liste": "Premier point\nDeuxième point\nTroisième point",
+    "chiffres clés": "120 000 | vues\n98 % | de satisfaction\n3 | minutes",
+    "avant / après": "Avant\nAprès",
+}
+SCENE_LINES_INFO = {
+    "liste": "un point par ligne",
+    "chiffres clés": "« chiffre | légende », un par ligne : les nombres défilent jusqu'à leur valeur",
+    "avant / après": "ligne 1 : étiquette de l'image « avant », ligne 2 : de l'image « après »",
+}
 SCENE_INFO = {
     "carte titre": "Logo ou image qui arrive avec un rebond, étiquette, grand titre et trait de couleur. "
                    "Idéal pour ouvrir une vidéo.",
     "téléphone": "Ta vidéo ou ton image dans un téléphone, avec un titre. Idéal pour montrer un extrait ou une appli.",
     "écran final": "Appel à l'action : titre, bouton qui se fait cliquer (« S'abonner » → « Abonné ») et badge "
                    "« Lien en bio ».",
+    "liste": "Titre puis une liste de points qui apparaissent un à un avec une coche.",
+    "chiffres clés": "Tuiles « grand chiffre + légende » ; les nombres défilent jusqu'à leur valeur.",
+    "avant / après": "Deux images ou vidéos : la seconde remplace la première par un balayage.",
+    "question choc": "Une grande question qui tombe mot par mot, puis une phrase (« Dis-le en commentaire »).",
 }
 
 
-def scene_spec(kind, fmt, dur, chip, title, sub, media, btn, done, badge, bg, glow, accent) -> dict:
+def scene_spec(kind, fmt, dur, chip, title, sub, media, media2, items, btn, done, badge, bg, glow, accent) -> dict:
     return {"scene": kind, "format": fmt, "duration": num(dur, 4.0), "chip": chip or "", "title": title or "",
-            "subtitle": sub or "", "media": persist(media) if media else "", "button": btn or "",
+            "subtitle": sub or "", "media": persist(media) if media else "",
+            "media2": persist(media2) if media2 else "", "items": items or "", "button": btn or "",
             "button_done": done or "", "badge": badge or "", "background": bg, "glow": glow, "accent": accent}
 
 
-def scene_kind_changed(kind):
-    """Description de la scène ; les champs du bouton ne servent qu'à l'écran final."""
-    return _(SCENE_INFO.get(kind, "")), gr.Group(visible=kind == "écran final")
+def scene_kind_changed(kind, items):
+    """Description de la scène et champs utiles : bouton (écran final), lignes, second média (avant / après).
+    Les lignes d'exemple sont remplacées par celles de la nouvelle scène (un texte personnel est gardé)."""
+    examples = {_(v) for v in SCENE_EXAMPLES.values()}
+    if not (items or "").strip() or items in examples:
+        items = _(SCENE_EXAMPLES[kind]) if kind in SCENE_EXAMPLES else ""
+    return (_(SCENE_INFO.get(kind, "")), gr.Group(visible=kind == "écran final"),
+            gr.Textbox(visible=kind in SCENE_LINES_INFO, value=items, info=_(SCENE_LINES_INFO.get(kind, "")) or None),
+            gr.File(visible=kind == "avant / après"))
+
+
+def use_scene(key: str, *args) -> dict:
+    """La scène réglée devient l'intro ou la fin du projet (au format du projet, ajoutée à chaque rendu)."""
+    spec = {**scene_spec(*args), "enabled": True}
+    spec.pop("format")
+    gr.Info(_("Intro du projet : {kind}", kind=_(spec["scene"])) if key == "intro"
+            else _("Fin du projet : {kind}", kind=_(spec["scene"])))
+    return spec
+
+
+def intro_outro_status(intro, outro) -> str:
+    def one(label, sc):
+        if not (sc or {}).get("enabled"):
+            return f"**{label}** — " + _("aucune")
+        title = re.sub(r"[*]", "", sc.get("title") or "").strip()
+        return f"**{label}** — {_(sc.get('scene') or 'carte titre')} « {title} » ({num(sc.get('duration'), 4):g} s)"
+    return one(_("Intro"), intro) + "  \n" + one(_("Fin"), outro)
+
+
+def music_preview(mood):
+    """Extrait de 12 s de la musique générée."""
+    if mood not in MOODS:
+        raise gr.Error(_("Choisis une ambiance de musique."))
+    from core import music
+    out = OUT_DIR / "musiques"
+    out.mkdir(parents=True, exist_ok=True)
+    return music.generate(out / f"extrait_{slug(mood)}.wav", 12, mood)
 
 
 def scene_preview(t, *args):
@@ -796,11 +846,20 @@ def tool_transcribe(file, lang, model, max_words, progress=gr.Progress()):
 
 # --------------------------------------------------------------------------- actions : voix off
 
-ENGINES = ["Piper (gratuit, local)", "ElevenLabs (API)"]
+ENGINES = ["Piper (gratuit, local)", "ElevenLabs (API)", "Ma voix (clonage local)"]
 
 
-def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key=""):
+def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key="",
+                   clone_voice=None, exag=0.5, cfg=0.5):
     """Traduit les réglages de l'onglet Voix off en (moteur, voix, options)."""
+    if engine == ENGINES[2]:
+        problem = voice.clone_problem()
+        if problem:
+            raise gr.Error(problem, duration=None)
+        if not clone_voice:
+            raise gr.Error(_("Crée d'abord ta voix (« Créer une nouvelle voix »), puis choisis-la dans la liste."))
+        return "clone", clone_voice, {"exaggeration": float(exag), "cfg_weight": float(cfg), "speed": speed,
+                                      "language": LANG.get()}
     if engine == ENGINES[1]:
         if not el_voice:
             raise gr.Error(_("Choisis une voix ElevenLabs (bouton « Charger mes voix »)."))
@@ -829,14 +888,17 @@ def piper_licence(label):
 
 
 def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
-              gap, max_words, progress=gr.Progress()):
-    provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key)
+              gap, max_words, clone_voice=None, exag=0.5, cfg=0.5, progress=gr.Progress()):
+    provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key,
+                                          clone_voice, exag, cfg)
     n = len(voice.split_scenes(script or ""))
     if not n:
         raise gr.Error(_("Écris le texte de la voix off."))
     msg = _("Création de la voix ({n} scène(s))", n=n)
     if provider == "piper":
         msg += " · " + _("le premier usage télécharge la voix")
+    elif provider == "clone":
+        msg += " · " + _("le premier usage télécharge le modèle (environ 3 Go)")
     progress(0.05, desc=msg)
     out = OUT_DIR / "voix" / time.strftime("%Y%m%d_%H%M%S")
     try:
@@ -849,6 +911,27 @@ def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, p
     lines.append(_("Sous-titres : minutage exact (ElevenLabs)") if provider == "elevenlabs"
                  else _("Sous-titres : minutage estimé"))
     return res["audio"], [res["audio"], res["srt"]] + res["scenes"], "\n".join(lines), res
+
+
+def clone_status() -> str:
+    problem = voice.clone_problem()
+    return f"⚠ {problem}" if problem else "✅ " + _("Clonage de voix installé.")
+
+
+def install_clone_ui(progress=gr.Progress()):
+    progress(0, desc=_("Installation du clonage de voix (plusieurs minutes)"))
+    voice.install_clone(lambda m: progress(0.5, desc=_("Installation du clonage de voix (plusieurs minutes)")))
+    gr.Info(_("Clonage de voix installé."))
+    return clone_status(), gr.Button(visible=False)
+
+
+def create_clone_ui(recording, name, consent):
+    if not consent:
+        raise gr.Error(_("Coche la case : on ne clone que sa propre voix, ou celle d'une personne qui a donné son "
+                         "accord."))
+    made = voice.create_clone_voice(name, persist(recording) if recording else "")
+    gr.Info(_("Voix « {name} » créée.", name=made))
+    return gr.Dropdown(choices=voice.clone_voices(), value=made)
 
 
 def send_voice_to_montage(res):
@@ -1160,6 +1243,16 @@ def _build_ui(lang: str) -> gr.Blocks:
                 # ---------------- colonne droite : réglages
                 with gr.Column(scale=2):
                     reg("name", gr.Textbox(label=_("Nom du projet"), value=DEF["name"]))
+                    intro_st = reg("intro", gr.State(DEF["intro"]))
+                    outro_st = reg("outro", gr.State(DEF["outro"]))
+                    with gr.Accordion(_("Intro et fin (scènes animées)"), open=False):
+                        io_md = gr.Markdown(intro_outro_status(DEF["intro"], DEF["outro"]))
+                        gr.Markdown(_("Choisis-les dans l'onglet « Scènes animées » (boutons « Utiliser comme "
+                                      "intro / fin du projet ») : elles sont ajoutées à chaque rendu, au format "
+                                      "du projet, et passent aussi dans les modèles de série."))
+                        with gr.Row():
+                            io_no_intro = gr.Button(_("Retirer l'intro"), size="sm")
+                            io_no_outro = gr.Button(_("Retirer la fin"), size="sm")
                     with gr.Accordion(_("Format et rendu"), open=True):
                         reg("format", gr.Radio(list(FORMATS), value=DEF["format"], label=_("Format")))
                         reg("fit", gr.Radio(opts(["flou", "rogner", "bandes"]), value=DEF["fit"], label=_("Cadrage"),
@@ -1189,6 +1282,14 @@ def _build_ui(lang: str) -> gr.Blocks:
                             reg("music.volume", gr.Slider(0, 1, value=DEF["music"]["volume"], step=0.01,
                                                           label=_("Volume musique")))
                             reg("music.ducking", gr.Checkbox(value=True, label=_("Baisser la musique quand on parle")))
+                        with gr.Row(equal_height=True):
+                            mu_auto = reg("music.auto", gr.Dropdown(
+                                opts(["aucune"] + list(MOODS)), value=DEF["music"]["auto"], scale=3,
+                                label=_("Musique générée (libre de droits)"),
+                                info=_("utilisée s'il n'y a pas de fichier de musique ; composée à la durée exacte "
+                                       "de la vidéo")))
+                            mu_listen = gr.Button(_("Écouter 12 s"), size="sm", scale=1)
+                        mu_audio = gr.Audio(label=_("Extrait"), type="filepath")
                         reg("normalize_audio", gr.Checkbox(value=True, label=_("Normaliser le volume (-14 LUFS, cible YouTube)")))
                         reg("remove_silence.enabled", gr.Checkbox(value=False, label=_("Couper les silences automatiquement")))
                         with gr.Row():
@@ -1314,10 +1415,13 @@ def _build_ui(lang: str) -> gr.Blocks:
                                          value=_("Épisode 1"))
                     sc_title = gr.Textbox(label=_("Titre"), value=_("Le *titre* de ta vidéo"))
                     sc_sub = gr.Textbox(label=_("Sous-titre"), value=_("Une phrase qui donne envie de regarder"))
+                    sc_items = gr.Textbox(label=_("Lignes"), lines=4, visible=False)
                     sc_media = gr.File(label=_("Logo, image ou vidéo"), type="filepath", height=90,
                                        file_types=sorted(ff.IMAGE_EXT | ff.VIDEO_EXT))
+                    sc_media2 = gr.File(label=_("Image ou vidéo « après »"), type="filepath", height=90,
+                                        file_types=sorted(ff.IMAGE_EXT | ff.VIDEO_EXT), visible=False)
                     gr.Markdown(_("Carte titre et écran final : ton logo ou une image. Téléphone : la vidéo ou "
-                                  "l'image affichée dans l'écran."))
+                                  "l'image affichée dans l'écran. Avant / après : l'image « avant »."))
                     with gr.Group(visible=False) as sc_final:
                         with gr.Row():
                             sc_btn = gr.Textbox(label=_("Texte du bouton"), value=_("S'abonner"))
@@ -1338,11 +1442,26 @@ def _build_ui(lang: str) -> gr.Blocks:
                     sc_vid = gr.Video(label=_("Scène"), height=360)
                     sc_file = gr.File(label=_("Télécharger"))
                     sc_add = gr.Button(_("Ajouter à la timeline"), variant="secondary")
-            sc_inputs = [sc_kind, sc_fmt, sc_dur, sc_chip, sc_title, sc_sub, sc_media, sc_btn, sc_done, sc_badge,
-                         sc_bg, sc_glow, sc_accent]
-            sc_kind.change(L(scene_kind_changed), sc_kind, [sc_info, sc_final]) \
+                    section("4", "Intro et fin automatiques")
+                    gr.Markdown(_("Ou bien ajoute cette scène à chaque rendu du projet (et de la série), au format "
+                                  "du projet :"))
+                    with gr.Row():
+                        sc_intro = gr.Button(_("Utiliser comme intro du projet"), size="sm")
+                        sc_outro = gr.Button(_("Utiliser comme fin du projet"), size="sm")
+                    sc_io_md = gr.Markdown(intro_outro_status(DEF["intro"], DEF["outro"]))
+            sc_inputs = [sc_kind, sc_fmt, sc_dur, sc_chip, sc_title, sc_sub, sc_media, sc_media2, sc_items, sc_btn,
+                         sc_done, sc_badge, sc_bg, sc_glow, sc_accent]
+            sc_kind.change(L(scene_kind_changed), [sc_kind, sc_items], [sc_info, sc_final, sc_items, sc_media2]) \
                 .then(L(scene_preview), [sc_t] + sc_inputs, sc_img)
-            for ev in (sc_prev.click, sc_t.release, sc_fmt.change, sc_media.change):
+            sc_intro.click(L(functools.partial(use_scene, "intro")), sc_inputs, intro_st)
+            sc_outro.click(L(functools.partial(use_scene, "outro")), sc_inputs, outro_st)
+            for st in (intro_st, outro_st):
+                st.change(L(intro_outro_status), [intro_st, outro_st], io_md) \
+                    .then(L(intro_outro_status), [intro_st, outro_st], sc_io_md)
+            io_no_intro.click(lambda: {"enabled": False}, None, intro_st)
+            io_no_outro.click(lambda: {"enabled": False}, None, outro_st)
+            mu_listen.click(L(music_preview), mu_auto, mu_audio)
+            for ev in (sc_prev.click, sc_t.release, sc_fmt.change, sc_media.change, sc_media2.change):
                 ev(L(scene_preview), [sc_t] + sc_inputs, sc_img)
             sc_make.click(L(scene_render), sc_inputs, [sc_vid, sc_file, sc_last])
             sc_add.click(L(scene_to_timeline), [sc_last, timeline, lib], [timeline, lib, media_dd]) \
@@ -1371,9 +1490,11 @@ def _build_ui(lang: str) -> gr.Blocks:
                     v_log = gr.Textbox(label=_("Journal"), lines=5, elem_classes="mono")
                 with gr.Column(scale=2):
                     section("2", "Voix")
-                    v_engine = gr.Radio(opts(ENGINES), value=ENGINES[0], label=_("Moteur"))
+                    has_clone = bool(voice.clone_voices()) and not voice.clone_problem()
+                    v_engine = gr.Radio(opts(ENGINES), value=ENGINES[2] if has_clone else ENGINES[0],
+                                        label=_("Moteur"))
                     v_speed = gr.Slider(0.7, 1.2, value=1.0, step=0.01, label=_("Vitesse"))
-                    with gr.Group(visible=True) as g_piper:
+                    with gr.Group(visible=not has_clone) as g_piper:
                         gr.Markdown(_("**Piper** : gratuit, hors ligne. La voix est téléchargée au premier usage."))
                         v_piper = gr.Dropdown(opts(list(voice.PIPER_VOICES)), value=voice.DEFAULT_PIPER,
                                               label=_("Voix"))
@@ -1393,6 +1514,26 @@ def _build_ui(lang: str) -> gr.Blocks:
                         v_stab = gr.Slider(0, 1, value=0.45, step=0.05, label=_("Stabilité (bas = plus expressif)"))
                         v_sim = gr.Slider(0, 1, value=0.8, step=0.05, label=_("Fidélité à la voix"))
                         v_style = gr.Slider(0, 1, value=0.15, step=0.05, label=_("Style / exagération"))
+                    with gr.Group(visible=has_clone) as g_clone:
+                        gr.Markdown(_("**Ma voix** : ta propre voix, recréée sur ton PC à partir d'un enregistrement "
+                                      "de 10 à 60 s. Rien n'est envoyé sur Internet. Ne clone que ta voix, ou celle "
+                                      "d'une personne qui t'a donné son accord."))
+                        cl_status = gr.Markdown(clone_status())
+                        cl_install = gr.Button(_("Installer le clonage de voix (≈ 5 Go, une seule fois)"),
+                                               size="sm", visible=bool(voice.clone_problem()))
+                        v_clone = gr.Dropdown(voice.clone_voices(), value=(voice.clone_voices() or [None])[0],
+                                              label=_("Mes voix"), interactive=True)
+                        v_exag = gr.Slider(0.25, 1.2, value=0.5, step=0.05, label=_("Expressivité"),
+                                           info=_("0,5 = naturel ; plus haut = plus d'émotion (et plus rapide)"))
+                        v_cfg = gr.Slider(0, 1, value=0.5, step=0.05, label=_("Rythme"),
+                                          info=_("plus bas = plus posé, conseillé si la voix parle trop vite"))
+                        with gr.Accordion(_("Créer une nouvelle voix"), open=not voice.clone_voices()):
+                            cl_rec = gr.File(label=_("Enregistrement de la voix (WAV ou MP3, 10 à 60 s)"),
+                                             type="filepath", height=80, file_types=sorted(ff.AUDIO_EXT))
+                            cl_name = gr.Textbox(label=_("Nom de la voix"), value=_("Ma voix"))
+                            cl_consent = gr.Checkbox(value=False, label=_("C'est ma voix, ou j'ai l'accord de la "
+                                                                          "personne enregistrée"))
+                            cl_make = gr.Button(_("Créer la voix"), size="sm")
             with gr.Accordion(_("Remplacer la voix d'un clip existant"), open=False):
                 gr.Markdown(_("Pour une scène générée avec la mauvaise voix : la voix d'origine est retirée et la "
                               "nouvelle est posée au moment choisi, au même volume qu'un clip de référence."))
@@ -1574,16 +1715,20 @@ def _build_ui(lang: str) -> gr.Blocks:
 
         tpl_dd.change(L(template_info), tpl_dd, tpl_desc)
         refresh_btn.click(L(lambda: gr.Dropdown(choices=template_choices())), None, tpl_dd)
-        v_inputs = [v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper, v_pitch, v_speed]
+        v_inputs = [v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper, v_pitch, v_speed, v_clone,
+                    v_exag, v_cfg]
         run_btn.click(L(run_series), [mode, csv_in, base_in, folder_series, max_dur, title_name, out_name, q_series,
                                       tpl_dd, auto_voice] + v_inputs + vals, [series_files, series_log])
 
-        v_engine.change(lambda e: (gr.Group(visible=e == ENGINES[0]), gr.Group(visible=e == ENGINES[1])),
-                        v_engine, [g_piper, g_el])
+        v_engine.change(lambda e: tuple(gr.Group(visible=e == x) for x in ENGINES), v_engine,
+                        [g_piper, g_el, g_clone])
+        cl_install.click(L(install_clone_ui), None, [cl_status, cl_install])
+        cl_make.click(L(create_clone_ui), [cl_rec, cl_name, cl_consent], v_clone)
         v_piper.change(L(piper_licence), v_piper, v_lic)
         v_load.click(L(load_el_voices), [v_key, v_remember], v_el)
         v_btn.click(L(gen_voice), [v_script, v_name, v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper,
-                                   v_pitch, v_speed, v_gap, v_words], [v_audio, v_files, v_log, voice_res])
+                                   v_pitch, v_speed, v_gap, v_words, v_clone, v_exag, v_cfg],
+                    [v_audio, v_files, v_log, voice_res])
         v_send.click(L(send_voice_to_montage), voice_res,
                      [FIELDS["voiceover.path"], FIELDS["subtitles.source"], FIELDS["subtitles.srt_path"],
                       FIELDS["fit_images_to_voiceover"]])
@@ -1695,7 +1840,8 @@ def build_app():
 
     # Seuls les dossiers de travail sont téléchargeables ; le code, la configuration et .venv ne le sont pas.
     allowed = [str(d) for d in (OUT_DIR, MEDIA_DIR, PROJ_DIR, BASE / "exemples")]
-    blocked = [str(BASE / d) for d in (".venv", "core", "assets", "cache", "templates")] + \
+    blocked = [str(BASE / d) for d in (".venv", ".venv_clonage", "core", "assets", "cache", "templates",
+                                       "voix_clonees")] + \
               [str(f) for f in BASE.glob("*") if f.is_file()]
     if paths.PRIVATE_DIR != BASE:          # clé API, voix téléchargées, cache : jamais téléchargeables
         blocked.append(str(paths.PRIVATE_DIR))

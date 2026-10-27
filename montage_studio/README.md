@@ -217,6 +217,21 @@ python cli.py voix-liste
 
 ---
 
+### Sécurité des dépendances
+
+L'audit (onglet Actions, job « Audit des dépendances ») échoue dès qu'une **nouvelle faille** est publiée dans un
+composant, même sans changement de ton code. Pour corriger, depuis la racine du dépôt :
+
+```bash
+pip install pip-audit            # une seule fois (uv doit aussi être installé)
+python outils/maj_securite.py    # met à jour uniquement les paquets vulnérables, puis revérifie
+```
+
+Puis lance les tests, commit et push. L'audit tourne aussi **chaque lundi** automatiquement, et une version ne peut
+plus être publiée (tag `v*`) si l'audit ou les tests échouent.
+
+---
+
 ## 8. Licences
 
 Montage Studio est un logiciel libre distribué sous **GPL-3.0-or-later** (fichier `LICENSE`) : tu peux l'utiliser,

@@ -1,9 +1,12 @@
 """Création de voix off.
 
-Deux moteurs :
+Trois moteurs :
   * ElevenLabs  — voix très naturelles, payant, nécessite une clé API (https://elevenlabs.io).
                   Renvoie le minutage exact de chaque caractère : les sous-titres sont parfaitement synchronisés.
   * Piper       — gratuit, 100 % local et hors ligne (via sherpa-onnx). Qualité correcte, minutage estimé.
+  * Ma voix     — clonage local de ta propre voix (Chatterbox Multilingual, licence MIT) à partir d'un
+                  enregistrement de 10 à 60 s. Tourne dans un environnement Python séparé (.venv_clonage),
+                  voir voice_clone_worker.py. Minutage estimé.
 
 Le texte peut être découpé en scènes avec une ligne contenant seulement « --- » :
 une piste audio est produite par scène + une piste complète + un fichier .srt.
@@ -14,6 +17,8 @@ import base64
 import json
 import os
 import re
+import subprocess
+import sys
 import tarfile
 import time
 import urllib.error
@@ -25,7 +30,13 @@ from . import ff, subs
 from .errors import PIPER_CMD, PIPER_FIX, UserError
 from .i18n import _
 
-from .paths import VOICE_CONFIG as CONFIG_FILE, VOICE_MODELS_DIR as MODELS_DIR  # noqa: E402
+from .paths import PRIVATE_DIR, VOICE_CONFIG as CONFIG_FILE, VOICE_MODELS_DIR as MODELS_DIR  # noqa: E402
+
+CLONE_DIR = PRIVATE_DIR / "voix_clonees"        # références de voix (privées, jamais téléchargeables)
+CLONE_VENV = PRIVATE_DIR / ".venv_clonage"      # PyTorch + Chatterbox, séparés de l'application
+CLONE_WORKER = Path(__file__).with_name("voice_clone_worker.py")
+CLONE_PACKAGES = [["torch==2.6.0", "torchaudio==2.6.0", "--index-url", "https://download.pytorch.org/whl/cu124"],
+                  ["chatterbox-tts==0.1.7"]]
 
 ELEVEN_API = "https://api.elevenlabs.io"
 ELEVEN_MODELS = {
@@ -227,6 +238,107 @@ def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1
     return subs.estimate_word_times(text, 0.05, max(0.1, dur - 0.1))
 
 
+# --------------------------------------------------------------------------- Ma voix (clonage local)
+
+def clone_python() -> Path:
+    return CLONE_VENV / ("Scripts/python.exe" if os.name == "nt" else "bin/python")
+
+
+def clone_problem() -> str | None:
+    """Pourquoi le clonage n'est pas prêt (message pour l'utilisateur), ou None."""
+    installed = any(CLONE_VENV.glob("Lib/site-packages/chatterbox")) or any(
+        CLONE_VENV.glob("lib/python*/site-packages/chatterbox"))
+    if not clone_python().exists() or not installed:
+        return _("Le clonage de voix n'est pas encore installé : clique sur « Installer le clonage de voix » "
+                 "(environ 5 Go à télécharger, une seule fois).")
+    return None
+
+
+def install_clone(log=None) -> None:
+    """Crée l'environnement séparé et installe PyTorch (CUDA si carte NVIDIA) + Chatterbox. Long : plusieurs minutes."""
+    def run(cmd):
+        if log:
+            log(" ".join(map(str, cmd[3:6])))
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+        if res.returncode != 0:
+            raise RuntimeError(_("Installation du clonage impossible : {err}", err=(res.stderr or res.stdout)[-600:]))
+    if not clone_python().exists():
+        run([sys.executable if sys.version_info[:2] == (3, 12) else "python", "-m", "venv", str(CLONE_VENV)])
+    py = str(clone_python())
+    run([py, "-m", "pip", "install", "-q", "--upgrade", "pip"])
+    for pkgs in CLONE_PACKAGES:
+        run([py, "-m", "pip", "install", "-q", *pkgs])
+
+
+def clone_voices() -> list[str]:
+    return sorted(p.stem for p in CLONE_DIR.glob("*.wav")) if CLONE_DIR.exists() else []
+
+
+def create_clone_voice(name: str, recording: str) -> str:
+    """Prépare une référence de voix à partir d'un enregistrement : silence du début retiré, volume normalisé,
+    6 à 15 s gardées en s'arrêtant sur une pause (le modèle n'utilise que les premières secondes)."""
+    name = re.sub(r"[^\w\- ]+", "", name or "").strip()
+    if not name:
+        raise ValueError(_("Donne un nom à la voix."))
+    if not recording or ff.media_kind(recording) not in ("audio", "video"):
+        raise ValueError(_("Ajoute un enregistrement audio de ta voix (WAV ou MP3, 10 à 60 s)."))
+    if ff.probe(recording).duration < 8:
+        raise ValueError(_("L'enregistrement est trop court : il faut au moins 10 secondes de voix."))
+    CLONE_DIR.mkdir(parents=True, exist_ok=True)
+    clean = CLONE_DIR / f"{name}.tmp.wav"
+    ff.run_ffmpeg(["-i", recording, "-vn", "-ac", "1", "-ar", "24000", "-af",
+                   "silenceremove=start_periods=1:start_threshold=-45dB,highpass=f=70,loudnorm=I=-20:TP=-2",
+                   str(clean)])
+    pauses = re.findall(r"silence_start: ([\d.]+)[\s\S]*?silence_end: ([\d.]+)",
+                        ff.run_capture(["-i", str(clean), "-af", "silencedetect=n=-40dB:d=0.3", "-f", "null", "-"]))
+    cuts = [(float(a) + float(b)) / 2 for a, b in pauses if 6 <= (float(a) + float(b)) / 2 <= 15]
+    out = CLONE_DIR / f"{name}.wav"
+    ff.run_ffmpeg(["-i", str(clean), "-t", f"{cuts[-1] if cuts else 15:.2f}", str(out)])
+    clean.unlink(missing_ok=True)
+    (CLONE_DIR / f"{name}.json").write_text(json.dumps(
+        {"source": Path(recording).name, "created": time.strftime("%Y-%m-%d %H:%M"),
+         "consent": "voix de l'utilisateur ou accord de la personne (case cochée)"}, ensure_ascii=False, indent=2),
+        encoding="utf-8")
+    return out.stem
+
+
+def clone_tts_batch(texts: list[str], outs: list[Path], voice_name: str, exaggeration: float = 0.5,
+                    cfg_weight: float = 0.5, speed: float = 1.0, language: str = "fr", progress=None) -> None:
+    """Synthétise plusieurs textes avec une voix clonée (modèle chargé une seule fois)."""
+    problem = clone_problem()
+    if problem:
+        raise RuntimeError(problem)
+    ref = CLONE_DIR / f"{voice_name}.wav"
+    if not ref.exists():
+        raise FileNotFoundError(_("Voix introuvable : {name}", name=voice_name))
+    raws = [Path(o).with_suffix(".brut.wav") for o in outs]
+    req = Path(outs[0]).with_suffix(".demande.json")
+    req.write_text(json.dumps({"reference": str(ref), "language": language, "exaggeration": exaggeration,
+                               "cfg_weight": cfg_weight, "items": [{"text": t, "out": str(r)}
+                                                                   for t, r in zip(texts, raws)]},
+                              ensure_ascii=False), encoding="utf-8")
+    # Les messages d'erreur et barres de progression (téléchargement du modèle…) vont dans un fichier : lus dans
+    # un tuyau seulement à la fin, ils le rempliraient et bloqueraient le programme de synthèse.
+    errlog = req.with_suffix(".journal.txt")
+    with errlog.open("w", encoding="utf-8", errors="replace") as err_f:
+        proc = subprocess.Popen([str(clone_python()), str(CLONE_WORKER), str(req)], stdout=subprocess.PIPE,
+                                stderr=err_f, text=True, encoding="utf-8", errors="replace")
+        for line in proc.stdout:
+            if line.startswith("SCENE") and progress:
+                _k, i, n = line.split()
+                progress(int(i) / int(n))
+        code = proc.wait()
+    err = errlog.read_text(encoding="utf-8", errors="replace")
+    req.unlink(missing_ok=True)
+    errlog.unlink(missing_ok=True)
+    if code != 0:
+        raise RuntimeError(_("La voix clonée n'a pas pu être générée : {err}", err=err.strip()[-600:]))
+    tempo = f",atempo={max(0.5, min(2.0, speed)):.3f}" if abs(speed - 1) > 0.01 else ""
+    for raw, out in zip(raws, outs):   # 48 kHz comme les autres voix, vitesse appliquée ici
+        ff.run_ffmpeg(["-i", str(raw), "-af", "aresample=48000,highpass=f=60" + tempo, str(out)])
+        raw.unlink(missing_ok=True)
+
+
 # --------------------------------------------------------------------------- API commune
 
 def generate(text: str, out_dir: str | Path, name: str = "voix", provider: str = "piper",
@@ -242,10 +354,16 @@ def generate(text: str, out_dir: str | Path, name: str = "voix", provider: str =
         raise ValueError(_("Le texte est vide."))
     files, all_words, durations = [], [], []
     offset = 0.0
+    if provider == "clone":   # toutes les scènes d'un coup : le modèle n'est chargé qu'une fois
+        clone_tts_batch(scenes, [out_dir / f"{name}_scene{i + 1:02d}.wav" for i in range(len(scenes))], voice,
+                        exaggeration=opts.get("exaggeration", 0.5), cfg_weight=opts.get("cfg_weight", 0.5),
+                        speed=opts.get("speed", 1.0), language=opts.get("language") or "fr")
     for i, sc in enumerate(scenes):
         ext = ".mp3" if provider == "elevenlabs" else ".wav"
         f = out_dir / f"{name}_scene{i + 1:02d}{ext}"
-        if provider == "elevenlabs":
+        if provider == "clone":
+            words = subs.estimate_word_times(sc, 0.05, max(0.1, ff.probe(f).duration - 0.1))
+        elif provider == "elevenlabs":
             words = eleven_tts(sc, voice, f, key=opts.get("key"), model=opts.get("model", "eleven_multilingual_v2"),
                                stability=opts.get("stability", 0.45), similarity=opts.get("similarity", 0.8),
                                style=opts.get("style", 0.15), speed=opts.get("speed", 1.0),

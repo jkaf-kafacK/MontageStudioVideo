@@ -448,14 +448,16 @@ def test_piper_version_compatible():
 # --------------------------------------------------------------------------- scènes animées
 
 @pytest.mark.parametrize("fmt", ["9:16", "16:9", "1:1", "4:5"])
-@pytest.mark.parametrize("scene", ["carte titre", "téléphone", "écran final"])
+@pytest.mark.parametrize("scene", ["carte titre", "téléphone", "écran final", "liste", "chiffres clés",
+                                   "avant / après", "question choc"])
 def test_apercu_des_scenes(scene, fmt, clip):
     from core import scenes
 
     titre = "Un titre *très* long " * 6   # doit être réduit pour tenir dans l'image
+    lignes = "\n".join(f"{i * 1250} € | ligne numéro {i}" for i in range(1, 8))
     img = scenes.preview({"scene": scene, "format": fmt, "title": titre, "subtitle": "Sous-titre", "chip": "Ep. 1",
-                          "media": str(clip), "button": "S'abonner", "button_done": "Abonné", "badge": "Lien en bio"},
-                         3.0)
+                          "media": str(clip), "media2": str(clip), "items": lignes, "button": "S'abonner",
+                          "button_done": "Abonné", "badge": "Lien en bio"}, 3.0)
     assert img.size == scenes.FORMATS[fmt]
     assert img.getbbox() is not None
 
@@ -470,3 +472,54 @@ def test_scene_video_puis_timeline(clip, tmp_path):
     assert (info.width, info.height) == (1080, 1080) and abs(info.duration - 1.5) < 0.1 and info.has_audio
     df, lib, _dd = app.scene_to_timeline(out, app.empty_df(), [])
     assert app.clips_from_df(df)[0]["path"] == out and lib == [out]
+
+
+@pytest.mark.parametrize("texte, moitie", [("120 000 €", "105 000 €"), ("98,7 %", "86,4 %"), ("GPU", "GPU"),
+                                           ("1.250.000 vues", "1.093.750 vues")])
+def test_compteur_des_chiffres_cles(texte, moitie):
+    from core.scenes import count_up
+
+    assert count_up(texte, 0.5) == moitie and count_up(texte, 1) == texte
+
+
+def test_serie_avec_intro_fin_et_musique_generee(clip, tmp_path):
+    from core import batch
+
+    csv_file = tmp_path / "serie.csv"
+    csv_file.write_text("id;medias;intro;outro;musique;texte\n"
+                        f"ep1;{clip};Le *secret* | épisode 1;Abonne-toi;auto:suspense;Un deux trois quatre\n",
+                        encoding="utf-8")
+    rows = batch.read_csv(csv_file)
+    proj = batch.build_project({"format": "1:1"}, rows[0], tmp_path)
+    assert proj["intro"]["title"] == "Le *secret*" and proj["intro"]["subtitle"] == "épisode 1"
+    assert proj["outro"]["scene"] == "écran final" and proj["music"]["auto"] == "suspense"
+    files, log = batch.run_batch({"format": "1:1"}, rows, tmp_path, tmp_path / "sortie", quality="aperçu")
+    video = [f for f in files if f.endswith(".mp4")][0]
+    assert abs(ff.probe(video).duration - (3 + 3 + 4)) < 0.3, log   # intro 3 s + clip 3 s + fin 4 s
+    assert "Musique générée" in log and "Intro" in log
+    srt = Path([f for f in files if f.endswith(".srt")][0]).read_text(encoding="utf-8")
+    assert "00:00:03" in srt.split("-->")[0]   # les sous-titres commencent après l'intro
+
+
+def test_musique_generee():
+    from core import music
+
+    for mood in music.MOODS:
+        sig = music.synth(6, mood, seed=1)
+        assert sig.shape == (6 * music.SR, 2) and 0.2 < abs(sig).max() <= 1
+
+
+def test_choix_de_scene_dans_l_interface():
+    import app
+    from core.i18n import LANG
+
+    token = LANG.set("it")
+    try:
+        info, _btn, lines, media2 = app.scene_kind_changed("chiffres clés", "")
+        assert "numeri" in lines.value or "visualizzazioni" in lines.value
+        _i, _b, lines2, _m = app.scene_kind_changed("liste", lines.value)   # l'exemple est remplacé
+        assert lines2.value.startswith("Primo punto")
+        _i, _b, lines3, _m = app.scene_kind_changed("liste", "Mon texte à moi")   # un texte personnel est gardé
+        assert lines3.value == "Mon texte à moi"
+    finally:
+        LANG.reset(token)

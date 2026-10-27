@@ -1,0 +1,11 @@
+{
+  "_explication": "Réglages de requirements.lock. 'exclude_newer' : seuls les paquets publiés avant cette date sont utilisés (protection contre les paquets piégés tout juste publiés). 'exceptions' : paquets autorisés plus récents, uniquement pour des correctifs de sécurité. Fichier mis à jour par outils/maj_securite.py.",
+  "exclude_newer": "2026-10-02",
+  "exceptions": {
+    "pillow": "2026-10-23",
+    "certifi": "2026-10-23",
+    "brotli": "2026-10-23",
+    "opentelemetry-api": "2026-10-23",
+    "filelock": "2026-10-18"
+  }
+}

@@ -675,12 +675,160 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Une phrase qui donne envie de regarder", "A line that makes people want to watch",
      "Una frase che fa venire voglia di guardare", "Una frase que dé ganas de mirar"),
     ("Logo, image ou vidéo", "Logo, image or video", "Logo, immagine o video", "Logo, imagen o vídeo"),
-    ("Carte titre et écran final : ton logo ou une image. Téléphone : la vidéo ou l'image affichée dans l'écran.",
-     "Title card and end screen: your logo or an image. Phone: the video or image shown on the screen.",
+    ("Carte titre et écran final : ton logo ou une image. Téléphone : la vidéo ou l'image affichée dans l'écran. "
+     "Avant / après : l'image « avant ».",
+     "Title card and end screen: your logo or an image. Phone: the video or image shown on the screen. "
+     "Before / after: the “before” image.",
      "Scheda titolo e schermata finale: il tuo logo o un'immagine. Telefono: il video o l'immagine mostrati "
-     "sullo schermo.",
+     "sullo schermo. Prima / dopo: l'immagine « prima ».",
      "Tarjeta de título y pantalla final: tu logo o una imagen. Teléfono: el vídeo o la imagen que se ve en la "
-     "pantalla."),
+     "pantalla. Antes / después: la imagen «antes»."),
+    ("liste", "list", "elenco", "lista"),
+    ("chiffres clés", "key figures", "numeri chiave", "cifras clave"),
+    ("avant / après", "before / after", "prima / dopo", "antes / después"),
+    ("question choc", "hook question", "domanda shock", "pregunta impactante"),
+    ("Titre puis une liste de points qui apparaissent un à un avec une coche.",
+     "A title, then a list of points that appear one by one with a check mark.",
+     "Un titolo, poi un elenco di punti che appaiono uno alla volta con una spunta.",
+     "Un título y luego una lista de puntos que aparecen uno a uno con una marca."),
+    ("Tuiles « grand chiffre + légende » ; les nombres défilent jusqu'à leur valeur.",
+     "“Big number + caption” tiles; the numbers count up to their value.",
+     "Riquadri « numero grande + didascalia »; i numeri scorrono fino al loro valore.",
+     "Recuadros «cifra grande + leyenda»; los números van contando hasta su valor."),
+    ("Deux images ou vidéos : la seconde remplace la première par un balayage.",
+     "Two images or videos: the second one replaces the first with a wipe.",
+     "Due immagini o video: il secondo sostituisce il primo con una tendina.",
+     "Dos imágenes o vídeos: la segunda sustituye a la primera con un barrido."),
+    ("Une grande question qui tombe mot par mot, puis une phrase (« Dis-le en commentaire »).",
+     "A big question that drops in word by word, then a line (“Tell me in the comments”).",
+     "Una grande domanda che cade parola per parola, poi una frase (« Dimmelo nei commenti »).",
+     "Una gran pregunta que cae palabra por palabra y luego una frase («Dímelo en los comentarios»)."),
+    ("Premier point\nDeuxième point\nTroisième point", "First point\nSecond point\nThird point",
+     "Primo punto\nSecondo punto\nTerzo punto", "Primer punto\nSegundo punto\nTercer punto"),
+    ("120 000 | vues\n98 % | de satisfaction\n3 | minutes", "120,000 | views\n98% | satisfaction\n3 | minutes",
+     "120.000 | visualizzazioni\n98% | di soddisfazione\n3 | minuti", "120.000 | visitas\n98 % | de satisfacción\n3 | minutos"),
+    ("Avant\nAprès", "Before\nAfter", "Prima\nDopo", "Antes\nDespués"),
+    ("un point par ligne", "one point per line", "un punto per riga", "un punto por línea"),
+    ("« chiffre | légende », un par ligne : les nombres défilent jusqu'à leur valeur",
+     "“number | caption”, one per line: the numbers count up to their value",
+     "« numero | didascalia », uno per riga: i numeri scorrono fino al loro valore",
+     "«cifra | leyenda», una por línea: los números van contando hasta su valor"),
+    ("ligne 1 : étiquette de l'image « avant », ligne 2 : de l'image « après »",
+     "line 1: label of the “before” image, line 2: of the “after” image",
+     "riga 1: etichetta dell'immagine « prima », riga 2: dell'immagine « dopo »",
+     "línea 1: etiqueta de la imagen «antes», línea 2: de la imagen «después»"),
+    ("Lignes", "Lines", "Righe", "Líneas"),
+    ("Image ou vidéo « après »", "“After” image or video", "Immagine o video « dopo »", "Imagen o vídeo «después»"),
+    ("Intro et fin automatiques", "Automatic intro and ending", "Intro e finale automatici",
+     "Intro y final automáticos"),
+    ("Ou bien ajoute cette scène à chaque rendu du projet (et de la série), au format du projet :",
+     "Or add this scene to every render of the project (and of the batch), in the project format:",
+     "Oppure aggiungi questa scena a ogni render del progetto (e della serie), nel formato del progetto:",
+     "O añade esta escena a cada renderizado del proyecto (y de la serie), en el formato del proyecto:"),
+    ("Utiliser comme intro du projet", "Use as project intro", "Usa come intro del progetto",
+     "Usar como intro del proyecto"),
+    ("Utiliser comme fin du projet", "Use as project ending", "Usa come finale del progetto",
+     "Usar como final del proyecto"),
+    ("Intro du projet : {kind}", "Project intro: {kind}", "Intro del progetto: {kind}", "Intro del proyecto: {kind}"),
+    ("Fin du projet : {kind}", "Project ending: {kind}", "Finale del progetto: {kind}", "Final del proyecto: {kind}"),
+    ("Intro", "Intro", "Intro", "Intro"),
+    ("Intro et fin (scènes animées)", "Intro and ending (animated scenes)", "Intro e finale (scene animate)",
+     "Intro y final (escenas animadas)"),
+    ("Choisis-les dans l'onglet « Scènes animées » (boutons « Utiliser comme intro / fin du projet ») : elles sont "
+     "ajoutées à chaque rendu, au format du projet, et passent aussi dans les modèles de série.",
+     "Pick them in the “Animated scenes” tab (“Use as project intro / ending” buttons): they are added to every "
+     "render, in the project format, and are also saved in batch templates.",
+     "Sceglile nella scheda « Scene animate » (pulsanti « Usa come intro / finale del progetto »): vengono "
+     "aggiunte a ogni render, nel formato del progetto, e finiscono anche nei modelli di serie.",
+     "Elígelas en la pestaña «Escenas animadas» (botones «Usar como intro / final del proyecto»): se añaden a "
+     "cada renderizado, en el formato del proyecto, y también se guardan en las plantillas de serie."),
+    ("Retirer l'intro", "Remove intro", "Togli l'intro", "Quitar la intro"),
+    ("Retirer la fin", "Remove ending", "Togli il finale", "Quitar el final"),
+    ("Scène animée : {kind}", "Animated scene: {kind}", "Scena animata: {kind}", "Escena animada: {kind}"),
+    ("🎬 {what} : {kind} ({dur:g} s)", "🎬 {what}: {kind} ({dur:g} s)", "🎬 {what}: {kind} ({dur:g} s)",
+     "🎬 {what}: {kind} ({dur:g} s)"),
+    # ---- ma voix : clonage local (core/voice.py, voice_clone_worker.py)
+    ("Ma voix (clonage local)", "My voice (local cloning)", "La mia voce (clonazione locale)",
+     "Mi voz (clonación local)"),
+    ("**Ma voix** : ta propre voix, recréée sur ton PC à partir d'un enregistrement de 10 à 60 s. Rien n'est envoyé "
+     "sur Internet. Ne clone que ta voix, ou celle d'une personne qui t'a donné son accord.",
+     "**My voice**: your own voice, recreated on your PC from a 10–60 s recording. Nothing is sent to the Internet. "
+     "Only clone your own voice, or that of someone who gave you their consent.",
+     "**La mia voce**: la tua voce, ricreata sul tuo PC da una registrazione di 10–60 s. Niente viene inviato su "
+     "Internet. Clona solo la tua voce, o quella di una persona che ti ha dato il suo consenso.",
+     "**Mi voz**: tu propia voz, recreada en tu PC a partir de una grabación de 10 a 60 s. No se envía nada a "
+     "Internet. Clona solo tu voz, o la de una persona que te haya dado su consentimiento."),
+    ("Mes voix", "My voices", "Le mie voci", "Mis voces"),
+    ("Ma voix", "My voice", "La mia voce", "Mi voz"),
+    ("Expressivité", "Expressiveness", "Espressività", "Expresividad"),
+    ("0,5 = naturel ; plus haut = plus d'émotion (et plus rapide)", "0.5 = natural; higher = more emotion (and faster)",
+     "0,5 = naturale; più alto = più emozione (e più veloce)", "0,5 = natural; más alto = más emoción (y más rápido)"),
+    ("Rythme", "Pace", "Ritmo", "Ritmo"),
+    ("plus bas = plus posé, conseillé si la voix parle trop vite", "lower = calmer, useful if the voice speaks too fast",
+     "più basso = più pacato, utile se la voce parla troppo veloce",
+     "más bajo = más pausado, útil si la voz habla demasiado rápido"),
+    ("Créer une nouvelle voix", "Create a new voice", "Crea una nuova voce", "Crear una voz nueva"),
+    ("Enregistrement de la voix (WAV ou MP3, 10 à 60 s)", "Voice recording (WAV or MP3, 10 to 60 s)",
+     "Registrazione della voce (WAV o MP3, da 10 a 60 s)", "Grabación de la voz (WAV o MP3, de 10 a 60 s)"),
+    ("Nom de la voix", "Voice name", "Nome della voce", "Nombre de la voz"),
+    ("C'est ma voix, ou j'ai l'accord de la personne enregistrée", "It's my voice, or I have the recorded person's consent",
+     "È la mia voce, o ho il consenso della persona registrata", "Es mi voz, o tengo el consentimiento de la persona grabada"),
+    ("Créer la voix", "Create the voice", "Crea la voce", "Crear la voz"),
+    ("Voix « {name} » créée.", "Voice “{name}” created.", "Voce « {name} » creata.", "Voz «{name}» creada."),
+    ("Coche la case : on ne clone que sa propre voix, ou celle d'une personne qui a donné son accord.",
+     "Tick the box: only clone your own voice, or that of someone who gave their consent.",
+     "Spunta la casella: si clona solo la propria voce, o quella di una persona che ha dato il consenso.",
+     "Marca la casilla: solo se clona la propia voz, o la de una persona que haya dado su consentimiento."),
+    ("Crée d'abord ta voix (« Créer une nouvelle voix »), puis choisis-la dans la liste.",
+     "First create your voice (“Create a new voice”), then pick it in the list.",
+     "Crea prima la tua voce (« Crea una nuova voce »), poi sceglila nell'elenco.",
+     "Crea primero tu voz («Crear una voz nueva») y luego elígela en la lista."),
+    ("Donne un nom à la voix.", "Give the voice a name.", "Dai un nome alla voce.", "Ponle un nombre a la voz."),
+    ("Ajoute un enregistrement audio de ta voix (WAV ou MP3, 10 à 60 s).",
+     "Add an audio recording of your voice (WAV or MP3, 10 to 60 s).",
+     "Aggiungi una registrazione audio della tua voce (WAV o MP3, da 10 a 60 s).",
+     "Añade una grabación de audio de tu voz (WAV o MP3, de 10 a 60 s)."),
+    ("L'enregistrement est trop court : il faut au moins 10 secondes de voix.",
+     "The recording is too short: at least 10 seconds of voice are needed.",
+     "La registrazione è troppo corta: servono almeno 10 secondi di voce.",
+     "La grabación es demasiado corta: hacen falta al menos 10 segundos de voz."),
+    ("Le clonage de voix n'est pas encore installé : clique sur « Installer le clonage de voix » (environ 5 Go à "
+     "télécharger, une seule fois).",
+     "Voice cloning is not installed yet: click “Install voice cloning” (about 5 GB to download, only once).",
+     "La clonazione della voce non è ancora installata: clicca su « Installa la clonazione della voce » (circa 5 GB "
+     "da scaricare, una sola volta).",
+     "La clonación de voz todavía no está instalada: haz clic en «Instalar la clonación de voz» (unos 5 GB que "
+     "descargar, una sola vez)."),
+    ("Installer le clonage de voix (≈ 5 Go, une seule fois)", "Install voice cloning (≈ 5 GB, only once)",
+     "Installa la clonazione della voce (≈ 5 GB, una sola volta)", "Instalar la clonación de voz (≈ 5 GB, una sola vez)"),
+    ("Installation du clonage de voix (plusieurs minutes)", "Installing voice cloning (several minutes)",
+     "Installazione della clonazione della voce (alcuni minuti)", "Instalando la clonación de voz (varios minutos)"),
+    ("Installation du clonage impossible : {err}", "Voice cloning could not be installed: {err}",
+     "Impossibile installare la clonazione: {err}", "No se ha podido instalar la clonación: {err}"),
+    ("Clonage de voix installé.", "Voice cloning installed.", "Clonazione della voce installata.",
+     "Clonación de voz instalada."),
+    ("La voix clonée n'a pas pu être générée : {err}", "The cloned voice could not be generated: {err}",
+     "Non è stato possibile generare la voce clonata: {err}", "No se ha podido generar la voz clonada: {err}"),
+    ("Voix introuvable : {name}", "Voice not found: {name}", "Voce non trovata: {name}", "Voz no encontrada: {name}"),
+    ("le premier usage télécharge le modèle (environ 3 Go)", "first use downloads the model (about 3 GB)",
+     "il primo utilizzo scarica il modello (circa 3 GB)", "el primer uso descarga el modelo (unos 3 GB)"),
+    # ---- musique générée (core/music.py)
+    ("calme", "calm", "calma", "tranquila"),
+    ("inspirant", "inspiring", "ispirante", "inspiradora"),
+    ("énergique", "energetic", "energica", "enérgica"),
+    ("suspense", "suspense", "suspense", "suspense"),
+    ("Musique générée (libre de droits)", "Generated music (royalty-free)", "Musica generata (senza diritti)",
+     "Música generada (libre de derechos)"),
+    ("utilisée s'il n'y a pas de fichier de musique ; composée à la durée exacte de la vidéo",
+     "used when there is no music file; composed to the exact length of the video",
+     "usata se non c'è un file di musica; composta alla durata esatta del video",
+     "se usa si no hay archivo de música; compuesta a la duración exacta del vídeo"),
+    ("Écouter 12 s", "Listen 12 s", "Ascolta 12 s", "Escuchar 12 s"),
+    ("Extrait", "Sample", "Estratto", "Fragmento"),
+    ("Choisis une ambiance de musique.", "Choose a music mood.", "Scegli un'atmosfera musicale.",
+     "Elige un ambiente musical."),
+    ("🎵 Musique générée : {mood}, {dur:.0f} s", "🎵 Generated music: {mood}, {dur:.0f} s",
+     "🎵 Musica generata: {mood}, {dur:.0f} s", "🎵 Música generada: {mood}, {dur:.0f} s"),
     ("Texte du bouton", "Button text", "Testo del pulsante", "Texto del botón"),
     ("S'abonner", "Subscribe", "Iscriviti", "Suscribirse"),
     ("Texte après le clic (vide = pas de clic)", "Text after the click (empty = no click)",
@@ -943,7 +1091,7 @@ HELP = {
 
 ### Shorts en série
 Prépare un modèle (onglet Montage → « Enregistrer comme modèle », ou un des modèles fournis), puis un tableau CSV
-où **une ligne = une vidéo**. Colonnes : `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`.
+où **une ligne = une vidéo**. Colonnes : `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` et `outro` : « Titre | sous-titre » d'une scène animée d'ouverture et de fin (style du modèle) ; `musique` : un fichier, ou `auto` / `auto:suspense` pour une musique générée.
 Dans `medias`, sépare les fichiers par `|`, indique un dossier entier, ou un motif comme `images/*.jpg`.
 Si la ligne contient des images et une voix off, les images sont réparties automatiquement sur la durée de la voix.
 
@@ -956,10 +1104,15 @@ Si la ligne contient des images et une voix off, les images sont réparties auto
 Un fichier `.srt` est toujours créé à côté de la vidéo : tu peux l'envoyer sur YouTube.
 
 ### Scènes animées
-Onglet **Scènes animées** : **carte titre** (logo qui rebondit, grand titre, trait de couleur), **téléphone** (ta vidéo
-ou ton image dans un téléphone) et **écran final** (bouton « S'abonner » qui se fait cliquer, badge « Lien en bio »).
-Remplis les textes (un mot entre \*étoiles\* prend la couleur d'accent), choisis le format et les couleurs, regarde
-l'aperçu, clique sur « Créer la scène » puis « Ajouter à la timeline ».
+Onglet **Scènes animées** : **carte titre**, **téléphone** (ta vidéo dans un téléphone), **écran final** (bouton
+« S'abonner » qui se fait cliquer), **liste** à cocher, **chiffres clés** qui défilent, **avant / après** avec balayage
+et **question choc** mot par mot. Remplis les textes (un mot entre \\*étoiles\\* prend la couleur d'accent), regarde
+l'aperçu, puis « Créer la scène » et « Ajouter à la timeline ». Avec « Utiliser comme intro / fin du projet », la
+scène est ajoutée automatiquement à chaque rendu, au format du projet (et dans les modèles de série).
+
+### Musique générée
+Réglages → Audio → **Musique générée** : calme, inspirant, énergique ou suspense. Libre de droits, composée sur ton
+PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. « Écouter 12 s » donne un extrait.
 
 ### Calques et photos animées
 - **Image ou vidéo incrustée** (section 4) : capture d'écran, sticker, logo ou vidéo par-dessus le montage
@@ -977,6 +1130,7 @@ Onglet **Voix off** : écris le texte (scènes séparées par `---`), choisis **
 **ElevenLabs** (ta clé API, voix très naturelles et minutage exact des sous-titres), puis « Utiliser dans l'onglet Montage ».
 En série, coche « Créer la voix off à partir de la colonne texte ». Une scène générée avec la mauvaise voix se corrige
 avec « Remplacer la voix d'un clip existant ».
+**Ma voix (clonage local)** : enregistre 30 à 60 s de ta voix (pièce calme, ton naturel), crée la voix une fois, puis choisis-la comme n'importe quelle autre. Tout reste sur ton PC ; la première utilisation installe environ 5 Go. Ne clone que ta voix, ou avec l'accord de la personne.
 
 ### Outils rapides
 - **Convertisseur de temps** (Inspecteur) : tape `90`, `1:30`, `1h 2m 3s` ou `2,5 min`, puis « → Début » / « → Fin ».
@@ -997,7 +1151,7 @@ En cas d'échec de l'encodeur GPU, le logiciel repasse automatiquement sur le CP
 
 ### Batch Shorts
 Prepare a template (Editor tab → “Save settings as batch template”, or one of the bundled templates), then a CSV table
-where **one row = one video**. Columns: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
+where **one row = one video**. Columns: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` and `outro`: “Title | subtitle” of an opening and closing animated scene (template style); `musique`: a file, or `auto` / `auto:suspense` for generated music
 (column names stay in French). In `medias`, separate files with `|`, give a whole folder, or a pattern like `images/*.jpg`.
 If a row contains images and a voice-over, the images are spread automatically over the length of the voice.
 
@@ -1010,10 +1164,15 @@ If a row contains images and a voice-over, the images are spread automatically o
 A `.srt` file is always created next to the video: you can upload it to YouTube.
 
 ### Animated scenes
-**Animated scenes** tab: **title card** (bouncing logo, big title, color line), **phone** (your video or image inside a
-phone) and **end screen** (a “Subscribe” button that gets clicked, “Link in bio” badge). Fill in the texts (a word
-between \*asterisks\* takes the accent color), pick the format and colors, check the preview, click “Create the
-scene” then “Add to timeline”.
+**Animated scenes** tab: **title card**, **phone** (your video inside a phone), **end screen** (a “Subscribe” button
+that gets clicked), check **list**, counting **key figures**, **before / after** with a wipe and a word-by-word **hook
+question**. Fill in the texts (a word between \\*asterisks\\* takes the accent color), check the preview, then
+“Create the scene” and “Add to timeline”. With “Use as project intro / ending”, the scene is added automatically to
+every render, in the project format (and in batch templates).
+
+### Generated music
+Settings → Audio → **Generated music**: calm, inspiring, energetic or suspense. Royalty-free, composed on your PC to
+the exact length of the video, and lowered while someone speaks. “Listen 12 s” plays a sample.
 
 ### Layers and animated photos
 - **Image or video overlay** (section 4): screenshot, sticker, logo or video on top of the edit (picture-in-picture).
@@ -1030,6 +1189,7 @@ scene” then “Add to timeline”.
 **ElevenLabs** (your API key, very natural voices and exact subtitle timing), then “Use in the Editor tab”.
 In batch mode, tick “Create the voice-over from the texte column”. A scene generated with the wrong voice can be fixed
 with “Replace the voice of an existing clip”.
+**My voice (local cloning)**: record 30 to 60 s of your voice (quiet room, natural tone), create the voice once, then pick it like any other. Everything stays on your PC; first use installs about 5 GB. Only clone your own voice, or with the person's consent.
 
 ### Quick tools
 - **Time converter** (Inspector): type `90`, `1:30`, `1h 2m 3s` or `2.5 min`, then “→ Start” / “→ End”.
@@ -1050,7 +1210,7 @@ If the GPU encoder fails, the software automatically falls back to the CPU.
 
 ### Shorts in serie
 Prepara un modello (scheda Montaggio → «Salva le impostazioni come modello di serie», oppure uno dei modelli forniti),
-poi una tabella CSV in cui **una riga = un video**. Colonne: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
+poi una tabella CSV in cui **una riga = un video**. Colonne: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` e `outro`: « Titolo | sottotitolo » di una scena animata di apertura e di chiusura (stile del modello); `musique`: un file, oppure `auto` / `auto:suspense` per una musica generata
 (i nomi delle colonne restano in francese). In `medias`, separa i file con `|`, indica un'intera cartella o un motivo come `images/*.jpg`.
 Se la riga contiene immagini e una voce fuori campo, le immagini vengono distribuite automaticamente sulla durata della voce.
 
@@ -1063,10 +1223,15 @@ Se la riga contiene immagini e una voce fuori campo, le immagini vengono distrib
 Accanto al video viene sempre creato un file `.srt`: puoi caricarlo su YouTube.
 
 ### Scene animate
-Scheda **Scene animate**: **scheda titolo** (logo che rimbalza, titolo grande, linea colorata), **telefono** (il tuo
-video o la tua immagine dentro un telefono) e **schermata finale** (pulsante « Iscriviti » che viene cliccato, badge
-« Link in bio »). Compila i testi (una parola tra \*asterischi\* prende il colore d'accento), scegli formato e colori,
-guarda l'anteprima, clicca su « Crea la scena » e poi su « Aggiungi alla timeline ».
+Scheda **Scene animate**: **scheda titolo**, **telefono** (il tuo video dentro un telefono), **schermata finale**
+(pulsante « Iscriviti » che viene cliccato), **elenco** con spunte, **numeri chiave** che scorrono, **prima / dopo** con
+tendina e **domanda shock** parola per parola. Compila i testi (una parola tra \\*asterischi\\* prende il colore
+d'accento), guarda l'anteprima, poi « Crea la scena » e « Aggiungi alla timeline ». Con « Usa come intro / finale del
+progetto », la scena viene aggiunta automaticamente a ogni render, nel formato del progetto (e nei modelli di serie).
+
+### Musica generata
+Impostazioni → Audio → **Musica generata**: calma, ispirante, energica o suspense. Senza diritti, composta sul tuo PC
+alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s » fa sentire un estratto.
 
 ### Livelli e foto animate
 - **Immagine o video sovrapposto** (sezione 4): screenshot, sticker, logo o video sopra il montaggio
@@ -1084,6 +1249,7 @@ Scheda **Voce fuori campo**: scrivi il testo (scene separate da `---`), scegli *
 **ElevenLabs** (la tua chiave API, voci molto naturali e sottotitoli con tempi esatti), poi «Usa nella scheda Montaggio».
 In serie, spunta «Crea la voce fuori campo dalla colonna texte». Una scena generata con la voce sbagliata si corregge
 con «Sostituisci la voce di una clip esistente».
+**La mia voce (clonazione locale)**: registra da 30 a 60 s della tua voce (stanza silenziosa, tono naturale), crea la voce una volta, poi sceglila come le altre. Tutto resta sul tuo PC; il primo utilizzo installa circa 5 GB. Clona solo la tua voce, o con il consenso della persona.
 
 ### Strumenti rapidi
 - **Convertitore di tempo** (Ispettore): scrivi `90`, `1:30`, `1h 2m 3s` o `2,5 min`, poi «→ Inizio» / «→ Fine».
@@ -1104,7 +1270,7 @@ Se l'encoder GPU non funziona, il programma torna automaticamente alla CPU.
 
 ### Shorts en serie
 Prepara una plantilla (pestaña Edición → «Guardar los ajustes como plantilla de serie», o una de las plantillas incluidas),
-y luego una tabla CSV donde **una fila = un vídeo**. Columnas: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage`
+y luego una tabla CSV donde **una fila = un vídeo**. Columnas: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` y `outro`: «Título | subtítulo» de una escena animada de apertura y de cierre (estilo de la plantilla); `musique`: un archivo, o `auto` / `auto:suspense` para una música generada
 (los nombres de las columnas se quedan en francés). En `medias`, separa los archivos con `|`, indica una carpeta entera o un patrón como `images/*.jpg`.
 Si la fila contiene imágenes y una voz en off, las imágenes se reparten automáticamente durante la voz.
 
@@ -1117,10 +1283,16 @@ Si la fila contiene imágenes y una voz en off, las imágenes se reparten autom�
 Siempre se crea un archivo `.srt` junto al vídeo: puedes subirlo a YouTube.
 
 ### Escenas animadas
-Pestaña **Escenas animadas**: **tarjeta de título** (logo que rebota, título grande, línea de color), **teléfono** (tu
-vídeo o tu imagen dentro de un teléfono) y **pantalla final** (botón «Suscribirse» que se pulsa, distintivo «Link en la
-bio»). Rellena los textos (una palabra entre \*asteriscos\* toma el color de acento), elige formato y colores, mira la
-vista previa, pulsa «Crear la escena» y después «Añadir a la línea de tiempo».
+Pestaña **Escenas animadas**: **tarjeta de título**, **teléfono** (tu vídeo dentro de un teléfono), **pantalla final**
+(botón «Suscribirse» que se pulsa), **lista** con marcas, **cifras clave** que van contando, **antes / después** con
+barrido y **pregunta impactante** palabra por palabra. Rellena los textos (una palabra entre \\*asteriscos\\* toma el
+color de acento), mira la vista previa y luego «Crear la escena» y «Añadir a la línea de tiempo». Con «Usar como
+intro / final del proyecto», la escena se añade automáticamente a cada renderizado, en el formato del proyecto (y en
+las plantillas de serie).
+
+### Música generada
+Ajustes → Audio → **Música generada**: tranquila, inspiradora, enérgica o suspense. Libre de derechos, compuesta en tu
+PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12 s» reproduce un fragmento.
 
 ### Capas y fotos animadas
 - **Imagen o vídeo superpuesto** (sección 4): captura de pantalla, sticker, logo o vídeo encima del montaje
@@ -1138,6 +1310,7 @@ Pestaña **Voz en off**: escribe el texto (escenas separadas por `---`), elige *
 **ElevenLabs** (tu clave API, voces muy naturales y subtítulos con tiempos exactos), y luego «Usar en la pestaña Edición».
 En serie, marca «Crear la voz en off a partir de la columna texte». Una escena generada con la voz equivocada se corrige
 con «Reemplazar la voz de un clip existente».
+**Mi voz (clonación local)**: graba de 30 a 60 s de tu voz (habitación tranquila, tono natural), crea la voz una vez y elígela como cualquier otra. Todo se queda en tu PC; el primer uso instala unos 5 GB. Clona solo tu voz, o con el consentimiento de la persona.
 
 ### Herramientas rápidas
 - **Conversor de tiempo** (Inspector): escribe `90`, `1:30`, `1h 2m 3s` o `2,5 min`, y luego «→ Inicio» / «→ Fin».
