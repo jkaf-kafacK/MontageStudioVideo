@@ -1,0 +1,16 @@
+{
+  "layout": "liste à gauche",
+  "order": "décroissant",
+  "style": {
+    "font": "Anton-Regular.ttf",
+    "title_size": 96,
+    "list_size": 44,
+    "text_color": "#FFFFFF",
+    "dim_color": "#6B7280",
+    "highlight_color": "#38BDF8",
+    "badge_color": "#F43F5E",
+    "background": "#000000",
+    "stroke_width": 4,
+    "stroke_color": "#000000"
+  }
+}

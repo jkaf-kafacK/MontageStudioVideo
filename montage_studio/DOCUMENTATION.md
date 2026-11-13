@@ -7,6 +7,8 @@ Ce document explique **ce que fait l'application, comment s'en servir, comment e
 
 > Astuce : dans VS Code, ouvre ce fichier puis appuie sur **Ctrl+Shift+V** pour l'afficher mis en forme.
 
+> Pour apprendre à **utiliser** l'application pas à pas, commence plutôt par le [tutoriel](TUTORIEL.md).
+
 ## Sommaire
 
 **Partie 1 : explications**
@@ -53,7 +55,9 @@ L'interface s'affiche dans le navigateur, mais c'est ton PC qui fait tout le tra
 rogner, bandes noires), 8 transitions, suppression automatique des silences, voix off, musique qui baisse quand on parle
 (*ducking*), volume normalisé pour YouTube (-14 LUFS), images animées (effet Ken Burns), titre, sous-titres avec mot
 surligné (karaoké), logo en filigrane, accélération GPU, miniatures YouTube, conversion vidéo → Short en un clic,
-extraction MP3, transcription `.srt`.
+extraction MP3, transcription `.srt`, calques (incrustations et textes animés), scènes animées (intro, écran final…),
+Shorts « Top N » (onglet Classement), musique générée libre de droits, voix off (Piper, ElevenLabs, ta propre voix
+clonée en local), effacement de logo.
 
 ---
 
@@ -92,7 +96,9 @@ fichiers de l'utilisateur dans `Documents\Montage Studio Video` et les fichiers 
 
 ## 3. Utiliser l'application
 
-L'interface a 4 onglets. Le sélecteur **FR · EN · IT · ES** en haut à droite change la langue.
+L'interface a 7 onglets : Montage, Scènes animées, Classement, Voix off, Shorts en série, Outils rapides, Aide.
+Le sélecteur **FR · EN · IT · ES** en haut à droite change la langue. Le [tutoriel](TUTORIEL.md) les parcourt avec un
+exercice guidé chacun.
 
 ### Onglet « Montage »
 
@@ -100,16 +106,34 @@ L'interface a 4 onglets. Le sélecteur **FR · EN · IT · ES** en haut à droit
 |---|---|
 | **1 · Médiathèque** | Importer des vidéos et images (glisser-déposer, ou chemin d'un dossier du PC). Les fichiers sont copiés dans `medias/`. |
 | **2 · Inspecteur** | Choisir un média, déplacer le curseur image par image, fixer **Début** et **Fin**, puis « Ajouter l'extrait à la timeline ». |
-| **3 · Timeline** | Tableau modifiable : `ordre`, `fichier`, `début`, `fin`, `vitesse` (0,5 à 4), `volume` (0 à 2), `cadrage_x` (0 = gauche, 1 = droite), `durée_img`. |
-| **Réglages (à droite)** | Format et rendu, Audio, Images fixes, Titre, Sous-titres, Logo. « Aperçu du texte » montre le titre et les sous-titres instantanément. |
+| **3 · Timeline** | Tableau modifiable : `ordre`, `fichier`, `début`, `fin`, `vitesse` (0,5 à 4), `volume` (0 à 2), `cadrage_x` (0 = gauche, 1 = droite), `durée_img`, `recadrage_%` (gauche/haut/droite/bas), `mouvement` (photo). |
+| **4 · Calques** | Image ou vidéo incrustée et textes animés par-dessus le montage, avec heures, position, taille et entrée animée (fondu, montée, zoom). Code : `core/layers.py`. |
+| **Réglages (à droite)** | Intro et fin (scènes animées), Format et rendu, Audio (dont la musique générée, `core/music.py`), Images fixes, Titre, Sous-titres, Logo. « Aperçu du texte et des calques » montre le titre, les sous-titres et les calques instantanément, au moment choisi. |
 | **En bas** | **Aperçu rapide** (demi-résolution, 3 à 5× plus rapide) et **Exporter la vidéo**. Le résultat va dans `sorties/` avec un `.srt` à côté. |
 | **Projets et modèles** | Enregistrer / charger un projet (`projets/*.json`), enregistrer les réglages comme modèle (`templates/*.json`). |
 
+### Onglet « Scènes animées »
+Sept animations prêtes à remplir : carte titre, téléphone, écran final, liste, chiffres clés, avant / après, question
+choc. Un mot entre `*étoiles*` prend la couleur d'accent. « Créer la scène (vidéo) » fabrique un MP4
+(`sorties/scenes/`), « Ajouter à la timeline » le place à la fin du montage, « Utiliser comme intro / fin du projet »
+l'ajoute à chaque rendu au format du projet (et dans les modèles de série). Code : `core/scenes.py`.
+
+### Onglet « Classement »
+Short 9:16 « Top N » de 2 à 10 clips : un titre (sur deux lignes avec Entrée, mots surlignés au choix), une liste
+numérotée qui se remplit clip après clip, le clip en cours avec son rang. 4 préréglages (`templates/classement/`),
+4 mises en page (liste à gauche, liste en haut, plein écran, bandeau), ordre décroissant ou croissant. Aperçu image
+par rang, aperçu vidéo rapide, export dans `sorties/classements/`, enregistrement en JSON. Le classement est traduit
+en projet standard rendu par `render_project` : pas de second moteur. Code : `core/ranking.py`, tests :
+`tests/test_classement.py`, format JSON : voir le README.
+
 ### Onglet « Voix off »
-Écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou **ElevenLabs** (ta clé API),
-puis « Générer la voix » : une piste par scène, une piste complète et un `.srt`. « Utiliser dans l'onglet Montage »
-règle d'un coup la voix off, les sous-titres et la répartition des images. L'accordéon « Remplacer la voix d'un clip
-existant » corrige une scène générée avec la mauvaise voix. Code : `core/voice.py`, tests : `tests/test_voix.py`.
+Écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne), **ElevenLabs** (ta clé API) ou
+**Ma voix** (ta voix clonée sur ton PC, dans l'environnement séparé `.venv_clonage`), puis « Générer la voix » : une
+piste par scène, une piste complète et un `.srt`. Les phrases sont lues séparément avec des pauses adaptées à la
+ponctuation, et un dictionnaire de prononciation corrige les mots mal dits (`core/speech.py`). « Utiliser dans
+l'onglet Montage » règle d'un coup la voix off, les sous-titres et la répartition des images. L'accordéon
+« Remplacer la voix d'un clip existant » corrige une scène générée avec la mauvaise voix. Code : `core/voice.py`,
+`core/voice_clone_worker.py`, tests : `tests/test_voix.py`.
 
 ### Onglet « Shorts en série »
 Un modèle (le style) + un tableau CSV ou un dossier (le contenu) = autant de vidéos que de lignes. Voir [section 8](#8-la-production-en-série-csv).
@@ -119,9 +143,12 @@ Un modèle (le style) + un tableau CSV ou un dossier (le contenu) = autant de vi
 - **B · Vidéo → Short 9:16** : conversion en un clic (cadrage + silences coupés).
 - **C · Extraire l'audio en MP3.**
 - **D · Transcrire en `.srt`** avec Whisper.
+- **E · Effacer un logo** : efface ou floute une zone sur toute la vidéo (vidéos dont on a les droits).
+- **F · Logo MSV** : ajoute le logo en mémorisant sa position, pour l'enlever ensuite exactement.
 
 ### Onglet « Aide »
-Rappel des étapes, du format CSV, des modes de sous-titres et des conseils de performance.
+Rappel des étapes, du format CSV, des modes de sous-titres, des scènes, des calques, du classement, de la voix off
+et des conseils de performance (texte `HELP` de `core/i18n.py`, dans les 4 langues).
 
 ---
 
@@ -135,6 +162,7 @@ montage_studio/
 ├── lancer_mac_linux.sh     ← lanceur macOS / Linux
 ├── requirements.txt        ← liste des bibliothèques Python nécessaires
 ├── README.md               ← présentation courte
+├── TUTORIEL.md             ← prise en main pas à pas, onglet par onglet
 ├── DOCUMENTATION.md        ← ce document
 │
 ├── core/                   ← le « moteur », indépendant de l'interface
@@ -144,12 +172,23 @@ montage_studio/
 │   ├── subs.py             ← sous-titres : SRT, minutage, Whisper
 │   ├── tools.py            ← silences, capture d'image, miniatures, audio
 │   ├── batch.py            ← production en série (CSV / dossier)
+│   ├── layers.py           ← calques : incrustations et textes animés
+│   ├── scenes.py           ← scènes animées (intro, écran final, liste…)
+│   ├── ranking.py          ← classement « Top N » → projet standard
+│   ├── music.py            ← musique générée libre de droits
+│   ├── voice.py            ← voix off : Piper, ElevenLabs, Ma voix
+│   ├── voice_clone_worker.py ← clonage local, lancé dans .venv_clonage
+│   ├── speech.py           ← texte parlé : pauses, nombres, prononciation
+│   ├── errors.py           ← messages d'erreur « problème + que faire »
+│   ├── paths.py            ← emplacement des dossiers de données
+│   ├── version.py          ← numéro de version
 │   └── i18n.py             ← toutes les traductions FR / EN / IT / ES
 │
 ├── assets/                 ← logo (SVG, PNG, ICO) et son script de génération
 ├── fonts/                  ← polices Anton et Montserrat (licence OFL)
 ├── templates/              ← modèles de style prêts à l'emploi (JSON)
-├── exemples/               ← exemples de tableaux CSV pour la série
+│   └── classement/         ← préréglages du classement (Néon sombre, Clair, Brut rouge, Podium)
+├── exemples/               ← exemples de CSV pour la série et de classement JSON
 │
 ├── medias/                 ← (créé auto) copies des fichiers importés
 ├── projets/                ← (créé auto) projets enregistrés
@@ -198,7 +237,15 @@ série peuvent réutiliser exactement le même moteur.
 | `core/tools.py` | Détecte les silences, capture une image, fabrique une miniature, extrait l'audio. | `detect_speech_ranges()`, `grab_frame()`, `make_thumbnail()` |
 | `core/batch.py` | Lit un CSV (ou un dossier) et rend une vidéo par ligne avec le même modèle. | `read_csv()`, `build_project()`, `run_batch()` |
 | `core/i18n.py` | Table de traduction : le texte français sert de clé. | `_()`, `opts()`, `help_text()`, `pick_lang()` |
-| `cli.py` | Commandes `rendu`, `serie`, `dossier`. | `main()` |
+| `core/layers.py` | Calques (incrustations, textes animés) : normalisation, aperçu et filtres FFmpeg. | `norm_overlay()`, `norm_text()`, `draw_layers()`, `build()` |
+| `core/scenes.py` | Scènes animées dessinées image par image avec Pillow. | `preview()`, `render_scene()` |
+| `core/ranking.py` | Classement « Top N » : normalise la description JSON, dessine titre, liste et badge, puis la traduit en projet standard. | `normaliser()`, `apercu()`, `dessiner_etat()`, `rendre()` |
+| `core/music.py` | Musique générée à la durée exacte de la vidéo (4 ambiances). | `synth()`, `generate()` |
+| `core/voice.py` | Voix off (Piper, ElevenLabs, Ma voix), sous-titres de la voix, remplacement de voix. | `clone_voices()`, `load_config()` |
+| `core/speech.py` | Prépare le texte lu : phrases, pauses, nombres et sigles en lettres, dictionnaire de prononciation. | |
+| `core/errors.py` | Transforme une exception en message « ce qui s'est passé + que faire ». | `user_message()` |
+| `core/paths.py` | Dossiers de données selon le mode (dépôt, installé, `MSV_DATA_DIR`). | `MEDIA_DIR`, `OUT_DIR`, `template_names()` |
+| `cli.py` | Commandes `rendu`, `serie`, `dossier`, `voix`, `voix-liste`, `classement`. | `main()` |
 | `assets/make_logo.py` | Génère le logo dans tous les formats à partir d'une seule géométrie. | `mark_svg()`, `mark_png()`, `lockup_png()` |
 
 ---
@@ -359,9 +406,17 @@ Pratique pour automatiser (sans interface) :
 
 # une vidéo par fichier d'un dossier (59 s max)
 .venv\Scripts\python.exe cli.py dossier templates/short_clip_parle.json D:/rushs --duree 59 --sortie sorties/clips
+
+# un Short « Top N » à partir d'un classement JSON (chemins relatifs au dossier du JSON)
+.venv\Scripts\python.exe cli.py classement exemples/classement_exemple.json -o sorties/top5.mp4 --qualite aperçu
+
+# une voix off à partir d'un texte, et la liste des voix disponibles
+.venv\Scripts\python.exe cli.py voix script.txt --voix "Pierre — homme, français" --nom histoire_07
+.venv\Scripts\python.exe cli.py voix-liste
 ```
 
-Options : `--qualite aperçu|standard|haute`, `--titre-nom` (titre = nom du fichier, mode dossier).
+Options : `--qualite aperçu|standard|haute`, `--titre-nom` (titre = nom du fichier, mode dossier), `--melanger`
+(classement : clips dans un ordre au hasard).
 Options de `app.py` : `--port 7870` (port précis), `--no-browser` (ne pas ouvrir le navigateur).
 
 ---

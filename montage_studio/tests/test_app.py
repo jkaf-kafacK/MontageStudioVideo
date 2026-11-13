@@ -523,3 +523,46 @@ def test_choix_de_scene_dans_l_interface():
         assert lines3.value == "Mon texte à moi"
     finally:
         LANG.reset(token)
+
+
+def _lancer_sans_blocage(code: str, delai: float) -> subprocess.CompletedProcess:
+    """Exécute `code` dans un autre processus ; au-delà de `delai`, tue tout l'arbre (FFmpeg compris) et échoue."""
+    nouveau_groupe = {} if sys.platform == "win32" else {"start_new_session": True}
+    proc = subprocess.Popen([sys.executable, "-c", code], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, encoding="utf-8", errors="replace", **nouveau_groupe)
+    try:
+        out, err = proc.communicate(timeout=delai)
+    except subprocess.TimeoutExpired:
+        if sys.platform == "win32":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            import os
+            import signal
+            os.killpg(proc.pid, signal.SIGKILL)
+        proc.communicate()
+        pytest.fail(f"le rendu est resté bloqué plus de {delai:.0f} s")
+    return subprocess.CompletedProcess(proc.args, proc.returncode, out, err)
+
+
+def test_calque_et_clips_aux_couleurs_differentes(tmp_path):
+    """Un clip balisé bt470bg (mire smptehdbars) après un clip sans balise : la vidéo assemblée change de
+    propriétés de couleur en cours de route. FFmpeg reconstruisait alors le graphe de filtres et attendait
+    indéfiniment l'image d'un calque déjà terminée (« -loop 1 -t »)."""
+    def clip(nom: str, source: str, freq: int) -> Path:
+        out = tmp_path / nom
+        subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", f"{source}:rate=30:d=2",
+                        "-f", "lavfi", "-i", f"sine=f={freq}:d=2", "-shortest", "-c:v", "libx264", "-pix_fmt",
+                        "yuv420p", str(out)], check=True)
+        return out
+
+    neutre, barres = clip("neutre.mp4", "testsrc=size=320x180", 440), clip("barres.mp4", "smptehdbars=size=320x180", 660)
+    logo = tmp_path / "logo.png"
+    subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=red:size=64x64",
+                    "-frames:v", "1", str(logo)], check=True)
+    projet = {"format": "9:16", "clips": [{"path": str(neutre)}, {"path": str(barres)}],
+              "overlays": [{"path": str(logo), "start": 0, "end": 1, "width": 30, "animation": "aucune"}]}
+    sortie = tmp_path / "couleurs.mp4"
+    res = _lancer_sans_blocage("from core.render import render_project\n"
+                               f"render_project({projet!r}, {str(sortie)!r}, quality='aperçu')", 60)
+    assert res.returncode == 0, res.stderr[-1500:]
+    assert abs(ff.probe(sortie).duration - 4) < 0.2

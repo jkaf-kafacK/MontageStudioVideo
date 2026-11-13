@@ -75,10 +75,13 @@ ENCODERS = {
     "intel (quicksync)": ["-c:v", "h264_qsv", "-global_quality", "21"],
 }
 
+FITS = ["flou", "rogner", "bandes", "cadre"]   # « cadre » : le clip dans un rectangle, voir parse_frame
+
 DEFAULT_PROJECT = {
     "name": "projet",
     "format": "9:16",
-    "fit": "flou",                     # rogner | flou | bandes
+    "fit": "flou",                     # rogner | flou | bandes | cadre ; un clip peut avoir le sien (clé "fit")
+    "background": "#000000",           # couleur autour du clip en mode bandes ou cadre
     "fps": 30,
     "quality": "haute",
     "encoder": "cpu (x264)",
@@ -159,13 +162,59 @@ def _atempo_chain(speed: float) -> str:
     return ",".join(parts)
 
 
-def _fit(inp: str, out: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5) -> str:
+MIN_FRAME = 5.0   # côté minimal d'un cadre, en % de l'image
+
+
+def parse_frame(value) -> Optional[tuple[float, float, float, float]]:
+    """Rectangle du mode « cadre » : coin haut gauche (x, y), largeur et hauteur, en % de l'image.
+
+    Accepte {"x", "y", "largeur", "hauteur"}, une liste [x, y, l, h] ou un texte « 40/20/60/60 ».
+    Renvoie des fractions (0-1), le rectangle étant ramené dans l'image. None s'il n'y a pas de cadre.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        vals = [value.get(k) for k in ("x", "y", "largeur", "hauteur")]
+    elif isinstance(value, (list, tuple)):
+        vals = list(value)
+    else:
+        txt = str(value).strip()
+        if not txt or txt.lower() == "nan":
+            return None
+        vals = [x.replace(",", ".") for x in re.split(r"[;/|\s]+", txt) if x]
+    if len(vals) != 4:
+        raise ValueError(_("Cadre invalide : « {v} » (attendu : x/y/largeur/hauteur en %, ex. 40/20/60/60)", v=value))
+    x, y = (min(100 - MIN_FRAME, max(0.0, _f(v))) for v in vals[:2])
+    w = min(100 - x, max(MIN_FRAME, _f(vals[2])))
+    h = min(100 - y, max(MIN_FRAME, _f(vals[3])))
+    return tuple(round(v / 100, 4) for v in (x, y, w, h))
+
+
+def _frame_box(frame, W: int, H: int) -> tuple[int, int, int, int]:
+    """Rectangle en pixels (x, y, largeur, hauteur), tout pair (exigé par H.264) et dans l'image."""
+    fx, fy, fw, fh = frame or (0.0, 0.0, 1.0, 1.0)
+    x, y = int(W * fx) // 2 * 2, int(H * fy) // 2 * 2
+    return x, y, min(_even(W * fw), (W - x) // 2 * 2), min(_even(H * fh), (H - y) // 2 * 2)
+
+
+def _ffmpeg_color(color: str) -> str:
+    """Couleur pour FFmpeg ; le noir garde son nom, pour que les commandes d'avant restent identiques."""
+    c = layers.norm_color(color)
+    return "black" if c.upper() == "#000000" else "0x" + c.lstrip("#")[:6]
+
+
+def _fit(inp: str, out: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5,
+         frame=None, background: str = "#000000") -> str:
     if mode == "rogner":
         return (f"[{inp}]scale={W}:{H}:force_original_aspect_ratio=increase,"
                 f"crop={W}:{H}:(iw-{W})*{cx:.3f}:(ih-{H})*{cy:.3f}[{out}]")
     if mode == "bandes":
         return (f"[{inp}]scale={W}:{H}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
-                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black[{out}]")
+                f"pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color={_ffmpeg_color(background)}[{out}]")
+    if mode == "cadre":   # le clip entier dans le rectangle, centré, le reste de l'image de la couleur du fond
+        x, y, w, h = _frame_box(frame, W, H)
+        return (f"[{inp}]scale={w}:{h}:force_original_aspect_ratio=decrease:force_divisible_by=2,"
+                f"pad={W}:{H}:{x}+({w}-iw)/2:{y}+({h}-ih)/2:color={_ffmpeg_color(background)}[{out}]")
     w4, h4 = _even(W / 4), _even(H / 4)
     return (f"[{inp}]split=2[{out}b0][{out}f0];"
             f"[{out}b0]scale={w4}:{h4}:force_original_aspect_ratio=increase,crop={w4}:{h4},"
@@ -220,8 +269,8 @@ def _crop_fractions(crop) -> Optional[tuple[float, float, float, float]]:
 
 
 def fit_image(path: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5,
-              crop=None) -> Image.Image:
-    """Cadre une image fixe au format W×H (rogner, bandes noires ou fond flou), après recadrage éventuel."""
+              crop=None, frame=None, background: str = "#000000") -> Image.Image:
+    """Cadre une image fixe au format W×H (rogner, bandes, fond flou ou cadre), après recadrage éventuel."""
     img = ImageOps.exif_transpose(Image.open(path)).convert("RGB")
     fr = _crop_fractions(crop)
     if fr:
@@ -230,9 +279,15 @@ def fit_image(path: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float =
                         round(img.width * (1 - r)), round(img.height * (1 - b))))
     if mode == "rogner":
         return ImageOps.fit(img, (W, H), Image.LANCZOS, centering=(cx, cy))
+    if mode == "cadre":
+        x, y, w, h = _frame_box(frame, W, H)
+        fg = ImageOps.contain(img, (w, h), Image.LANCZOS)
+        bg = Image.new("RGB", (W, H), layers.norm_color(background))
+        bg.paste(fg, (x + (w - fg.width) // 2, y + (h - fg.height) // 2))
+        return bg
     fg = ImageOps.contain(img, (W, H), Image.LANCZOS)
     if mode == "bandes":
-        bg = Image.new("RGB", (W, H), (0, 0, 0))
+        bg = Image.new("RGB", (W, H), layers.norm_color(background))
     else:
         bg = ImageOps.fit(img, (max(2, W // 8), max(2, H // 8)), Image.BILINEAR)
         bg = bg.filter(ImageFilter.GaussianBlur(3)).resize((W, H), Image.BILINEAR)
@@ -256,8 +311,10 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
         if not path:
             continue
         info = ff.probe(path)
+        # cadrage propre au clip (sinon celui du projet) et rectangle du mode « cadre »
+        own = {"fit": layers.norm_choice(c.get("fit"), FITS, ""), "frame": parse_frame(c.get("frame"))}
         if info.kind == "image":
-            segs.append({"type": "image", "path": path,
+            segs.append({"type": "image", "path": path, **own,
                          "dur": _f(c.get("duration")) or _f(p["image_duration"]) or 3.0,
                          "zoom": layers.norm_choice(c.get("zoom"), MOTIONS, "")
                                  or layers.norm_choice(p.get("image_zoom"), MOTIONS, "aucun"),
@@ -282,7 +339,7 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
                     log.append(_("✂ {name} : {n} morceaux, {gain:.1f} s de silence retirés",
                                  name=Path(path).name, n=len(ranges), gain=gain))
             for a, b in ranges:
-                segs.append({"type": "video", "path": path, "start": a, "end": b, "speed": speed,
+                segs.append({"type": "video", "path": path, "start": a, "end": b, "speed": speed, **own,
                              "volume": _f(c.get("volume", 1.0)) if c.get("volume") is not None else 1.0,
                              "mute": mute, "has_audio": info.has_audio,
                              "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
@@ -328,7 +385,8 @@ def _motion(zoom: str, frames: int, kb: int = 0) -> Optional[tuple[str, str, str
     return f"{z0}+{z1 - z0:.3f}*{e}", f"(iw-iw/zoom)*{fx}", f"(ih-ih/zoom)*{fy}"
 
 
-def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit: str, log: list):
+def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit: str, log: list,
+                    background: str = "#000000"):
     dur = seg["dur"]
     common_out = ["-t", f"{dur:.3f}", "-r", str(fps), "-c:v", "libx264", *q["inter"], "-pix_fmt", "yuv420p",
                   "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", str(out)]
@@ -338,10 +396,12 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
         # L'image est cadrée une seule fois avec Pillow, puis animée : bien plus rapide
         # que de recalculer le cadrage à chaque image.
         frames = max(1, int(round(dur * fps)))
-        motion = _motion(seg.get("zoom", "aucun"), frames, seg.get("kb", 0))
+        # en mode cadre, l'image reste immobile : un zoom agrandirait aussi le cadre et le fond
+        motion = None if fit == "cadre" else _motion(seg.get("zoom", "aucun"), frames, seg.get("kb", 0))
         k = 2 if motion else 1   # image deux fois plus grande : mouvement plus fluide (moins de « tremblement »)
         still = out.with_suffix(".png")
-        fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"], seg.get("crop")).save(still)
+        fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"], seg.get("crop"),
+                  seg.get("frame"), background).save(still)
         args = ["-i", str(still), *silent]
         if motion:
             z, x, y = motion
@@ -362,7 +422,7 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
             crop = (f",crop=trunc(iw*{1 - l - r:.4f}/2)*2:trunc(ih*{1 - t - b:.4f}/2)*2"
                     f":trunc(iw*{l:.4f}):trunc(ih*{t:.4f})")
         fc = (f"[0:v]setpts=(PTS-STARTPTS)/{sp:.4f},fps={fps}{crop}[pre];"
-              + _fit("pre", "fit", W, H, fit, seg["crop_x"], seg["crop_y"])
+              + _fit("pre", "fit", W, H, fit, seg["crop_x"], seg["crop_y"], seg.get("frame"), background)
               + ";[fit]format=yuv420p,setsar=1[v]")
         if seg["has_audio"] and not seg["mute"]:
             fc += (f";[0:a]asetpts=PTS-STARTPTS,{_atempo_chain(sp)},volume={seg['volume']:.3f},"
@@ -550,7 +610,11 @@ def _subtitle_track(cues: list[dict], p: dict, W: int, H: int, T: float, work: P
 
 def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: dict,
               sub_track: Optional[Path], work: Path, out: Path, log: list, on_p):
-    args = ["-i", str(assembled)]
+    # « -reinit_filter 0 » : la vidéo assemblée a partout la même taille, la même cadence et le même format de pixels,
+    # mais ses balises de couleur peuvent changer d'un clip à l'autre (une mire balisée bt470bg après un clip sans
+    # balise). FFmpeg reconstruisait alors le graphe de filtres en cours de route et attendait indéfiniment
+    # l'image d'un calque déjà terminé (« -loop 1 -t ») : le rendu restait bloqué.
+    args = ["-reinit_filter", "0", "-i", str(assembled)]
     idx = 1
     vf, af = [], []
     cur_v, cur_a = "0:v", "0:a"
@@ -722,7 +786,7 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
         for i, s in enumerate(segs):
             prog(0.02 + 0.45 * i / len(segs), _("Préparation du segment {i}/{n}", i=i + 1, n=len(segs)))
             part = work / f"seg_{i:04d}.mkv"
-            _render_segment(s, part, W, H, fps, q, p["fit"], log)
+            _render_segment(s, part, W, H, fps, q, s.get("fit") or p["fit"], log, p.get("background") or "#000000")
             parts.append(part)
             durs.append(s["dur"])
 

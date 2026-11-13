@@ -7,6 +7,7 @@ Les tailles sont exprimées pour une référence de 1080 px (petit côté de l'i
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable
 from functools import lru_cache
 from pathlib import Path
 
@@ -128,6 +129,28 @@ def _wrap(words: list[str], font, max_w: float, stroke: int) -> list[list[int]]:
     return lines
 
 
+def _bare(word: str) -> str:
+    """Mot sans casse ni ponctuation (« FOOTBALL, » -> « football »)."""
+    return re.sub(r"[\W_]+", "", word.casefold())
+
+
+def word_indices(text: str, words: Iterable[str] | None) -> set[int]:
+    """Indices des mots de `text` (découpé comme dans render_text) à surligner.
+
+    La comparaison ignore la casse et la ponctuation ; chaque occurrence est surlignée. Un groupe de mots
+    (« best football ») surligne la suite exacte. Un mot absent du texte est ignoré.
+    """
+    tokens = [_bare(w) for w in ("" if text is None else str(text)).split()]
+    found: set[int] = set()
+    for entry in words or []:
+        parts = [p for p in map(_bare, str(entry or "").split()) if p]
+        n = len(parts)
+        for i in range(len(tokens) - n + 1) if n else ():
+            if tokens[i:i + n] == parts:
+                found.update(range(i, i + n))
+    return found
+
+
 def render_text(
     text: str,
     W: int,
@@ -136,11 +159,20 @@ def render_text(
     out_path: str | Path | None = None,
     highlight_index: int | None = None,
     base: Image.Image | None = None,
+    highlight_indices: Iterable[int] | None = None,
+    highlight_colors: dict[int, str] | None = None,
 ) -> Image.Image:
     """Dessine `text` sur un calque transparent W×H (ou sur `base`).
 
     highlight_index : indice du mot à mettre en avant (mode karaoké).
+    highlight_indices : indices de plusieurs mots à mettre en avant (titre de classement, voir word_indices) ;
+    s'ajoutent à highlight_index.
+    highlight_colors : couleur propre à certains mots surlignés ({indice: couleur}) ; les autres gardent
+    highlight_color (deuxième couleur du titre de classement).
     """
+    highlighted = set(highlight_indices or ())
+    if highlight_index is not None:
+        highlighted.add(highlight_index)
     st = {**DEFAULT_STYLE, **(style or {})}
     text = "" if text is None else str(text)   # champ vide envoyé comme None par l'interface
     if st.get("uppercase"):
@@ -155,7 +187,17 @@ def render_text(
     k, font, stroke = _scaled(st, W, H)
     draw = ImageDraw.Draw(img)
     max_w = W * float(st["max_width"])
-    lines = _wrap(words, font, max_w, stroke)
+    if st.get("line_breaks"):
+        # retours à la ligne imposés (titre de classement) : chaque ligne du texte est coupée à part ; les indices
+        # restent ceux de text.split(), donc ceux de word_indices et du surlignage
+        lines, debut = [], 0
+        for para in text.splitlines():
+            n = len(para.split())
+            if n:
+                lines += [[debut + i for i in ln] for ln in _wrap(words[debut:debut + n], font, max_w, stroke)]
+                debut += n
+    else:
+        lines = _wrap(words, font, max_w, stroke)
 
     ascent, descent = font.getmetrics()
     line_h = int((ascent + descent) * float(st["line_spacing"]))
@@ -169,7 +211,7 @@ def render_text(
 
     color = parse_color(st["color"])
     stroke_c = parse_color(st["stroke_color"])
-    hl_c = parse_color(st["highlight_color"])
+    hl_base = hl_c = parse_color(st["highlight_color"])
     pad = int(22 * k)
 
     if st.get("box"):
@@ -193,8 +235,12 @@ def render_text(
         for i in ln:
             w = words[i]
             ww = font.getlength(w)
-            is_hl = highlight_index is not None and i == highlight_index
+            is_hl = i in highlighted
             fill = color
+            if is_hl and highlight_colors and i in highlight_colors:
+                hl_c = parse_color(highlight_colors[i])
+            else:
+                hl_c = hl_base
             if is_hl and st.get("highlight_mode") == "fond":
                 hb = ImageDraw.Draw(img)
                 hb.rounded_rectangle(

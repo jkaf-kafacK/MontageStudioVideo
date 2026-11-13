@@ -10,6 +10,11 @@ Trois moteurs :
 
 Le texte peut être découpé en scènes avec une ligne contenant seulement « --- » :
 une piste audio est produite par scène + une piste complète + un fichier .srt.
+
+Pour un rendu plus naturel (speech.py) : Piper et Ma voix lisent phrase par phrase, avec une pause qui dépend
+de la ponctuation (et des balises [pause 1s]), sur un texte où nombres, sigles et symboles sont écrits en lettres
+et où le dictionnaire de prononciation de l'utilisateur est appliqué. Toutes les voix passent ensuite par un
+traitement « studio » (STUDIO).
 """
 from __future__ import annotations
 
@@ -26,7 +31,7 @@ import urllib.request
 import wave
 from pathlib import Path
 
-from . import ff, subs
+from . import ff, speech, subs
 from .errors import PIPER_CMD, PIPER_FIX, UserError
 from .i18n import _
 
@@ -52,7 +57,6 @@ ELEVEN_MODELS = {
 PIPER_VOICES = {
     "Pierre — homme, français": ("fr_FR-upmc-medium", 1, "CC BY-SA 4.0"),
     "Tom — homme, français": ("fr_FR-tom-medium", 0, "AGPL-3.0"),
-    "Gilles — homme, français (grave)": ("fr_FR-gilles-low", 0, "CC0"),
     "Jessica — femme, français": ("fr_FR-upmc-medium", 0, "CC BY-SA 4.0"),
     "Siwis — femme, français": ("fr_FR-siwis-medium", 0, "CC BY 4.0"),
     "LibriTTS — homme, anglais": ("en_US-libritts_r-medium", 36, "CC BY 4.0"),
@@ -62,6 +66,22 @@ PIPER_VOICES = {
 }
 DEFAULT_PIPER = "Pierre — homme, français"
 PIPER_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-{name}.tar.bz2"
+# Un peu plus de variation que les réglages d'origine (0,667 / 0,8) : intonation et rythme moins monotones.
+PIPER_NOISE, PIPER_NOISE_W = 0.72, 0.9
+
+# Ma voix : (expressivité, rythme) de Chatterbox pour chaque style de lecture.
+CLONE_PRESETS = {
+    "Narration calme": (0.5, 0.5),
+    "Conversation": (0.6, 0.4),
+    "Promo énergique": (0.75, 0.3),
+}
+CUSTOM_PRESET = "Personnalisé"
+
+# Traitement « studio » de toutes les voix : coupe des basses inutiles, chaleur (180 Hz) et présence (3,2 kHz),
+# « s » adoucis, compression douce, ambiance de pièce très légère, puis limiteur (pas de saturation).
+STUDIO = ("highpass=f=80,equalizer=f=180:t=q:w=1:g=1.5,equalizer=f=3200:t=q:w=1.4:g=2,deesser=i=0.4,"
+          "acompressor=threshold=0.1:ratio=2.5:attack=10:release=150:makeup=1.5,"
+          "aecho=0.9:0.9:23|41:0.08|0.05,alimiter=limit=0.89:level=0")
 
 
 # --------------------------------------------------------------------------- configuration
@@ -90,8 +110,50 @@ def api_key(explicit: str | None = None) -> str:
 # --------------------------------------------------------------------------- découpage du script
 
 def split_scenes(text: str) -> list[str]:
-    parts = re.split(r"^\s*-{3,}\s*$", text.strip(), flags=re.M)
-    return [re.sub(r"\s+", " ", p).strip() for p in parts if p.strip()]
+    """Scènes séparées par « --- ». Les espaces sont simplifiés, les paragraphes (ligne vide) sont gardés."""
+    out = []
+    for part in re.split(r"^\s*-{3,}\s*$", text.strip(), flags=re.M):
+        paras = [re.sub(r"\s+", " ", x).strip() for x in re.split(r"\n[ \t]*\n", part)]
+        if any(paras):
+            out.append("\n\n".join(x for x in paras if x))
+    return out
+
+
+def finish_audio(raw: str | Path, out: str | Path, pre: str = "", studio: bool = True) -> None:
+    """Dernière étape de toutes les voix : 48 kHz mono, filtres propres au moteur (pre), traitement studio."""
+    chain = ",".join(x for x in (pre, "aresample=48000", STUDIO if studio else "highpass=f=60") if x)
+    ff.run_ffmpeg(["-i", str(raw), "-af", chain, "-ac", "1", "-ar", "48000", str(out)])
+
+
+def timed_words(segs: list[speech.Segment], spans: list[tuple[float, float]], lang: str = "fr"):
+    """Mots minutés phrase par phrase (chaque phrase sur sa durée réelle) : sous-titres mieux calés.
+
+    Dans une phrase, chaque mot dure selon sa longueur prononcée (« 2026 » est long à dire) ; la pause de fin
+    de phrase est déjà hors de la durée de la phrase.
+    """
+    words = []
+    for seg, (a, b) in zip(segs, spans):
+        ws, opening = [], ""
+        for w in seg.text.split():   # « 15 % », « Simple ? » : le signe reste avec son mot (espace insécable)
+            if w in ("«", "“", "("):
+                opening = w + " "
+            elif ws and not re.search(r"\w", w):
+                ws[-1] += " " + w
+            else:
+                ws.append(opening + w)
+                opening = ""
+        weights = [len(speech.spoken(w, lang)) + 1.5 + (3 if w.endswith((",", ";", ":")) else 0) for w in ws]
+        t, total = a, sum(weights) or 1
+        for w, wt in zip(ws, weights):
+            d = max(0.1, b - a) * wt / total
+            words.append((w, t, t + d))
+            t += d
+    return words
+
+
+def lexicon_text(lexicon: str | None) -> str:
+    """Dictionnaire de prononciation : celui donné, sinon celui mémorisé dans la configuration."""
+    return load_config().get("prononciation", "") if lexicon is None else lexicon
 
 
 def _chars_to_words(chars, starts, ends, offset=0.0) -> list[tuple[str, float, float]]:
@@ -168,6 +230,18 @@ def eleven_tts(text: str, voice_id: str, out_mp3: str | Path, key: str | None = 
     return subs.estimate_word_times(text, 0.05, max(0.1, dur - 0.05))
 
 
+_BREAK_WORD = re.compile(r"^(?:<break|time=|/>|…$)")
+
+
+def eleven_text(text: str, model: str) -> str:
+    """Balises [pause 1s] → <break time="1s" /> (le modèle v3 ne les connaît pas : points de suspension)."""
+    def tag(m):
+        num, unit = m.group(1), (m.group(2) or "").lower()
+        d = speech.PAUSE_TAG if num is None else float(num.replace(",", ".")) / (1000 if unit == "ms" else 1)
+        return " … " if model == "eleven_v3" else f' <break time="{min(3.0, d):.1f}s" /> '
+    return re.sub(r"[ \t]+", " ", speech.TAG.sub(tag, text)).strip()
+
+
 # --------------------------------------------------------------------------- Piper (local)
 
 def piper_available() -> bool:
@@ -208,9 +282,20 @@ def _piper_model(name: str) -> Path:
 _tts_cache: dict = {}
 
 
+def _write_wav(path: Path, samples, sr: int) -> None:
+    import numpy as np
+
+    with wave.open(str(path), "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(sr)
+        w.writeframes((np.clip(samples, -1, 1) * 32767).astype(np.int16).tobytes())
+
+
 def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1.0,
-              pitch_semitones: float = 0.0) -> list[tuple[str, float, float]]:
-    """Synthèse locale. pitch_semitones < 0 donne une voix plus grave (ex. -2)."""
+              pitch_semitones: float = 0.0, lexicon: str | None = None,
+              studio: bool = True) -> list[tuple[str, float, float]]:
+    """Synthèse locale, phrase par phrase. pitch_semitones < 0 donne une voix plus grave (ex. -2)."""
     import numpy as np
     import sherpa_onnx
 
@@ -219,23 +304,27 @@ def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1
         d = _piper_model(name)
         cfg = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
             vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=str(d / f"{name}.onnx"), tokens=str(d / "tokens.txt"),
-                                                      data_dir=str(d / "espeak-ng-data")),
+                                                      data_dir=str(d / "espeak-ng-data"), noise_scale=PIPER_NOISE,
+                                                      noise_scale_w=PIPER_NOISE_W),
             num_threads=max(1, (os.cpu_count() or 2) // 2)))
         _tts_cache[name] = sherpa_onnx.OfflineTts(cfg)
-    audio = _tts_cache[name].generate(text, sid=sid, speed=speed)
-    if audio.sample_rate <= 0 or len(audio.samples) == 0:
-        raise UserError(_("La voix Piper n'a produit aucun son pour « {text} ».", text=text[:60]), _(PIPER_FIX, cmd=PIPER_CMD))
+    rules = speech.parse_lexicon(lexicon_text(lexicon))
+    segs, pieces, sr = speech.segments(text), [], 22050
+    for seg in segs:
+        audio = _tts_cache[name].generate(speech.spoken(seg.text, name[:2], rules), sid=sid, speed=speed)
+        if audio.sample_rate <= 0 or len(audio.samples) == 0:
+            raise UserError(_("La voix Piper n'a produit aucun son pour « {text} ».", text=seg.text[:60]),
+                            _(PIPER_FIX, cmd=PIPER_CMD))
+        sr = audio.sample_rate
+        pieces.append((np.array(audio.samples, dtype=np.float32), seg.pause / speed))
+    samples, spans = speech.assemble(pieces, sr)
     raw = Path(out_wav).with_suffix(".brut.wav")
-    s = np.clip(np.array(audio.samples, dtype=np.float32), -1, 1)
-    with wave.open(str(raw), "wb") as w:
-        w.setnchannels(1); w.setsampwidth(2); w.setframerate(audio.sample_rate)
-        w.writeframes((s * 32767).astype(np.int16).tobytes())
-    ratio = 2 ** (pitch_semitones / 12)
-    af = f"asetrate={audio.sample_rate}*{ratio:.5f},aresample=48000,atempo={1 / ratio:.5f}" if pitch_semitones else "aresample=48000"
-    ff.run_ffmpeg(["-i", str(raw), "-af", af + ",highpass=f=60", str(out_wav)])
+    _write_wav(raw, samples, sr)
+    # rubberband change la hauteur sans changer la durée ni le timbre (formants) : pas de son métallique
+    pre = f"rubberband=pitch={2 ** (pitch_semitones / 12):.5f}:formant=preserved" if pitch_semitones else ""
+    finish_audio(raw, out_wav, pre, studio)
     raw.unlink(missing_ok=True)
-    dur = ff.probe(out_wav).duration
-    return subs.estimate_word_times(text, 0.05, max(0.1, dur - 0.1))
+    return timed_words(segs, spans, name[:2])
 
 
 # --------------------------------------------------------------------------- Ma voix (clonage local)
@@ -303,8 +392,13 @@ def create_clone_voice(name: str, recording: str) -> str:
 
 
 def clone_tts_batch(texts: list[str], outs: list[Path], voice_name: str, exaggeration: float = 0.5,
-                    cfg_weight: float = 0.5, speed: float = 1.0, language: str = "fr", progress=None) -> None:
-    """Synthétise plusieurs textes avec une voix clonée (modèle chargé une seule fois)."""
+                    cfg_weight: float = 0.5, speed: float = 1.0, language: str = "fr", progress=None,
+                    takes: int = 2, lexicon: str | None = None, studio: bool = True) -> tuple[list, str]:
+    """Synthétise plusieurs textes avec une voix clonée (modèle chargé une seule fois).
+
+    Chaque phrase est générée jusqu'à « takes » fois et la meilleure prise est gardée (voice_clone_worker.py).
+    Renvoie (mots minutés de chaque texte, bilan lisible).
+    """
     problem = clone_problem()
     if problem:
         raise RuntimeError(problem)
@@ -312,11 +406,17 @@ def clone_tts_batch(texts: list[str], outs: list[Path], voice_name: str, exagger
     if not ref.exists():
         raise FileNotFoundError(_("Voix introuvable : {name}", name=voice_name))
     raws = [Path(o).with_suffix(".brut.wav") for o in outs]
+    rules = speech.parse_lexicon(lexicon_text(lexicon))
+    segs = [speech.merge_short(speech.segments(t)) for t in texts]
     req = Path(outs[0]).with_suffix(".demande.json")
     req.write_text(json.dumps({"reference": str(ref), "language": language, "exaggeration": exaggeration,
-                               "cfg_weight": cfg_weight, "items": [{"text": t, "out": str(r)}
-                                                                   for t, r in zip(texts, raws)]},
+                               "cfg_weight": cfg_weight, "takes": int(takes),
+                               "items": [{"segments": [{"text": speech.spoken(g.text, language, rules), "pause": g.pause}
+                                                       for g in gs], "out": str(r)}
+                                         for gs, r in zip(segs, raws)]},
                               ensure_ascii=False), encoding="utf-8")
+    spans: dict[int, list] = {}
+    summary = ""
     # Les messages d'erreur et barres de progression (téléchargement du modèle…) vont dans un fichier : lus dans
     # un tuyau seulement à la fin, ils le rempliraient et bloqueraient le programme de synthèse.
     errlog = req.with_suffix(".journal.txt")
@@ -324,19 +424,33 @@ def clone_tts_batch(texts: list[str], outs: list[Path], voice_name: str, exagger
         proc = subprocess.Popen([str(clone_python()), str(CLONE_WORKER), str(req)], stdout=subprocess.PIPE,
                                 stderr=err_f, text=True, encoding="utf-8", errors="replace")
         for line in proc.stdout:
-            if line.startswith("SCENE") and progress:
-                _k, i, n = line.split()
+            kind, _sp, rest = line.strip().partition(" ")
+            if kind == "PART" and progress:
+                i, n = rest.split()
                 progress(int(i) / int(n))
+            elif kind == "SPANS":
+                i, data = rest.split(" ", 1)
+                spans[int(i)] = json.loads(data)
+            elif kind == "BILAN":
+                n, redone, doubtful = (int(x) for x in rest.split())
+                summary = _("{n} phrase(s), {redone} refaite(s) après vérification, {doubtful} douteuse(s) "
+                            "(à réécouter)", n=n, redone=redone, doubtful=doubtful)
         code = proc.wait()
     err = errlog.read_text(encoding="utf-8", errors="replace")
     req.unlink(missing_ok=True)
     errlog.unlink(missing_ok=True)
     if code != 0:
         raise RuntimeError(_("La voix clonée n'a pas pu être générée : {err}", err=err.strip()[-600:]))
-    tempo = f",atempo={max(0.5, min(2.0, speed)):.3f}" if abs(speed - 1) > 0.01 else ""
-    for raw, out in zip(raws, outs):   # 48 kHz comme les autres voix, vitesse appliquée ici
-        ff.run_ffmpeg(["-i", str(raw), "-af", "aresample=48000,highpass=f=60" + tempo, str(out)])
+    speed = max(0.5, min(2.0, speed))
+    tempo = f"atempo={speed:.3f}" if abs(speed - 1) > 0.01 else ""
+    words = []
+    for i, (raw, out) in enumerate(zip(raws, outs)):   # vitesse appliquée ici (les heures sont divisées d'autant)
+        finish_audio(raw, out, tempo, studio)
         raw.unlink(missing_ok=True)
+        sp = [(a / speed, b / speed) for a, b in spans.get(i, [])]
+        words.append(timed_words(segs[i], sp, language) if len(sp) == len(segs[i]) else
+                     subs.estimate_word_times(speech.plain(texts[i]), 0.05, max(0.1, ff.probe(out).duration - 0.1)))
+    return words, summary
 
 
 # --------------------------------------------------------------------------- API commune
@@ -354,24 +468,33 @@ def generate(text: str, out_dir: str | Path, name: str = "voix", provider: str =
         raise ValueError(_("Le texte est vide."))
     files, all_words, durations = [], [], []
     offset = 0.0
+    studio, lexicon = bool(opts.get("studio", True)), opts.get("lexicon")
+    summary = ""
     if provider == "clone":   # toutes les scènes d'un coup : le modèle n'est chargé qu'une fois
-        clone_tts_batch(scenes, [out_dir / f"{name}_scene{i + 1:02d}.wav" for i in range(len(scenes))], voice,
-                        exaggeration=opts.get("exaggeration", 0.5), cfg_weight=opts.get("cfg_weight", 0.5),
-                        speed=opts.get("speed", 1.0), language=opts.get("language") or "fr")
+        clone_words, summary = clone_tts_batch(
+            scenes, [out_dir / f"{name}_scene{i + 1:02d}.wav" for i in range(len(scenes))], voice,
+            exaggeration=opts.get("exaggeration", 0.5), cfg_weight=opts.get("cfg_weight", 0.5),
+            speed=opts.get("speed", 1.0), language=opts.get("language") or "fr", progress=opts.get("progress"),
+            takes=opts.get("takes", 2), lexicon=lexicon, studio=studio)
     for i, sc in enumerate(scenes):
-        ext = ".mp3" if provider == "elevenlabs" else ".wav"
-        f = out_dir / f"{name}_scene{i + 1:02d}{ext}"
+        f = out_dir / f"{name}_scene{i + 1:02d}.wav"
         if provider == "clone":
-            words = subs.estimate_word_times(sc, 0.05, max(0.1, ff.probe(f).duration - 0.1))
+            words = clone_words[i]
         elif provider == "elevenlabs":
-            words = eleven_tts(sc, voice, f, key=opts.get("key"), model=opts.get("model", "eleven_multilingual_v2"),
+            model = opts.get("model", "eleven_multilingual_v2")
+            mp3 = f.with_suffix(".brut.mp3")
+            words = eleven_tts(eleven_text(sc, model), voice, mp3, key=opts.get("key"), model=model,
                                stability=opts.get("stability", 0.45), similarity=opts.get("similarity", 0.8),
                                style=opts.get("style", 0.15), speed=opts.get("speed", 1.0),
-                               previous_text=scenes[i - 1] if i else "",
-                               next_text=scenes[i + 1] if i + 1 < len(scenes) else "",
+                               previous_text=speech.plain(scenes[i - 1]) if i else "",
+                               next_text=speech.plain(scenes[i + 1]) if i + 1 < len(scenes) else "",
                                language=opts.get("language"))
+            words = [w for w in words if not _BREAK_WORD.match(w[0])]
+            finish_audio(mp3, f, studio=studio)
+            mp3.unlink(missing_ok=True)
         else:
-            words = piper_tts(sc, voice, f, speed=opts.get("speed", 1.0), pitch_semitones=opts.get("pitch", 0.0))
+            words = piper_tts(sc, voice, f, speed=opts.get("speed", 1.0), pitch_semitones=opts.get("pitch", 0.0),
+                              lexicon=lexicon, studio=studio)
         d = ff.probe(f).duration
         files.append(str(f))
         durations.append(d)
@@ -391,7 +514,7 @@ def generate(text: str, out_dir: str | Path, name: str = "voix", provider: str =
         ff.run_ffmpeg([*args, "-filter_complex", ";".join(fc), "-map", "[out]", str(full)])
     cues = subs.group_words(all_words, max_words=max_words)
     srt = subs.write_srt(cues, out_dir / f"{name}.srt")
-    return {"audio": str(full), "scenes": files, "srt": srt, "durations": durations}
+    return {"audio": str(full), "scenes": files, "srt": srt, "durations": durations, "summary": summary}
 
 
 def replace_clip_voice(video: str, new_voice: str, out_path: str, at: float = 0.0,

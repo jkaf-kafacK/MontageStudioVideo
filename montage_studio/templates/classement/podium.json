@@ -1,0 +1,23 @@
+{
+  "layout": "bandeau",
+  "order": "décroissant",
+  "style": {
+    "font": "Anton-Regular.ttf",
+    "title_size": 104,
+    "list_size": 64,
+    "text_color": "#FFFFFF",
+    "dim_color": "#FFFFFF",
+    "highlight_color": "#EF4444",
+    "highlight_color_2": "#FACC15",
+    "badge_color": "#F43F5E",
+    "background": "#000000",
+    "stroke_width": 6,
+    "stroke_color": "#000000",
+    "badge": "aucun",
+    "list_panel": false,
+    "number_colors": ["#FFD700", "#C0C0C0", "#CD7F32"],
+    "label_scale": 0.55,
+    "label_uppercase": true,
+    "label_italic": true
+  }
+}

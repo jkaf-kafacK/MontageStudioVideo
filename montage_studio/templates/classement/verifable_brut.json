@@ -1,0 +1,16 @@
+{
+  "layout": "plein écran",
+  "order": "décroissant",
+  "style": {
+    "font": "Anton-Regular.ttf",
+    "title_size": 104,
+    "list_size": 46,
+    "text_color": "#FFFFFF",
+    "dim_color": "#737373",
+    "highlight_color": "#C8102E",
+    "badge_color": "#C8102E",
+    "background": "#000000",
+    "stroke_width": 5,
+    "stroke_color": "#000000"
+  }
+}

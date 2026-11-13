@@ -4,6 +4,7 @@ Exemples :
   python cli.py rendu projets/mon_projet.json -o sorties/final.mp4
   python cli.py serie templates/short_storytelling.json exemples/serie_storytelling.csv --base D:/chaine --sortie sorties/lot1
   python cli.py dossier templates/short_clip_parle.json D:/rushs --duree 59 --sortie sorties/clips
+  python cli.py classement exemples/classement_exemple.json -o sorties/top5.mp4 --qualite aperçu
 """
 from __future__ import annotations
 
@@ -20,6 +21,37 @@ def bar(frac: float, msg: str) -> None:
     n = int(frac * 30)
     sys.stdout.write(f"\r[{'█' * n}{'·' * (30 - n)}] {frac * 100:5.1f}%  {msg[:60]:<60}")
     sys.stdout.flush()
+
+
+class AideEnFrancais(argparse.HelpFormatter):
+    """Aide en français (argparse écrit « usage: » en anglais)."""
+
+    def add_usage(self, usage, actions, groups, prefix=None):
+        return super().add_usage(usage, actions, groups, prefix or "utilisation : ")
+
+
+def classement(a: argparse.Namespace) -> None:
+    """Short « Top N » : description JSON -> vidéo (voir core/ranking.py)."""
+    from core import errors, paths, ranking
+
+    try:   # messages d'erreur (sortie d'erreur) en UTF-8, comme le reste de l'affichage
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+    fichier = Path(a.fichier)
+    try:
+        spec = ranking.normaliser(json.loads(fichier.read_text(encoding="utf-8")), base=fichier.resolve().parent)
+        if a.melanger:
+            spec = ranking.melanger(spec)
+        out = a.sortie or str(paths.OUT_DIR / f"{fichier.stem}.mp4")
+        res = ranking.rendre(spec, out, progression=bar, qualite=a.qualite)
+    except json.JSONDecodeError as e:
+        sys.exit("\n" + errors.user_message(e, html=False))
+    except (ValueError, FileNotFoundError) as e:    # erreur de saisie : le message dit déjà quoi corriger
+        sys.exit(f"\n❌ {e}")
+    except Exception as e:
+        sys.exit("\n" + errors.user_message(e, html=False))
+    print(f"\n✅ {res['video']} ({res['duration']:.1f} s, en {res['seconds']:.0f} s)\n{res['log']}")
 
 
 def main() -> None:
@@ -61,7 +93,24 @@ def main() -> None:
     v.add_argument("--sortie", default="sorties/voix")
     sub.add_parser("voix-liste", help="lister les voix disponibles")
 
+    c = sub.add_parser("classement", help="Short « Top N » à partir d'un classement JSON", add_help=False,
+                       formatter_class=AideEnFrancais,
+                       description="Rend un Short 9:16 « Top N » à partir d'une description JSON "
+                                   "(voir exemples/classement_exemple.json). Les chemins des clips sont relatifs "
+                                   "au dossier du fichier JSON.")
+    c._positionals.title, c._optionals.title = "arguments", "options"
+    c.add_argument("-h", "--help", action="help", help="afficher cette aide et quitter")
+    c.add_argument("fichier", help="description du classement (JSON)")
+    c.add_argument("-o", "--sortie", default=None,
+                   help="vidéo MP4 à créer (défaut : dossier « sorties », même nom que le fichier JSON)")
+    c.add_argument("--qualite", choices=["aperçu", "standard", "haute"], default="haute",
+                   help="aperçu (rapide, demi-résolution), standard ou haute (défaut : haute)")
+    c.add_argument("--melanger", action="store_true", help="passer les clips dans un ordre au hasard")
+
     a = ap.parse_args()
+    if a.cmd == "classement":
+        classement(a)
+        return
     if a.cmd in ("voix", "voix-liste"):
         from core import voice
         if a.cmd == "voix-liste":

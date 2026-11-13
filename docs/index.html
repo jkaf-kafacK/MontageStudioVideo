@@ -210,6 +210,7 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
           <li><a href="#interface">L'interface</a></li>
           <li><a href="#montage">Monter une vidéo</a></li>
           <li><a href="#scenes">Scènes animées</a></li>
+          <li><a href="#classement">Classement</a></li>
           <li><a href="#voix">Voix off</a></li>
           <li><a href="#serie">Shorts en série</a></li>
           <li><a href="#outils">Outils rapides</a></li>
@@ -265,7 +266,7 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
       <section id="interface">
         <p class="eyebrow">Prise en main</p>
         <h2>L'interface</h2>
-        <p>Tout se passe dans une seule fenêtre, organisée en six onglets. Le sélecteur en haut à droite change la langue de l'interface : français, anglais, italien ou espagnol.</p>
+        <p>Tout se passe dans une seule fenêtre, organisée en sept onglets. Le sélecteur en haut à droite change la langue de l'interface : français, anglais, italien ou espagnol.</p>
         <figure class="shot">
           <img src="img/interface.webp" alt="Interface de MSV : onglets, médiathèque, inspecteur et réglages" width="1600" height="1111" loading="lazy">
           <figcaption>L'onglet Montage : la médiathèque et l'inspecteur à gauche, les réglages du projet à droite.</figcaption>
@@ -275,6 +276,7 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
           <tbody>
             <tr><td><strong>Montage</strong></td><td>Assembler une vidéo : importer, couper, recadrer, ajouter calques, titre, sous-titres, audio, puis exporter.</td></tr>
             <tr><td><strong>Scènes animées</strong></td><td>Créer des séquences animées (intro, écran final, liste…) et les ajouter au montage.</td></tr>
+            <tr><td><strong>Classement</strong></td><td>Fabriquer un Short « Top N » : une liste numérotée qui se remplit clip après clip.</td></tr>
             <tr><td><strong>Voix off</strong></td><td>Transformer un texte en voix, avec ses sous-titres synchronisés.</td></tr>
             <tr><td><strong>Shorts en série</strong></td><td>Produire automatiquement une vidéo par ligne d'un tableau ou par fichier d'un dossier.</td></tr>
             <tr><td><strong>Outils rapides</strong></td><td>Miniature YouTube, conversion en Short, extraction du son, transcription, retrait de logo.</td></tr>
@@ -405,6 +407,33 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
         </ul>
       </section>
 
+      <!-- ============================================================ 5 bis -->
+      <section id="classement">
+        <p class="eyebrow">Onglet Classement</p>
+        <h2>Un Short « Top N » en quelques minutes</h2>
+        <p>Le format « Top 5 des… » en vidéo verticale 9:16 : un titre en haut, une liste numérotée qui se remplit au fil des clips, et le clip en cours affiché avec son rang. Il faut de 2 à 10 clips, vidéos ou images.</p>
+        <ol>
+          <li><strong>Importez les clips.</strong> Ils forment un tableau, une ligne par clip ; la première ligne est le n° 1. Donnez un titre à chaque rang, et si besoin le crédit de la source, un début et une fin. Les boutons <em>Monter</em>, <em>Descendre</em>, <em>Supprimer</em> et <em>Mélanger</em> changent l'ordre.</li>
+          <li><strong>Écrivez le titre</strong> de la vidéo. La touche Entrée le met sur deux lignes. Cochez les mots à surligner.</li>
+          <li><strong>Choisissez un style</strong> : un préréglage, une mise en page et l'ordre de passage. En ordre <em>décroissant</em>, c'est un compte à rebours : le n° 1 passe en dernier.</li>
+          <li><strong>Vérifiez</strong> avec le curseur « Rang affiché », qui montre l'écran à chaque étape, puis avec l'aperçu vidéo rapide.</li>
+          <li><strong>Exportez</strong> en 1080 × 1920. Le classement s'enregistre en fichier JSON pour être repris plus tard, ou rendu en ligne de commande.</li>
+        </ol>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Mise en page</th><th>Disposition</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Liste à gauche</strong></td><td>La liste à gauche, le clip à droite</td></tr>
+            <tr><td><strong>Liste en haut</strong></td><td>La liste sous le titre, le clip en dessous</td></tr>
+            <tr><td><strong>Plein écran</strong></td><td>Le clip occupe tout l'écran, la liste est posée dessus</td></tr>
+            <tr><td><strong>Bandeau</strong></td><td>Le titre sur une bande en haut, le clip remplit le reste de l'écran</td></tr>
+          </tbody>
+        </table></div>
+        <p>Quatre préréglages sont fournis : <strong>Néon sombre</strong>, <strong>Clair</strong>, <strong>Brut rouge</strong> et <strong>Podium</strong> (titre dans une bande noire, numéros or, argent et bronze, libellés en majuscules). Les réglages fins permettent aussi une deuxième couleur de surlignage, la position du badge de rang (coin du clip, à côté du titre, ou aucun), un panneau derrière la liste et la taille des libellés.</p>
+        <div class="note">
+          <p><strong>Droits.</strong> N'utilisez que des clips que vous avez filmés ou dont vous avez l'autorisation, et créditez toujours la source.</p>
+        </div>
+      </section>
+
       <!-- ============================================================ 6 -->
       <section id="voix">
         <p class="eyebrow">Onglet Voix off</p>
@@ -432,6 +461,13 @@ footer { margin-top: 24px; font-size: var(--step--1); color: var(--muted); }
           <p><strong>Consentement et transparence.</strong> On ne clone que sa propre voix, ou celle d'une personne qui a donné son accord. Chaque audio produit porte un filigrane inaudible qui permet de reconnaître une voix de synthèse. L'enregistrement et la voix clonée restent sur votre ordinateur.</p>
           <p>La première utilisation installe le moteur de clonage (environ 5 Go, une seule fois). Sur une carte NVIDIA RTX 4060, la première phrase prend environ 45 secondes (chargement du modèle compris), les suivantes quelques secondes.</p>
         </div>
+        <h3>Une lecture plus naturelle</h3>
+        <ul>
+          <li><strong>Pauses</strong> : chaque phrase est lue séparément, avec une pause adaptée à sa ponctuation. Une balise comme <code>[pause 1s]</code> impose une pause précise.</li>
+          <li><strong>Prononciation</strong> : nombres, heures, prix et sigles sont lus en toutes lettres, et un dictionnaire corrige les mots mal prononcés (<code>YouTube = you-tioube</code>).</li>
+          <li><strong>Son studio</strong> : un traitement audio rend toutes les voix plus chaudes et plus nettes.</li>
+          <li><strong>Ma voix</strong> : un style de lecture (narration calme, conversation, promo énergique) et, au choix, 2 ou 3 prises par phrase. Chaque prise est vérifiée par une transcription automatique et refaite si un mot manque.</li>
+        </ul>
         <p>L'encadré <strong>Remplacer la voix d'un clip existant</strong> corrige une scène déjà montée : la voix d'origine est retirée et la nouvelle est posée au moment choisi, au même volume qu'un clip de référence.</p>
       </section>
 
@@ -514,7 +550,7 @@ flowchart LR
             <tr><td>Volume</td><td>Normalisé à -14 LUFS (niveau YouTube)</td></tr>
             <tr><td>Accélération matérielle</td><td>NVIDIA NVENC, Apple VideoToolbox, Intel Quick Sync, avec repli automatique sur le processeur</td></tr>
             <tr><td>Langues de l'interface</td><td>Français, anglais, italien, espagnol</td></tr>
-            <tr><td>Automatisation</td><td>Ligne de commande pour rendre un projet, une série CSV, un dossier ou une voix off</td></tr>
+            <tr><td>Automatisation</td><td>Ligne de commande pour rendre un projet, une série CSV, un dossier, un classement ou une voix off</td></tr>
           </tbody>
         </table></div>
         <h3>Des erreurs expliquées</h3>
@@ -568,7 +604,7 @@ flowchart LR
           <dt>Mes projets sont-ils sauvegardés ?</dt>
           <dd>Un projet s'enregistre en un clic (fichier <code>.json</code>) et se recharge plus tard. Ses réglages peuvent aussi devenir un modèle de série.</dd>
           <dt>Peut-on automatiser la production ?</dt>
-          <dd>Oui, avec l'onglet Shorts en série ou la ligne de commande, qui rend un projet, une série CSV, un dossier ou une voix off sans ouvrir l'interface.</dd>
+          <dd>Oui, avec l'onglet Shorts en série ou la ligne de commande, qui rend un projet, une série CSV, un dossier, un classement ou une voix off sans ouvrir l'interface.</dd>
         </dl>
       </section>
 

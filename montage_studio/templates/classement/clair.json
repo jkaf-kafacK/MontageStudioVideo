@@ -1,0 +1,16 @@
+{
+  "layout": "liste en haut",
+  "order": "décroissant",
+  "style": {
+    "font": "Montserrat.ttf",
+    "title_size": 88,
+    "list_size": 42,
+    "text_color": "#0F172A",
+    "dim_color": "#94A3B8",
+    "highlight_color": "#2563EB",
+    "badge_color": "#F97316",
+    "background": "#F8FAFC",
+    "stroke_width": 0,
+    "stroke_color": "#FFFFFF"
+  }
+}

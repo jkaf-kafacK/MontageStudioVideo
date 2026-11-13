@@ -1,0 +1,28 @@
+{
+  "title": "Ranking best football moments",
+  "highlight_words": ["football", "moments"],
+  "order": "décroissant",
+  "layout": "liste à gauche",
+  "max_clip_duration": 8,
+  "items": [
+    {"path": "clips/karma.mp4", "label": "Instant Karma", "start": 2.0, "end": 9.5, "credit": "@createur1"},
+    {"path": "clips/dad.mp4", "label": "Proud dad"},
+    {"path": "clips/retourne.mp4", "label": "Le retourné de la dernière minute", "start": 1.0},
+    {"path": "clips/coup_franc.mp4", "label": "Coup franc en lucarne", "credit": "@createur2"},
+    {"path": "clips/parade.jpg", "label": "La parade impossible"}
+  ],
+  "style": {
+    "font": "Anton-Regular.ttf",
+    "title_size": 96,
+    "list_size": 44,
+    "text_color": "#FFFFFF",
+    "dim_color": "#6B7280",
+    "highlight_color": "#38BDF8",
+    "badge_color": "#F43F5E",
+    "background": "#000000",
+    "stroke_width": 4,
+    "stroke_color": "#000000"
+  },
+  "music": {"path": "", "volume": 0.15, "ducking": true},
+  "normalize_audio": true
+}

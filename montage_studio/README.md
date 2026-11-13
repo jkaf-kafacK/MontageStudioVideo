@@ -7,6 +7,8 @@ et des **vidéos YouTube 16:9** : montage manuel à la main, ou production **en 
 
 Interface dans le navigateur (Gradio), moteur FFmpeg, texte rendu avec Pillow : identique sous Windows, macOS et Linux.
 
+**Première utilisation ?** Suis le [tutoriel pas à pas](TUTORIEL.md) : un exercice guidé par onglet.
+
 ---
 
 ## 1. Installation (une seule fois)
@@ -68,6 +70,8 @@ Le modèle (`small` ≈ 500 Mo) est téléchargé au premier usage. Avec une car
 | Normalisation | Audio | -14 LUFS, le niveau visé par YouTube |
 | Images fixes animées | Images fixes | Zoom avant / arrière (Ken Burns), réparties sur la durée de la voix off |
 | Titre | Titre | Police, taille, couleur, position, bandeau, horaires |
+| Calques | Calques | Images, vidéos incrustées et textes animés par-dessus le montage, entrée en fondu, montée ou zoom |
+| Musique générée | Audio | Libre de droits, composée à la durée exacte de la vidéo : calme, inspirant, énergique, suspense |
 | Sous-titres | Sous-titres | Script minuté automatiquement, fichier `.srt` ou Whisper ; **karaoké** (mot prononcé surligné) |
 | Logo / filigrane | Logo | 5 positions, taille, opacité |
 | Aperçu rapide | Bas de page | Demi-résolution, 3 à 5× plus rapide |
@@ -75,11 +79,16 @@ Le modèle (`small` ≈ 500 Mo) est téléchargé au premier usage. Avec une car
 | Accélération GPU | Encodeur | NVIDIA, Apple, Intel ; repli automatique sur le CPU si ça échoue |
 | Projets | Projets et modèles | Sauvegarde / chargement en JSON |
 | Série | Shorts en série | CSV ou dossier → N vidéos avec le même style |
+| **Scènes animées** | Scènes animées | Carte titre, téléphone, écran final, liste, chiffres clés, avant / après, question choc ; ajout à la timeline ou intro / fin automatique |
+| **Classement** | Classement | Short 9:16 « Top N » : 2 à 10 clips, liste numérotée qui se remplit, 4 préréglages, 4 mises en page |
 | Miniatures | Outils rapides | Image de la vidéo + gros texte, 16:9 ou 9:16 |
 | Vidéo → Short | Outils rapides | Un clic : 9:16 + silences coupés |
 | Extraire l'audio | Outils rapides | MP3 |
 | Transcription | Outils rapides | Audio/vidéo → `.srt` (Whisper) |
+| Effacer un logo | Outils rapides | Efface ou floute une zone sur toute la vidéo (vidéos dont tu as les droits) |
+| Logo MSV | Outils rapides | Ajoute ton logo en mémorisant sa position, pour l'enlever proprement ensuite |
 | **Voix off** | Voix off | Texte → voix avec **ElevenLabs** (ta clé API) ou **Piper** (gratuit, hors ligne) ; une piste par scène + `.srt` |
+| **Ma voix** | Voix off | Ta propre voix clonée sur ton PC à partir de 10 à 60 s d'enregistrement (avec consentement) |
 | Remplacer une voix | Voix off | Change la voix d'un clip existant, au même volume qu'un clip de référence |
 | Voix auto en série | Shorts en série | Chaque ligne du CSV avec un `texte` reçoit sa voix off générée |
 
@@ -100,10 +109,15 @@ flowchart LR
 
 | Module | Rôle |
 |---|---|
-| `app.py` | Interface (onglets Montage, Shorts en série, Outils rapides, Aide) |
+| `app.py` | Interface (onglets Montage, Scènes animées, Classement, Voix off, Shorts en série, Outils rapides, Aide) |
 | `cli.py` | Même moteur en ligne de commande |
 | `core/render.py` | Moteur : projet JSON → MP4 |
 | `core/batch.py` | Production en série (CSV, dossier) |
+| `core/scenes.py` | Scènes animées (intro, écran final, liste…) |
+| `core/ranking.py` | Classement « Top N » : description JSON → projet standard |
+| `core/layers.py` | Calques : incrustations et textes animés |
+| `core/music.py` | Musique générée libre de droits |
+| `core/voice.py` | Voix off : Piper, ElevenLabs, Ma voix |
 | `core/subs.py` | SRT, minutage automatique, Whisper |
 | `core/textimg.py` | Rendu du texte (titres, sous-titres, karaoké) |
 | `core/tools.py` | Silences, captures, miniatures, audio |
@@ -157,6 +171,9 @@ python cli.py serie templates/short_storytelling.json exemples/serie_storytellin
 
 # Une vidéo par fichier d'un dossier (59 s max)
 python cli.py dossier templates/short_clip_parle.json D:/rushs --duree 59 --titre-nom --sortie sorties/clips
+
+# Un Short « Top N » à partir d'un classement JSON
+python cli.py classement exemples/classement_exemple.json -o sorties/top5.mp4 --qualite aperçu
 ```
 
 Pratique pour programmer un rendu de nuit (Planificateur de tâches Windows, cron).
@@ -189,6 +206,51 @@ Astuces : travaille en « aperçu », n'exporte en « haute » qu'à la fin ; sa
 
 ---
 
+## Classement (Top N)
+
+Onglet **Classement** : un Short 9:16 où une liste numérotée se remplit clip après clip, le clip en cours affiché avec
+son rang. De 2 à 10 clips ; le n° 1 est la première ligne du tableau.
+
+| Mise en page | Disposition |
+|---|---|
+| `liste à gauche` | Liste à gauche, clip à droite |
+| `liste en haut` | Liste sous le titre, clip en dessous |
+| `plein écran` | Clip plein écran, liste posée dessus |
+| `bandeau` | Titre sur une bande en haut, clip rogné qui remplit le reste |
+
+Préréglages fournis (`templates/classement/`) : **Néon sombre**, **Clair**, **Brut rouge**, **Podium**.
+Ordre `décroissant` (compte à rebours, le n° 1 en dernier) ou `croissant`.
+
+Le bouton « Enregistrer le classement » produit un fichier JSON, que l'on peut aussi écrire à la main
+(voir `exemples/classement_exemple.json`) :
+
+```json
+{
+  "title": "Le top 5\ndes plus beaux buts",
+  "highlight_words": ["beaux", "buts"],
+  "order": "décroissant",
+  "layout": "liste à gauche",
+  "max_clip_duration": 8,
+  "items": [
+    {"path": "clips/retourne.mp4", "label": "Le retourné", "start": 1.0, "end": 7.5, "credit": "@createur1"},
+    {"path": "clips/parade.jpg", "label": "La parade impossible"}
+  ],
+  "style": {"font": "Anton-Regular.ttf", "highlight_color": "#38BDF8", "badge": "coin du clip"},
+  "music": {"path": "", "volume": 0.15, "ducking": true}
+}
+```
+
+Les chemins des clips sont relatifs au dossier du fichier JSON. Clés de style facultatives : `font`, `title_size`,
+`list_size`, `text_color`, `dim_color`, `highlight_color`, `highlight_color_2`, `badge_color`, `background`,
+`stroke_color`, `stroke_width`, `badge` (`coin du clip`, `à côté du titre`, `aucun`), `list_panel`,
+`number_colors` (liste de couleurs), `label_scale` (0,3 à 1), `label_uppercase`, `label_italic`.
+Rendu : `python cli.py classement fichier.json` (options `-o`, `--qualite`, `--melanger`).
+Le classement est traduit en projet standard et rendu par le même moteur que l'onglet Montage.
+
+**Droits** : n'utilise que des clips dont tu as les droits ou l'autorisation, et crédite la source.
+
+---
+
 ## Voix off
 
 | | **Piper** | **ElevenLabs** |
@@ -197,7 +259,7 @@ Astuces : travaille en « aperçu », n'exporte en « haute » qu'à la fin ; sa
 | Internet | Seulement pour télécharger la voix la 1re fois | Obligatoire |
 | Qualité | Correcte, un peu synthétique | Très naturelle, voix clonées possibles |
 | Sous-titres | Minutage estimé | Minutage **exact**, mot par mot |
-| Voix | FR : Pierre, Tom, Gilles, Jessica, Siwis · EN : LibriTTS · ES : DaveFX, Sharvard | Toutes celles de ton compte |
+| Voix | FR : Pierre, Tom, Jessica, Siwis · EN : LibriTTS · ES : DaveFX, Sharvard | Toutes celles de ton compte |
 
 **ElevenLabs** : sur elevenlabs.io, *Profile → API Keys*, crée une clé, colle-la dans l'onglet Voix off puis
 « Charger mes voix ». La clé est mémorisée dans `voix_config.json` sur ton PC (ou mets-la dans la variable

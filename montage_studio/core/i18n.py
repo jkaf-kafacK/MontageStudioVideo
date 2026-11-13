@@ -359,8 +359,6 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)"),
     ("Pierre — homme, français", "Pierre — male, French", "Pierre — uomo, francese", "Pierre — hombre, francés"),
     ("Tom — homme, français", "Tom — male, French", "Tom — uomo, francese", "Tom — hombre, francés"),
-    ("Gilles — homme, français (grave)", "Gilles — male, French (deep)", "Gilles — uomo, francese (grave)",
-     "Gilles — hombre, francés (grave)"),
     ("Jessica — femme, français", "Jessica — female, French", "Jessica — donna, francese", "Jessica — mujer, francés"),
     ("Siwis — femme, français", "Siwis — female, French", "Siwis — donna, francese", "Siwis — mujer, francés"),
     ("LibriTTS — homme, anglais", "LibriTTS — male, English", "LibriTTS — uomo, inglese", "LibriTTS — hombre, inglés"),
@@ -507,6 +505,134 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Invalid crop: “{v}” (expected: left/top/right/bottom in %, e.g. 10/0/10/0)",
      "Ritaglio non valido: «{v}» (atteso: sinistra/alto/destra/basso in %, es. 10/0/10/0)",
      "Recorte no válido: «{v}» (se espera: izquierda/arriba/derecha/abajo en %, p. ej. 10/0/10/0)"),
+    # ---- onglet Classement (app.py)
+    ("Classement", "Ranking", "Classifica", "Clasificación"),
+    ("Un Short « Top N » : un titre, une liste numérotée qui se remplit clip après clip, le clip en cours dans un cadre "
+     "avec son rang. N'utilise que des clips dont tu as les droits ou l'autorisation, et crédite la source.",
+     "A “Top N” Short: a title, a numbered list that fills up clip after clip, and the current clip in a frame with "
+     "its rank. Only use clips you have the rights or permission to use, and credit the source.",
+     "Uno Short «Top N»: un titolo, una lista numerata che si riempie clip dopo clip, la clip in corso in una cornice "
+     "con la sua posizione. Usa solo clip di cui hai i diritti o l'autorizzazione, e cita la fonte.",
+     "Un Short «Top N»: un título, una lista numerada que se llena clip tras clip y el clip actual en un marco con su "
+     "puesto. Usa solo clips de los que tengas los derechos o la autorización, y cita la fuente."),
+    ("Clips", "Clips", "Clip", "Clips"),
+    ("Importer des clips (vidéos ou images)", "Import clips (videos or images)", "Importa clip (video o immagini)",
+     "Importar clips (vídeos o imágenes)"),
+    ("rang", "rank", "posizione", "puesto"),
+    ("titre", "title", "titolo", "título"),
+    ("crédit", "credit", "crediti", "crédito"),
+    ("Le n° 1 est la première ligne. Début et fin (s) sont facultatifs ; clique sur une ligne pour la sélectionner.",
+     "No. 1 is the first row. Start and end (s) are optional; click a row to select it.",
+     "Il n. 1 è la prima riga. Inizio e fine (s) sono facoltativi; clicca una riga per selezionarla.",
+     "El n.º 1 es la primera fila. Inicio y fin (s) son opcionales; haz clic en una fila para seleccionarla."),
+    ("Rang sélectionné", "Selected rank", "Posizione selezionata", "Puesto seleccionado"),
+    ("Monter", "Move up", "Sposta su", "Subir"),
+    ("Descendre", "Move down", "Sposta giù", "Bajar"),
+    ("Supprimer", "Delete", "Elimina", "Eliminar"),
+    ("Mélanger", "Shuffle", "Mescola", "Mezclar"),
+    ("Importe de 2 à 10 clips, puis donne un titre à chaque rang.", "Import 2 to 10 clips, then give each rank a title.",
+     "Importa da 2 a 10 clip, poi dai un titolo a ogni posizione.",
+     "Importa de 2 a 10 clips y luego da un título a cada puesto."),
+    ("Rang affiché", "Rank shown", "Posizione mostrata", "Puesto mostrado"),
+    ("Titre et style", "Title and style", "Titolo e stile", "Título y estilo"),
+    ("Le top 5 des plus beaux buts", "Top 5 most beautiful goals", "I 5 gol più belli", "Los 5 goles más bonitos"),
+    ("Entrée : passer à la ligne (titre sur deux lignes).", "Enter: new line (two-line title).",
+     "Invio: va a capo (titolo su due righe).", "Intro: salto de línea (título en dos líneas)."),
+    ("Mots à surligner", "Words to highlight", "Parole da evidenziare", "Palabras a resaltar"),
+    ("Préréglage", "Preset", "Preimpostazione", "Preajuste"),
+    ("Néon sombre", "Dark neon", "Neon scuro", "Neón oscuro"),
+    ("Clair", "Light", "Chiaro", "Claro"),
+    ("Brut rouge", "Raw red", "Rosso crudo", "Rojo crudo"),
+    ("Podium", "Podium", "Podio", "Podio"),
+    ("Surlignage 2", "Highlight 2", "Evidenziazione 2", "Resaltado 2"),
+    ("Un mot surligné sur deux (même couleur : désactivé).", "Every other highlighted word (same colour: off).",
+     "Una parola evidenziata su due (stesso colore: disattivato).",
+     "Una de cada dos palabras resaltadas (mismo color: desactivado)."),
+    ("Position du badge", "Badge position", "Posizione del badge", "Posición de la insignia"),
+    ("Panneau derrière la liste", "Panel behind the list", "Pannello dietro la lista", "Panel detrás de la lista"),
+    ("Quand la liste est posée sur la vidéo.", "When the list sits on top of the video.",
+     "Quando la lista è sopra il video.", "Cuando la lista está sobre el vídeo."),
+    ("Numéros colorés (or, argent, bronze)", "Coloured numbers (gold, silver, bronze)",
+     "Numeri colorati (oro, argento, bronzo)", "Números de colores (oro, plata, bronce)"),
+    ("Taille des libellés (× numéros)", "Label size (× numbers)", "Dimensione delle etichette (× numeri)",
+     "Tamaño de las etiquetas (× números)"),
+    ("Libellés en majuscules", "Labels in capitals", "Etichette in maiuscolo", "Etiquetas en mayúsculas"),
+    ("Libellés en italique", "Labels in italics", "Etichette in corsivo", "Etiquetas en cursiva"),
+    ("Mise en page", "Layout", "Impaginazione", "Diseño"),
+    ("Ordre de passage", "Playing order", "Ordine di passaggio", "Orden de aparición"),
+    ("décroissant : compte à rebours, le n° 1 passe en dernier", "descending: countdown, No. 1 comes last",
+     "decrescente: conto alla rovescia, il n. 1 arriva per ultimo",
+     "descendente: cuenta atrás, el n.º 1 sale el último"),
+    ("Durée max par clip (s)", "Max length per clip (s)", "Durata massima per clip (s)", "Duración máx. por clip (s)"),
+    ("Police, tailles et couleurs", "Font, sizes and colours", "Carattere, dimensioni e colori",
+     "Fuente, tamaños y colores"),
+    ("Taille du titre", "Title size", "Dimensione del titolo", "Tamaño del título"),
+    ("Taille de la liste", "List size", "Dimensione della lista", "Tamaño de la lista"),
+    ("Rangs à venir", "Upcoming ranks", "Posizioni in arrivo", "Puestos por venir"),
+    ("Badge", "Badge", "Badge", "Insignia"),
+    ("Épaisseur du contour", "Outline thickness", "Spessore del contorno", "Grosor del contorno"),
+    ("Musique (facultatif)", "Music (optional)", "Musica (facoltativa)", "Música (opcional)"),
+    ("Volume de la musique", "Music volume", "Volume della musica", "Volumen de la música"),
+    ("Aperçu rapide (vidéo)", "Quick preview (video)", "Anteprima rapida (video)", "Vista previa rápida (vídeo)"),
+    ("Exporter", "Export", "Esporta", "Exportar"),
+    ("Enregistrer le classement", "Save ranking", "Salva la classifica", "Guardar la clasificación"),
+    ("Charger un classement", "Load a ranking", "Carica una classifica", "Cargar una clasificación"),
+    ("Classement enregistré (.json)", "Saved ranking (.json)", "Classifica salvata (.json)",
+     "Clasificación guardada (.json)"),
+    ("Un classement contient au plus {max} clips : les clips en trop sont ignorés.",
+     "A ranking contains at most {max} clips: the extra clips are ignored.",
+     "Una classifica contiene al massimo {max} clip: quelle in più vengono ignorate.",
+     "Una clasificación contiene como máximo {max} clips: los que sobran se ignoran."),
+    ("**{n} clips · {d:.1f} s au total**", "**{n} clips · {d:.1f} s in total**", "**{n} clip · {d:.1f} s in totale**",
+     "**{n} clips · {d:.1f} s en total**"),
+    ("Rendu du classement", "Rendering the ranking", "Rendering della classifica", "Renderizando la clasificación"),
+    ("Classement créé : {name}", "Ranking created: {name}", "Classifica creata: {name}",
+     "Clasificación creada: {name}"),
+    ("Classement enregistré : {name}", "Ranking saved: {name}", "Classifica salvata: {name}",
+     "Clasificación guardada: {name}"),
+    ("Choisis un fichier de classement .json.", "Choose a ranking .json file.", "Scegli un file di classifica .json.",
+     "Elige un archivo de clasificación .json."),
+    # ---- mode Classement (core/ranking.py)
+    ("décroissant", "descending", "decrescente", "descendente"),
+    ("croissant", "ascending", "crescente", "ascendente"),
+    ("liste à gauche", "list on the left", "lista a sinistra", "lista a la izquierda"),
+    ("liste en haut", "list at the top", "lista in alto", "lista arriba"),
+    ("plein écran", "full screen", "schermo intero", "pantalla completa"),
+    ("bandeau", "banner", "banda", "banda superior"),
+    ("coin du clip", "clip corner", "angolo della clip", "esquina del clip"),
+    ("à côté du titre", "next to the title", "accanto al titolo", "junto al título"),
+    ("Position du badge inconnue : « {v} » (choix : {choix}).", "Unknown badge position: “{v}” (choices: {choix}).",
+     "Posizione del badge sconosciuta: «{v}» (scelte: {choix}).",
+     "Posición de la insignia desconocida: «{v}» (opciones: {choix})."),
+    ("Ordre inconnu : « {v} » (choix : {choix}).", "Unknown order: “{v}” (choices: {choix}).",
+     "Ordine sconosciuto: «{v}» (scelte: {choix}).", "Orden desconocido: «{v}» (opciones: {choix})."),
+    ("Mise en page inconnue : « {v} » (choix : {choix}).", "Unknown layout: “{v}” (choices: {choix}).",
+     "Impaginazione sconosciuta: «{v}» (scelte: {choix}).", "Diseño desconocido: «{v}» (opciones: {choix})."),
+    ("Un classement contient de {min} à {max} clips (ici : {n}).",
+     "A ranking contains from {min} to {max} clips (here: {n}).",
+     "Una classifica contiene da {min} a {max} clip (qui: {n}).",
+     "Una clasificación contiene de {min} a {max} clips (aquí: {n})."),
+    ("Rang {n} : fichier introuvable ({path}).", "Rank {n}: file not found ({path}).",
+     "Posizione {n}: file non trovato ({path}).", "Puesto {n}: archivo no encontrado ({path})."),
+    ("Rang {n} : « {name} » n'est ni une vidéo ni une image.", "Rank {n}: “{name}” is neither a video nor an image.",
+     "Posizione {n}: «{name}» non è né un video né un'immagine.",
+     "Puesto {n}: «{name}» no es ni un vídeo ni una imagen."),
+    ("Rang {n} : extrait trop court ({d:.2f} s). Vérifie le début et la fin.",
+     "Rank {n}: excerpt too short ({d:.2f} s). Check the start and end.",
+     "Posizione {n}: estratto troppo corto ({d:.2f} s). Controlla inizio e fine.",
+     "Puesto {n}: fragmento demasiado corto ({d:.2f} s). Revisa el inicio y el final."),
+    ("Musique introuvable : {path}", "Music not found: {path}", "Musica non trovata: {path}",
+     "Música no encontrada: {path}"),
+    ("Préréglage inconnu : « {nom} » (choix : {choix}).", "Unknown preset: “{nom}” (choices: {choix}).",
+     "Preimpostazione sconosciuta: «{nom}» (scelte: {choix}).", "Preajuste desconocido: «{nom}» (opciones: {choix})."),
+    ("⚠ Durée totale : {d:.0f} s. Au-delà de 60 s, la vidéo risque de ne plus être considérée comme un Short.",
+     "⚠ Total length: {d:.0f} s. Beyond 60 s, the video may no longer count as a Short.",
+     "⚠ Durata totale: {d:.0f} s. Oltre 60 s, il video potrebbe non essere più considerato uno Short.",
+     "⚠ Duración total: {d:.0f} s. Más allá de 60 s, el vídeo podría dejar de considerarse un Short."),
+    ("Cadre invalide : « {v} » (attendu : x/y/largeur/hauteur en %, ex. 40/20/60/60)",
+     "Invalid frame: “{v}” (expected: x/y/width/height in %, e.g. 40/20/60/60)",
+     "Cornice non valida: «{v}» (atteso: x/y/larghezza/altezza in %, es. 40/20/60/60)",
+     "Marco no válido: «{v}» (se espera: x/y/ancho/alto en %, p. ej. 40/20/60/60)"),
     ("⚠ Aucune piste de sous-titres dans {name}", "⚠ No subtitle track in {name}",
      "⚠ Nessuna traccia di sottotitoli in {name}", "⚠ No hay pista de subtítulos en {name}"),
     ("⚠ Sous-titres en image dans {name} : non pris en charge, utilise Whisper",
@@ -761,6 +887,54 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Mes voix", "My voices", "Le mie voci", "Mis voces"),
     ("Ma voix", "My voice", "La mia voce", "Mi voz"),
     ("Expressivité", "Expressiveness", "Espressività", "Expresividad"),
+    ("Sous-titres .srt et texte .txt", "Subtitles .srt and text .txt", "Sottotitoli .srt e testo .txt",
+     "Subtítulos .srt y texto .txt"),
+    # ---- voix plus naturelles (pauses, prononciation, son studio, prises vérifiées)
+    ("Style de lecture", "Reading style", "Stile di lettura", "Estilo de lectura"),
+    ("Narration calme", "Calm narration", "Narrazione calma", "Narración tranquila"),
+    ("Conversation", "Conversation", "Conversazione", "Conversación"),
+    ("Promo énergique", "Energetic promo", "Promo energica", "Promo enérgica"),
+    ("Personnalisé", "Custom", "Personalizzato", "Personalizado"),
+    ("Prises par phrase", "Takes per sentence", "Riprese per frase", "Tomas por frase"),
+    ("2 ou 3 : chaque phrase est vérifiée (transcription) et refaite si un mot manque ; le premier usage télécharge "
+     "le vérificateur (≈ 1 Go)",
+     "2 or 3: each sentence is checked (transcription) and redone if a word is missing; first use downloads the "
+     "checker (≈ 1 GB)",
+     "2 o 3: ogni frase viene verificata (trascrizione) e rifatta se manca una parola; al primo uso scarica il "
+     "verificatore (≈ 1 GB)",
+     "2 o 3: cada frase se verifica (transcripción) y se rehace si falta una palabra; el primer uso descarga el "
+     "verificador (≈ 1 GB)"),
+    ("Son studio", "Studio sound", "Suono da studio", "Sonido de estudio"),
+    ("égaliseur, « s » adoucis, compression et très légère ambiance de pièce : la voix sonne moins « synthèse »",
+     "equalizer, softened \"s\" sounds, compression and a very light room tone: the voice sounds less synthetic",
+     "equalizzatore, « s » addolcite, compressione e leggerissimo effetto stanza: la voce suona meno sintetica",
+     "ecualizador, « s » suavizadas, compresión y un ligerísimo ambiente de sala: la voz suena menos sintética"),
+    ("Pauses et prononciation", "Pauses and pronunciation", "Pause e pronuncia", "Pausas y pronunciación"),
+    ("**Pauses** : chaque phrase est lue séparément, avec une pause plus longue après un point, un point "
+     "d'exclamation, des points de suspension ou une ligne vide. Pour une pause précise, écris `[pause 1s]` ou "
+     "`[pause 500ms]`.\n\n**Prononciation** (Piper et Ma voix) : nombres, heures, prix, pourcentages et sigles sont "
+     "lus en toutes lettres. Si un mot est mal prononcé, ajoute une ligne `mot = prononciation` ci-dessous.",
+     "**Pauses**: each sentence is read separately, with a longer pause after a full stop, an exclamation mark, an "
+     "ellipsis or a blank line. For an exact pause, write `[pause 1s]` or `[pause 500ms]`.\n\n**Pronunciation** "
+     "(Piper and My voice): numbers, times, prices, percentages and acronyms are read out in full. If a word is "
+     "mispronounced, add a line `word = pronunciation` below.",
+     "**Pause**: ogni frase viene letta separatamente, con una pausa più lunga dopo un punto, un punto esclamativo, "
+     "dei puntini di sospensione o una riga vuota. Per una pausa precisa, scrivi `[pause 1s]` o `[pause 500ms]`.\n\n"
+     "**Pronuncia** (Piper e La mia voce): numeri, orari, prezzi, percentuali e sigle vengono letti per esteso. Se "
+     "una parola è pronunciata male, aggiungi una riga `parola = pronuncia` qui sotto.",
+     "**Pausas**: cada frase se lee por separado, con una pausa más larga tras un punto, un signo de exclamación, "
+     "puntos suspensivos o una línea vacía. Para una pausa exacta, escribe `[pause 1s]` o `[pause 500ms]`.\n\n"
+     "**Pronunciación** (Piper y Mi voz): números, horas, precios, porcentajes y siglas se leen en letras. Si una "
+     "palabra se pronuncia mal, añade una línea `palabra = pronunciación` abajo."),
+    ("Dictionnaire de prononciation", "Pronunciation dictionary", "Dizionario di pronuncia",
+     "Diccionario de pronunciación"),
+    ("MSV = èm-èss-vé\nYouTube = you-tioube", "MSV = em-ess-vee\nGIF = jif", "MSV = emme-esse-vu\nYouTube = iutiub",
+     "MSV = eme-ese-uve\nYouTube = yutub"),
+    ("Vérification : {summary}", "Check: {summary}", "Verifica: {summary}", "Verificación: {summary}"),
+    ("{n} phrase(s), {redone} refaite(s) après vérification, {doubtful} douteuse(s) (à réécouter)",
+     "{n} sentence(s), {redone} redone after checking, {doubtful} doubtful (listen again)",
+     "{n} frase/i, {redone} rifatta/e dopo la verifica, {doubtful} dubbia/e (da riascoltare)",
+     "{n} frase(s), {redone} rehecha(s) tras la verificación, {doubtful} dudosa(s) (volver a escuchar)"),
     ("0,5 = naturel ; plus haut = plus d'émotion (et plus rapide)", "0.5 = natural; higher = more emotion (and faster)",
      "0,5 = naturale; più alto = più emozione (e più veloce)", "0,5 = natural; más alto = más emoción (y más rápido)"),
     ("Rythme", "Pace", "Ritmo", "Ritmo"),
@@ -1125,12 +1299,17 @@ PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. 
   et déplacement, avec un trajet différent à chaque photo). La colonne « mouvement » de la timeline règle une photo
   précise.
 
+### Classement
+Onglet **Classement** : un Short 9:16 « Top N ». Importe 2 à 10 clips (le n° 1 est la première ligne), donne un titre à chaque rang et, si tu veux, le crédit de la source. Écris le titre et coche les mots à surligner, puis choisis un préréglage (Néon sombre, Clair, Brut rouge, Podium), une mise en page (liste à gauche, liste en haut, plein écran, bandeau) et l'ordre (décroissant : compte à rebours, le n° 1 passe en dernier). Entrée dans le titre passe à la ligne. « Police, tailles et couleurs » règle aussi une deuxième couleur de surlignage, la position du badge (coin du clip, à côté du titre, aucun), le panneau derrière la liste, les numéros colorés (or, argent, bronze) et les libellés (taille, majuscules, italique). Le curseur « Rang affiché » montre chaque étape ; « Aperçu rapide » fait une vidéo légère, « Exporter » la version finale dans `sorties/classements`. Enregistre le classement (`.json`) pour le reprendre plus tard, ou pour le rendre en ligne de commande : `python cli.py classement fichier.json`.
+**Droits** : n'utilise que des clips dont tu as les droits ou l'autorisation, et crédite toujours la source.
+
 ### Voix off
 Onglet **Voix off** : écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou
 **ElevenLabs** (ta clé API, voix très naturelles et minutage exact des sous-titres), puis « Utiliser dans l'onglet Montage ».
 En série, coche « Créer la voix off à partir de la colonne texte ». Une scène générée avec la mauvaise voix se corrige
 avec « Remplacer la voix d'un clip existant ».
 **Ma voix (clonage local)** : enregistre 30 à 60 s de ta voix (pièce calme, ton naturel), crée la voix une fois, puis choisis-la comme n'importe quelle autre. Tout reste sur ton PC ; la première utilisation installe environ 5 Go. Ne clone que ta voix, ou avec l'accord de la personne.
+**Voix plus naturelles** : chaque phrase est lue séparément avec une pause adaptée à sa ponctuation ; `[pause 1s]` force une pause. Nombres, heures, prix et sigles sont lus en lettres, et le **dictionnaire de prononciation** (« Pauses et prononciation ») corrige un mot mal dit (`MSV = èm-èss-vé`). « Son studio » donne à toutes les voix un son plus chaud et plus net. Pour Ma voix, choisis un **style de lecture** (Narration calme, Conversation, Promo énergique) ; avec **2 ou 3 prises par phrase**, chaque phrase est réécoutée par une transcription automatique et refaite si un mot manque ou si un mot inventé s'ajoute. Le modèle imite le ton de ton enregistrement : pour une promo, enregistre-toi avec le ton d'une promo. Écris pour l'oreille : phrases courtes, ponctuation soignée.
 
 ### Outils rapides
 - **Convertisseur de temps** (Inspecteur) : tape `90`, `1:30`, `1h 2m 3s` ou `2,5 min`, puis « → Début » / « → Fin ».
@@ -1184,12 +1363,17 @@ the exact length of the video, and lowered while someone speaks. “Listen 12 s�
 - **Photo motion** (Settings → Still images): zoom in or out, pan, or **Ken Burns** (slow zoom and drift, with a
   different path for each photo). The timeline's “motion” column sets the motion of a single photo.
 
+### Ranking
+**Ranking** tab: a 9:16 “Top N” Short. Import 2 to 10 clips (No. 1 is the first row), give each rank a title and, if you like, the source credit. Write the title and tick the words to highlight, then pick a preset (Dark neon, Light, Raw red, Podium), a layout (list on the left, list at the top, full screen, banner) and the order (descending: countdown, No. 1 comes last). Enter in the title starts a new line. “Font, sizes and colours” also sets a second highlight colour, the badge position (clip corner, next to the title, none), the panel behind the list, coloured numbers (gold, silver, bronze) and the labels (size, capitals, italics). The “Rank shown” slider previews each step; “Quick preview” makes a light video, “Export” the final version in `sorties/classements`. Save the ranking (`.json`) to resume it later, or to render it from the command line: `python cli.py classement file.json`.
+**Rights**: only use clips you have the rights or permission to use, and always credit the source.
+
 ### Voice-over
 **Voice-over** tab: write the text (scenes separated by `---`), choose **Piper** (free, offline) or
 **ElevenLabs** (your API key, very natural voices and exact subtitle timing), then “Use in the Editor tab”.
 In batch mode, tick “Create the voice-over from the texte column”. A scene generated with the wrong voice can be fixed
 with “Replace the voice of an existing clip”.
 **My voice (local cloning)**: record 30 to 60 s of your voice (quiet room, natural tone), create the voice once, then pick it like any other. Everything stays on your PC; first use installs about 5 GB. Only clone your own voice, or with the person's consent.
+**More natural voices**: each sentence is read separately with a pause that matches its punctuation; `[pause 1s]` forces a pause. Numbers, times, prices and acronyms are read out in full, and the **pronunciation dictionary** ("Pauses and pronunciation") fixes a mispronounced word (`MSV = em-ess-vee`). "Studio sound" gives every voice a warmer, cleaner sound. For My voice, pick a **reading style** (Calm narration, Conversation, Energetic promo); with **2 or 3 takes per sentence**, each sentence is checked by automatic transcription and redone if a word is missing or an invented word is added. The model copies the tone of your recording: for a promo, record yourself in a promo tone. Write for the ear: short sentences, careful punctuation.
 
 ### Quick tools
 - **Time converter** (Inspector): type `90`, `1:30`, `1h 2m 3s` or `2.5 min`, then “→ Start” / “→ End”.
@@ -1244,12 +1428,17 @@ alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s
   (zoom lento e spostamento, con un percorso diverso per ogni foto). La colonna « movimento » della timeline regola
   una sola foto.
 
+### Classifica
+Scheda **Classifica**: uno Short 9:16 «Top N». Importa da 2 a 10 clip (il n. 1 è la prima riga), dai un titolo a ogni posizione e, se vuoi, i crediti della fonte. Scrivi il titolo e spunta le parole da evidenziare, poi scegli una preimpostazione (Neon scuro, Chiaro, Rosso crudo, Podio), un'impaginazione (lista a sinistra, lista in alto, schermo intero, banda) e l'ordine (decrescente: conto alla rovescia, il n. 1 arriva per ultimo). Invio nel titolo va a capo. «Carattere, dimensioni e colori» regola anche un secondo colore di evidenziazione, la posizione del badge (angolo della clip, accanto al titolo, nessuno), il pannello dietro la lista, i numeri colorati (oro, argento, bronzo) e le etichette (dimensione, maiuscolo, corsivo). Il cursore «Posizione mostrata» mostra ogni passaggio; «Anteprima rapida» crea un video leggero, «Esporta» la versione finale in `sorties/classements`. Salva la classifica (`.json`) per riprenderla più tardi o per crearla da riga di comando: `python cli.py classement file.json`.
+**Diritti**: usa solo clip di cui hai i diritti o l'autorizzazione, e cita sempre la fonte.
+
 ### Voce fuori campo
 Scheda **Voce fuori campo**: scrivi il testo (scene separate da `---`), scegli **Piper** (gratuito, offline) o
 **ElevenLabs** (la tua chiave API, voci molto naturali e sottotitoli con tempi esatti), poi «Usa nella scheda Montaggio».
 In serie, spunta «Crea la voce fuori campo dalla colonna texte». Una scena generata con la voce sbagliata si corregge
 con «Sostituisci la voce di una clip esistente».
 **La mia voce (clonazione locale)**: registra da 30 a 60 s della tua voce (stanza silenziosa, tono naturale), crea la voce una volta, poi sceglila come le altre. Tutto resta sul tuo PC; il primo utilizzo installa circa 5 GB. Clona solo la tua voce, o con il consenso della persona.
+**Voci più naturali**: ogni frase viene letta separatamente con una pausa adatta alla punteggiatura; `[pause 1s]` forza una pausa. Numeri, orari, prezzi e sigle vengono letti per esteso, e il **dizionario di pronuncia** («Pause e pronuncia») corregge una parola pronunciata male (`MSV = emme-esse-vu`). «Suono da studio» dà a tutte le voci un suono più caldo e pulito. Per La mia voce, scegli uno **stile di lettura** (Narrazione calma, Conversazione, Promo energica); con **2 o 3 riprese per frase**, ogni frase viene verificata da una trascrizione automatica e rifatta se manca una parola o se ne viene aggiunta una inventata. Il modello imita il tono della tua registrazione: per una promo, registrati con un tono da promo. Scrivi per l'orecchio: frasi brevi, punteggiatura curata.
 
 ### Strumenti rapidi
 - **Convertitore di tempo** (Ispettore): scrivi `90`, `1:30`, `1h 2m 3s` o `2,5 min`, poi «→ Inizio» / «→ Fine».
@@ -1305,12 +1494,17 @@ PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12
   desplazamiento, con un recorrido distinto para cada foto). La columna «movimiento» de la línea de tiempo ajusta
   una sola foto.
 
+### Clasificación
+Pestaña **Clasificación**: un Short 9:16 «Top N». Importa de 2 a 10 clips (el n.º 1 es la primera fila), da un título a cada puesto y, si quieres, el crédito de la fuente. Escribe el título y marca las palabras a resaltar; luego elige un preajuste (Neón oscuro, Claro, Rojo crudo, Podio), un diseño (lista a la izquierda, lista arriba, pantalla completa, banda superior) y el orden (descendente: cuenta atrás, el n.º 1 sale el último). Intro en el título hace un salto de línea. «Fuente, tamaños y colores» también ajusta un segundo color de resaltado, la posición de la insignia (esquina del clip, junto al título, ninguno), el panel detrás de la lista, los números de colores (oro, plata, bronce) y las etiquetas (tamaño, mayúsculas, cursiva). El cursor «Puesto mostrado» muestra cada paso; «Vista previa rápida» crea un vídeo ligero y «Exportar» la versión final en `sorties/classements`. Guarda la clasificación (`.json`) para retomarla más tarde o para crearla desde la línea de comandos: `python cli.py classement archivo.json`.
+**Derechos**: usa solo clips de los que tengas los derechos o la autorización, y cita siempre la fuente.
+
 ### Voz en off
 Pestaña **Voz en off**: escribe el texto (escenas separadas por `---`), elige **Piper** (gratis, sin conexión) o
 **ElevenLabs** (tu clave API, voces muy naturales y subtítulos con tiempos exactos), y luego «Usar en la pestaña Edición».
 En serie, marca «Crear la voz en off a partir de la columna texte». Una escena generada con la voz equivocada se corrige
 con «Reemplazar la voz de un clip existente».
 **Mi voz (clonación local)**: graba de 30 a 60 s de tu voz (habitación tranquila, tono natural), crea la voz una vez y elígela como cualquier otra. Todo se queda en tu PC; el primer uso instala unos 5 GB. Clona solo tu voz, o con el consentimiento de la persona.
+**Voces más naturales**: cada frase se lee por separado con una pausa adaptada a su puntuación; `[pause 1s]` fuerza una pausa. Números, horas, precios y siglas se leen en letras, y el **diccionario de pronunciación** («Pausas y pronunciación») corrige una palabra mal dicha (`MSV = eme-ese-uve`). «Sonido de estudio» da a todas las voces un sonido más cálido y limpio. Para Mi voz, elige un **estilo de lectura** (Narración tranquila, Conversación, Promo enérgica); con **2 o 3 tomas por frase**, cada frase se verifica con una transcripción automática y se rehace si falta una palabra o se añade una inventada. El modelo imita el tono de tu grabación: para una promo, grábate con tono de promo. Escribe para el oído: frases cortas, puntuación cuidada.
 
 ### Herramientas rápidas
 - **Conversor de tiempo** (Inspector): escribe `90`, `1:30`, `1h 2m 3s` o `2,5 min`, y luego «→ Inicio» / «→ Fin».

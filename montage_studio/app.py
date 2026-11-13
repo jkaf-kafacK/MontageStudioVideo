@@ -16,6 +16,7 @@ import threading
 import time
 import webbrowser
 import os
+import random
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -30,7 +31,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import batch, errors, ff, layers, paths, scenes, subs, tools, voice
+from core import batch, errors, ff, layers, paths, ranking, scenes, subs, tools, voice
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
@@ -587,11 +588,11 @@ def template_info(name):
 
 def run_series(mode, csv_file, base_dir, folder, max_dur, title_from_name, out_name, quality, tpl,
                auto_v, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
-               clone_voice, exag, cfg, *values, progress=gr.Progress()):
+               clone_voice, exag, cfg, takes, studio, lexicon, *values, progress=gr.Progress()):
     tts = None
     if auto_v:
         provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch,
-                                              speed, key, clone_voice, exag, cfg)
+                                              speed, key, clone_voice, exag, cfg, takes, studio, lexicon)
         tts = {"provider": provider, "voice": v, **options}
     if tpl == FROM_MONTAGE or not tpl:
         template = collect(values)
@@ -712,6 +713,208 @@ def scene_to_timeline(path, df, lib):
     lib = list(lib or []) + ([path] if path not in (lib or []) else [])
     gr.Info(_("Scène ajoutée à la fin de la timeline (onglet Montage)."))
     return df_from_rows(rows), lib, gr.Dropdown(choices=[(media_label(x), x) for x in lib])
+
+
+# --------------------------------------------------------------------------- actions : classement (Top N)
+
+RK_COLS = ["rang", "fichier", "titre", "début", "fin", "crédit"]   # lues par position, en-têtes traduits
+PRESET_LABELS = {"neon_sombre": "Néon sombre", "clair": "Clair", "verifable_brut": "Brut rouge", "podium": "Podium"}
+# réglages du style dans l'ordre des champs de l'onglet (voir rank_spec et rank_preset)
+RK_STYLE_KEYS = ["font", "title_size", "list_size", "text_color", "dim_color", "highlight_color", "badge_color",
+                 "background", "stroke_color", "stroke_width", "highlight_color_2", "badge", "list_panel",
+                 "number_colors", "label_scale", "label_uppercase", "label_italic"]
+
+
+def rank_style_fields(st: dict) -> list:
+    """Valeurs des champs du style (ordre de RK_STYLE_KEYS) à partir d'un style de classement. Les numéros colorés
+    sont une case à cocher ; la deuxième couleur vide prend celle du surlignage (même rendu)."""
+    st = {**ranking.STYLE, **{k: v for k, v in (st or {}).items() if v is not None}}
+    vals = {**st, "number_colors": bool(st.get("number_colors")),
+            "highlight_color_2": st.get("highlight_color_2") or st["highlight_color"],
+            "badge": layers.norm_choice(st.get("badge"), ranking.BADGES, ranking.BADGES[0]),
+            "list_panel": layers.truthy(st.get("list_panel")), "label_uppercase": layers.truthy(st.get("label_uppercase")),
+            "label_italic": layers.truthy(st.get("label_italic")),
+            "label_scale": num(st.get("label_scale"), 1.0)}
+    return [vals[k] for k in RK_STYLE_KEYS]
+
+
+def rank_cols() -> list[str]:
+    return [_(c) for c in RK_COLS]
+
+
+def _cell(v) -> str:
+    """Texte d'une cellule (vide pour None ou NaN)."""
+    return "" if v is None or (isinstance(v, float) and math.isnan(v)) else str(v).strip()
+
+
+def rank_df(rows) -> pd.DataFrame:
+    """Tableau du classement ; la colonne « rang » suit l'ordre des lignes."""
+    rows = [[i + 1, *(list(r) + [None] * 6)[1:6]] for i, r in enumerate(rows)]
+    return pd.DataFrame(rows, columns=rank_cols()) if rows else pd.DataFrame(columns=rank_cols())
+
+
+def rank_rows(df) -> list[list]:
+    """Lignes du tableau qui ont un fichier."""
+    return [(list(r) + [None] * 6)[:6] for r in to_rows(df) if _cell((list(r) + [None, None])[1])
+            and _cell(r[1]).lower() != "nan"]
+
+
+def rank_items(df) -> list[dict]:
+    return [{"path": _cell(r[1]), "label": _cell(r[2]), "start": num(r[3]), "end": num(r[4]),
+             "credit": _cell(r[5])} for r in rank_rows(df)]
+
+
+def rank_import(files, df):
+    """Ajoute des clips à la fin du classement (copiés dans medias/ ; titre = nom du fichier d'origine).
+    Renvoie aussi None pour vider le champ d'import : sinon le clip suivant ramènerait les précédents."""
+    rows = rank_rows(df)
+    for f in files or []:
+        p = persist(f)
+        nom = Path(f if isinstance(f, str) else getattr(f, "name", str(f))).stem   # avant un éventuel horodatage
+        rows.append([None, p, nom.replace("_", " "), None, None, ""])
+    if len(rows) > ranking.MAX_CLIPS:
+        gr.Warning(_("Un classement contient au plus {max} clips : les clips en trop sont ignorés.",
+                     max=ranking.MAX_CLIPS))
+        rows = rows[:ranking.MAX_CLIPS]
+    return rank_df(rows), None
+
+
+def rank_selected(evt: gr.SelectData):
+    """Clic sur une ligne du tableau : elle devient le rang sélectionné."""
+    return int(evt.index[0]) + 1
+
+
+def rank_move(df, rang, delta: int):
+    """Monte (delta = -1, vers le n° 1) ou descend le rang sélectionné. Renvoie (tableau, nouveau rang)."""
+    rows = rank_rows(df)
+    i = int(num(rang, 1) or 1) - 1
+    j = i + delta
+    if 0 <= i < len(rows) and 0 <= j < len(rows):
+        rows[i], rows[j] = rows[j], rows[i]
+        i = j
+    return rank_df(rows), max(1, min(i + 1, len(rows) or 1))
+
+
+def rank_delete(df, rang):
+    rows = rank_rows(df)
+    i = int(num(rang, 1) or 1) - 1
+    if 0 <= i < len(rows):
+        rows.pop(i)
+    return rank_df(rows), max(1, min(i + 1, len(rows) or 1))
+
+
+def rank_shuffle(df, seed=None):
+    rows = rank_rows(df)
+    random.Random(seed).shuffle(rows)
+    return rank_df(rows)
+
+
+def rank_word_choices(title: str) -> list[str]:
+    """Mots du titre, sans ponctuation ni doublons, dans l'ordre."""
+    out, seen = [], set()
+    for w in (title or "").split():
+        w = re.sub(r"^[\W_]+|[\W_]+$", "", w)
+        if w and w.casefold() not in seen:
+            seen.add(w.casefold())
+            out.append(w)
+    return out
+
+
+def rank_words(title, selected):
+    """Cases des mots à surligner, régénérées quand le titre change (les mots encore présents restent cochés)."""
+    choices = rank_word_choices(title)
+    keep = {str(w).casefold() for w in selected or []}
+    return gr.CheckboxGroup(choices=choices, value=[w for w in choices if w.casefold() in keep])
+
+
+def rank_preset(name):
+    """Préréglage choisi -> mise en page, ordre, police, tailles et couleurs."""
+    p = ranking.charger_preset(name)
+    return [p.get("layout", ranking.MISES_EN_PAGE[0]), p.get("order", ranking.ORDRES[0])] + \
+        rank_style_fields(p.get("style", {}))
+
+
+def rank_spec(df, title, words, layout, order, max_dur, *rest) -> dict:
+    """Description du classement à partir des champs de l'onglet (format de core/ranking.py)."""
+    style_vals, (music, volume) = rest[:len(RK_STYLE_KEYS)], rest[len(RK_STYLE_KEYS):]
+    style = dict(zip(RK_STYLE_KEYS, style_vals))
+    for k in ("title_size", "list_size", "stroke_width", "label_scale"):
+        style[k] = num(style[k], ranking.STYLE[k])
+    style["number_colors"] = list(ranking.COULEURS_PODIUM) if style["number_colors"] else []
+    return {"title": title or "", "highlight_words": list(words or []), "order": order, "layout": layout,
+            "max_clip_duration": num(max_dur, 8.0), "items": rank_items(df), "style": style,
+            "music": {"path": persist(music) if music else "", "volume": num(volume, 0.15), "ducking": True},
+            "normalize_audio": True}
+
+
+def rank_status_text(spec: dict) -> str:
+    """Nombre de clips et durée totale (avertissement au-delà de 60 s)."""
+    total = sum(p["duree"] for p in ranking.durees(spec))
+    txt = _("**{n} clips · {d:.1f} s au total**", n=len(spec["items"]), d=total)
+    return "  \n".join([txt] + ranking.alertes(spec))
+
+
+def rank_status(df, max_dur) -> str:
+    if not rank_rows(df):
+        return _("Importe de 2 à 10 clips, puis donne un titre à chaque rang.")
+    try:
+        return rank_status_text(ranking.normaliser({"items": rank_items(df), "max_clip_duration": num(max_dur, 8)}))
+    except ValueError as e:
+        return f"⚠ {e}"
+
+
+def rank_preview(rang, *args):
+    """Aperçu instantané du rang affiché, et l'état du classement (ou ce qui manque)."""
+    try:
+        spec = ranking.normaliser(rank_spec(*args))
+    except ValueError as e:
+        return None, f"⚠ {e}"
+    r = max(1, min(int(num(rang, 1) or 1), len(spec["items"])))
+    return ranking.apercu(spec, r, 540, 960), rank_status_text(spec)
+
+
+def rank_render(quality: str, *args, progress=gr.Progress()):
+    """Vidéo du classement dans sorties/classements (aperçu rapide ou export en haute qualité)."""
+    spec = ranking.normaliser(rank_spec(*args))
+    msg = _("Rendu du classement")
+    progress(0, desc=msg)
+    name = slug(spec["title"])[:40] or "classement"
+    out = OUT_DIR / "classements" / f"{name}_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+    res = ranking.rendre(spec, out, lambda f, m: progress(f, desc=m or msg), quality)
+    gr.Info(_("Classement créé : {name}", name=out.name))
+    return str(out), str(out), res["log"]
+
+
+def rank_save(*args) -> str:
+    """Enregistre le classement (JSON) dans projets/classements."""
+    spec = rank_spec(*args)
+    folder = PROJ_DIR / "classements"
+    folder.mkdir(parents=True, exist_ok=True)
+    path = folder / f"{slug(spec['title'])[:40] or 'classement'}.json"
+    path.write_text(json.dumps(spec, ensure_ascii=False, indent=2), encoding="utf-8")
+    gr.Info(_("Classement enregistré : {name}", name=path.name))
+    return str(path)
+
+
+def rank_load(file) -> list:
+    """Charge un classement JSON dans l'onglet (chemins relatifs : par rapport au dossier du fichier)."""
+    if not file:
+        raise gr.Error(_("Choisis un fichier de classement .json."))
+    path = Path(file)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    rows = []
+    for it in data.get("items") or []:
+        p = Path(str(it.get("path") or ""))
+        p = p if p.is_absolute() or not str(p) else path.parent / p
+        rows.append([None, str(p), it.get("label") or "", it.get("start"), it.get("end"), it.get("credit") or ""])
+    music = data.get("music") or {}
+    title = data.get("title") or ""
+    return [rank_df(rows), title, rank_words(title, data.get("highlight_words") or []),
+            layers.norm_choice(data.get("layout"), ranking.MISES_EN_PAGE, ranking.MISES_EN_PAGE[0]),
+            layers.norm_choice(data.get("order"), ranking.ORDRES, ranking.ORDRES[0]),
+            num(data.get("max_clip_duration"), 8.0)] + rank_style_fields(data.get("style")) + \
+        [music.get("path") if music.get("path") and Path(music["path"]).is_file() else None,
+         num(music.get("volume"), 0.15)]
 
 
 # --------------------------------------------------------------------------- actions : outils
@@ -841,7 +1044,10 @@ def tool_transcribe(file, lang, model, max_words, progress=gr.Progress()):
     cues = subs.transcribe(src, lang or None, model, int(max_words))
     out = OUT_DIR / f"{Path(file).stem}.srt"
     subs.write_srt(cues, out)
-    return str(out), "\n".join(f"[{c['start']:.1f} → {c['end']:.1f}] {c['text']}" for c in cues[:200])
+    text = subs.plain_text(cues)           # un seul paragraphe, sans heures ni [crochets]
+    txt = out.with_suffix(".txt")
+    txt.write_text(text + "\n", encoding="utf-8")
+    return [str(out), str(txt)], text
 
 
 # --------------------------------------------------------------------------- actions : voix off
@@ -850,8 +1056,12 @@ ENGINES = ["Piper (gratuit, local)", "ElevenLabs (API)", "Ma voix (clonage local
 
 
 def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key="",
-                   clone_voice=None, exag=0.5, cfg=0.5):
+                   clone_voice=None, exag=0.5, cfg=0.5, takes=2, studio=True, lexicon=None):
     """Traduit les réglages de l'onglet Voix off en (moteur, voix, options)."""
+    common = {"studio": bool(studio)}
+    if lexicon is not None:   # le dictionnaire de prononciation est mémorisé pour les prochaines fois
+        voice.save_config(prononciation=lexicon)
+        common["lexicon"] = lexicon
     if engine == ENGINES[2]:
         problem = voice.clone_problem()
         if problem:
@@ -859,16 +1069,23 @@ def voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pi
         if not clone_voice:
             raise gr.Error(_("Crée d'abord ta voix (« Créer une nouvelle voix »), puis choisis-la dans la liste."))
         return "clone", clone_voice, {"exaggeration": float(exag), "cfg_weight": float(cfg), "speed": speed,
-                                      "language": LANG.get()}
+                                      "language": LANG.get(), "takes": int(takes), **common}
     if engine == ENGINES[1]:
         if not el_voice:
             raise gr.Error(_("Choisis une voix ElevenLabs (bouton « Charger mes voix »)."))
         return "elevenlabs", el_voice, {"key": key or None, "model": voice.ELEVEN_MODELS.get(el_model, el_model),
-                                        "stability": stab, "similarity": sim, "style": style, "speed": speed}
+                                        "stability": stab, "similarity": sim, "style": style, "speed": speed,
+                                        **common}
     problem = voice.piper_problem()
     if problem:
         raise gr.Error(problem, duration=None)
-    return "piper", piper_voice, {"pitch": pitch, "speed": speed}
+    return "piper", piper_voice, {"pitch": pitch, "speed": speed, **common}
+
+
+def clone_preset(name):
+    """Style de lecture choisi → réglages d'expressivité et de rythme (Personnalisé : inchangés)."""
+    exag, cfg = voice.CLONE_PRESETS.get(name, (None, None))
+    return (gr.update() if exag is None else exag), (gr.update() if cfg is None else cfg)
 
 
 def load_el_voices(key, remember):
@@ -888,9 +1105,10 @@ def piper_licence(label):
 
 
 def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed,
-              gap, max_words, clone_voice=None, exag=0.5, cfg=0.5, progress=gr.Progress()):
+              gap, max_words, clone_voice=None, exag=0.5, cfg=0.5, takes=2, studio=True, lexicon=None,
+              progress=gr.Progress()):
     provider, v, options = voice_settings(engine, el_voice, el_model, stab, sim, style, piper_voice, pitch, speed, key,
-                                          clone_voice, exag, cfg)
+                                          clone_voice, exag, cfg, takes, studio, lexicon)
     n = len(voice.split_scenes(script or ""))
     if not n:
         raise gr.Error(_("Écris le texte de la voix off."))
@@ -899,6 +1117,7 @@ def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, p
         msg += " · " + _("le premier usage télécharge la voix")
     elif provider == "clone":
         msg += " · " + _("le premier usage télécharge le modèle (environ 3 Go)")
+        options["progress"] = lambda f: progress(0.05 + 0.9 * f, desc=_("Création de la voix ({n} scène(s))", n=n))
     progress(0.05, desc=msg)
     out = OUT_DIR / "voix" / time.strftime("%Y%m%d_%H%M%S")
     try:
@@ -908,6 +1127,8 @@ def gen_voice(script, name, engine, key, el_voice, el_model, stab, sim, style, p
         raise fail(e)
     lines = [_("✅ Voix créée : {dur:.1f} s, {n} scène(s)", dur=sum(res["durations"]), n=len(res["scenes"]))]
     lines += [_("   scène {i} : {dur:.2f} s", i=i + 1, dur=d) for i, d in enumerate(res["durations"])]
+    if res.get("summary"):
+        lines.append(_("Vérification : {summary}", summary=res["summary"]))
     lines.append(_("Sous-titres : minutage exact (ElevenLabs)") if provider == "elevenlabs"
                  else _("Sous-titres : minutage estimé"))
     return res["audio"], [res["audio"], res["srt"]] + res["scenes"], "\n".join(lines), res
@@ -1467,6 +1688,119 @@ def _build_ui(lang: str) -> gr.Blocks:
             sc_add.click(L(scene_to_timeline), [sc_last, timeline, lib], [timeline, lib, media_dd]) \
                 .then(lambda lb: gr.Dropdown(choices=[(media_label(x), x) for x in lb or []]), lib, ov_media)
 
+        # ------------------------------------------------------------- classement (Top N)
+        with gr.Tab(_("Classement")):
+            gr.Markdown(_("Un Short « Top N » : un titre, une liste numérotée qui se remplit clip après clip, le clip "
+                          "en cours dans un cadre avec son rang. N'utilise que des clips dont tu as les droits ou "
+                          "l'autorisation, et crédite la source."))
+            neon = ranking.STYLE
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Clips")
+                    rk_files = gr.File(label=_("Importer des clips (vidéos ou images)"), file_count="multiple",
+                                       type="filepath", height=90, file_types=sorted(ff.IMAGE_EXT | ff.VIDEO_EXT))
+                    rk_table = gr.Dataframe(
+                        value=rank_df([]), headers=rank_cols(), interactive=True, wrap=True,
+                        datatype=["number", "str", "str", "number", "number", "str"],
+                        column_count=(len(RK_COLS), "fixed"),
+                        column_widths=["8%", "34%", "24%", "9%", "9%", "16%"])
+                    gr.Markdown(_("Le n° 1 est la première ligne. Début et fin (s) sont facultatifs ; clique sur "
+                                  "une ligne pour la sélectionner."))
+                    with gr.Row(equal_height=True):
+                        rk_sel = gr.Number(value=1, precision=0, minimum=1, maximum=ranking.MAX_CLIPS,
+                                           label=_("Rang sélectionné"), scale=2, min_width=120)
+                        rk_up = gr.Button("▲ " + _("Monter"), size="sm", scale=1, min_width=80)
+                        rk_down = gr.Button("▼ " + _("Descendre"), size="sm", scale=1, min_width=80)
+                        rk_del = gr.Button(_("Supprimer"), size="sm", scale=1, min_width=80)
+                        rk_shuffle = gr.Button(_("Mélanger"), size="sm", scale=1, min_width=80)
+                    rk_total = gr.Markdown(_("Importe de 2 à 10 clips, puis donne un titre à chaque rang."))
+                with gr.Column(scale=2):
+                    section("2", "Aperçu")
+                    rk_img = gr.Image(label=_("Aperçu"), height=560, interactive=False)
+                    rk_rank = gr.Slider(1, ranking.MAX_CLIPS, value=1, step=1, label=_("Rang affiché"))
+                    rk_prev = gr.Button(_("Actualiser l'aperçu"))
+                with gr.Column(scale=2):
+                    section("3", "Titre et style")
+                    rk_title = gr.Textbox(label=_("Titre"), placeholder=_("Le top 5 des plus beaux buts"),
+                                          lines=2, max_lines=3,
+                                          info=_("Entrée : passer à la ligne (titre sur deux lignes)."))
+                    rk_words = gr.CheckboxGroup([], label=_("Mots à surligner"))
+                    rk_preset = gr.Dropdown([(_(PRESET_LABELS.get(n, n)), n) for n in ranking.preset_names()],
+                                            value="neon_sombre", label=_("Préréglage"))
+                    rk_layout = gr.Radio(opts(ranking.MISES_EN_PAGE), value=ranking.MISES_EN_PAGE[0],
+                                         label=_("Mise en page"))
+                    rk_order = gr.Radio(opts(ranking.ORDRES), value=ranking.ORDRES[0], label=_("Ordre de passage"),
+                                        info=_("décroissant : compte à rebours, le n° 1 passe en dernier"))
+                    rk_max = gr.Slider(1, 30, value=8, step=0.5, label=_("Durée max par clip (s)"))
+                    with gr.Accordion(_("Police, tailles et couleurs"), open=False):
+                        rk_font = gr.Dropdown(FONTS, value=neon["font"] if neon["font"] in FONTS else FONTS[0],
+                                              label=_("Police"))
+                        with gr.Row():
+                            rk_tsize = gr.Slider(48, 140, value=neon["title_size"], step=2, label=_("Taille du titre"))
+                            rk_lsize = gr.Slider(24, 80, value=neon["list_size"], step=2,
+                                                 label=_("Taille de la liste"))
+                        with gr.Row():
+                            rk_text = gr.ColorPicker(value=neon["text_color"], label=_("Texte"))
+                            rk_dim = gr.ColorPicker(value=neon["dim_color"], label=_("Rangs à venir"))
+                            rk_hl = gr.ColorPicker(value=neon["highlight_color"], label=_("Surlignage"))
+                        with gr.Row():
+                            rk_badge = gr.ColorPicker(value=neon["badge_color"], label=_("Badge"))
+                            rk_bg = gr.ColorPicker(value=neon["background"], label=_("Fond"))
+                            rk_stroke = gr.ColorPicker(value=neon["stroke_color"], label=_("Contour"))
+                        rk_stroke_w = gr.Slider(0, 10, value=neon["stroke_width"], step=1,
+                                                label=_("Épaisseur du contour"))
+                        with gr.Row():
+                            rk_hl2 = gr.ColorPicker(value=neon["highlight_color"], label=_("Surlignage 2"),
+                                                    info=_("Un mot surligné sur deux (même couleur : désactivé)."))
+                            rk_badge_pos = gr.Radio(opts(ranking.BADGES), value=ranking.BADGES[0],
+                                                    label=_("Position du badge"))
+                        with gr.Row():
+                            rk_panel = gr.Checkbox(value=True, label=_("Panneau derrière la liste"),
+                                                   info=_("Quand la liste est posée sur la vidéo."))
+                            rk_numcol = gr.Checkbox(value=False, label=_("Numéros colorés (or, argent, bronze)"))
+                        rk_lscale = gr.Slider(0.3, 1, value=1, step=0.05, label=_("Taille des libellés (× numéros)"))
+                        with gr.Row():
+                            rk_lcaps = gr.Checkbox(value=False, label=_("Libellés en majuscules"))
+                            rk_lital = gr.Checkbox(value=False, label=_("Libellés en italique"))
+                    rk_music = gr.File(label=_("Musique (facultatif)"), type="filepath", height=80,
+                                       file_types=sorted(ff.AUDIO_EXT))
+                    rk_vol = gr.Slider(0, 1, value=0.15, step=0.05, label=_("Volume de la musique"))
+            section("4", "Vidéo")
+            with gr.Row():
+                rk_quick = gr.Button(_("Aperçu rapide (vidéo)"))
+                rk_export = gr.Button(_("Exporter"), variant="primary")
+                rk_save = gr.Button(_("Enregistrer le classement"))
+                rk_load = gr.UploadButton(_("Charger un classement"), file_types=[".json"], type="filepath")
+            with gr.Row(equal_height=False):
+                rk_vid = gr.Video(label=_("Vidéo"), height=420)
+                with gr.Column():
+                    rk_out = gr.File(label=_("Télécharger"))
+                    rk_json = gr.File(label=_("Classement enregistré (.json)"))
+                    rk_log = gr.Textbox(label=_("Journal"), lines=4, elem_classes="mono")
+
+            rk_style = [rk_font, rk_tsize, rk_lsize, rk_text, rk_dim, rk_hl, rk_badge, rk_bg, rk_stroke, rk_stroke_w,
+                        rk_hl2, rk_badge_pos, rk_panel, rk_numcol, rk_lscale, rk_lcaps, rk_lital]
+            rk_inputs = [rk_table, rk_title, rk_words, rk_layout, rk_order, rk_max] + rk_style + [rk_music, rk_vol]
+            rk_view = (L(rank_preview), [rk_rank] + rk_inputs, [rk_img, rk_total])
+            rk_files.upload(L(rank_import), [rk_files, rk_table], [rk_table, rk_files]).then(*rk_view)
+            rk_table.select(rank_selected, None, rk_sel)
+            rk_table.input(L(rank_status), [rk_table, rk_max], rk_total)
+            for btn, delta in ((rk_up, -1), (rk_down, 1)):
+                btn.click(L(functools.partial(rank_move, delta=delta)), [rk_table, rk_sel], [rk_table, rk_sel]) \
+                    .then(*rk_view)
+            rk_del.click(L(rank_delete), [rk_table, rk_sel], [rk_table, rk_sel]).then(*rk_view)
+            rk_shuffle.click(L(rank_shuffle), rk_table, rk_table).then(*rk_view)
+            rk_title.change(L(rank_words), [rk_title, rk_words], rk_words)
+            rk_preset.change(L(rank_preset), rk_preset, [rk_layout, rk_order] + rk_style).then(*rk_view)
+            for ev in (rk_prev.click, rk_rank.release, rk_title.blur, rk_words.input, rk_layout.input,
+                       rk_order.input, rk_max.release, rk_badge_pos.input, rk_panel.input, rk_numcol.input,
+                       rk_lscale.release, rk_lcaps.input, rk_lital.input):
+                ev(*rk_view)
+            rk_quick.click(L(functools.partial(rank_render, "aperçu")), rk_inputs, [rk_vid, rk_out, rk_log])
+            rk_export.click(L(functools.partial(rank_render, "haute")), rk_inputs, [rk_vid, rk_out, rk_log])
+            rk_save.click(L(rank_save), rk_inputs, rk_json)
+            rk_load.upload(L(rank_load), rk_load, rk_inputs).then(*rk_view)
+
         # ------------------------------------------------------------- voix off
         with gr.Tab(_("Voix off")):
             gr.Markdown(_("Écris le texte, choisis une voix, génère. Sépare les scènes par une ligne `---` : "
@@ -1482,6 +1816,16 @@ def _build_ui(lang: str) -> gr.Blocks:
                         v_name = gr.Textbox(label=_("Nom"), value="voix", scale=2)
                         v_gap = gr.Slider(0, 1.5, value=0.35, step=0.05, label=_("Pause entre scènes (s)"), scale=2)
                         v_words = gr.Slider(1, 8, value=3, step=1, label=_("Mots par sous-titre"), scale=2)
+                    with gr.Accordion(_("Pauses et prononciation"), open=False):
+                        gr.Markdown(_("**Pauses** : chaque phrase est lue séparément, avec une pause plus longue "
+                                      "après un point, un point d'exclamation, des points de suspension ou une "
+                                      "ligne vide. Pour une pause précise, écris `[pause 1s]` ou `[pause 500ms]`.\n\n"
+                                      "**Prononciation** (Piper et Ma voix) : nombres, heures, prix, pourcentages "
+                                      "et sigles sont lus en toutes lettres. Si un mot est mal prononcé, ajoute "
+                                      "une ligne `mot = prononciation` ci-dessous."))
+                        v_lexicon = gr.Textbox(label=_("Dictionnaire de prononciation"), lines=4,
+                                               value=voice.load_config().get("prononciation", ""),
+                                               placeholder=_("MSV = èm-èss-vé\nYouTube = you-tioube"))
                     v_btn = gr.Button(_("Générer la voix"), variant="primary", size="lg")
                     v_audio = gr.Audio(label=_("Écoute"), type="filepath")
                     v_send = gr.Button(_("Utiliser dans l'onglet Montage (voix + sous-titres)"))
@@ -1494,6 +1838,9 @@ def _build_ui(lang: str) -> gr.Blocks:
                     v_engine = gr.Radio(opts(ENGINES), value=ENGINES[2] if has_clone else ENGINES[0],
                                         label=_("Moteur"))
                     v_speed = gr.Slider(0.7, 1.2, value=1.0, step=0.01, label=_("Vitesse"))
+                    v_studio = gr.Checkbox(value=True, label=_("Son studio"),
+                                           info=_("égaliseur, « s » adoucis, compression et très légère ambiance "
+                                                  "de pièce : la voix sonne moins « synthèse »"))
                     with gr.Group(visible=not has_clone) as g_piper:
                         gr.Markdown(_("**Piper** : gratuit, hors ligne. La voix est téléchargée au premier usage."))
                         v_piper = gr.Dropdown(opts(list(voice.PIPER_VOICES)), value=voice.DEFAULT_PIPER,
@@ -1523,6 +1870,12 @@ def _build_ui(lang: str) -> gr.Blocks:
                                                size="sm", visible=bool(voice.clone_problem()))
                         v_clone = gr.Dropdown(voice.clone_voices(), value=(voice.clone_voices() or [None])[0],
                                               label=_("Mes voix"), interactive=True)
+                        v_preset = gr.Dropdown(opts([*voice.CLONE_PRESETS, voice.CUSTOM_PRESET]),
+                                               value="Narration calme", label=_("Style de lecture"))
+                        v_takes = gr.Slider(1, 3, value=2, step=1, label=_("Prises par phrase"),
+                                            info=_("2 ou 3 : chaque phrase est vérifiée (transcription) et refaite "
+                                                   "si un mot manque ; le premier usage télécharge le vérificateur "
+                                                   "(≈ 1 Go)"))
                         v_exag = gr.Slider(0.25, 1.2, value=0.5, step=0.05, label=_("Expressivité"),
                                            info=_("0,5 = naturel ; plus haut = plus d'émotion (et plus rapide)"))
                         v_cfg = gr.Slider(0, 1, value=0.5, step=0.05, label=_("Rythme"),
@@ -1621,8 +1974,8 @@ def _build_ui(lang: str) -> gr.Blocks:
                                                label=_("Modèle Whisper"))
                         tr_words = gr.Slider(1, 12, value=6, step=1, label=_("Mots par ligne"))
                     tr_btn = gr.Button(_("Transcrire"))
-                    tr_out = gr.File(label=_("Fichier .srt"))
-                    tr_txt = gr.Textbox(label=_("Texte"), lines=6, elem_classes="mono")
+                    tr_out = gr.File(label=_("Sous-titres .srt et texte .txt"), file_count="multiple")
+                    tr_txt = gr.Textbox(label=_("Texte"), lines=6)
             with gr.Row(equal_height=False):
                 with gr.Column():
                     section("E", "Effacer un logo", "logo, filigrane, texte")
@@ -1716,7 +2069,7 @@ def _build_ui(lang: str) -> gr.Blocks:
         tpl_dd.change(L(template_info), tpl_dd, tpl_desc)
         refresh_btn.click(L(lambda: gr.Dropdown(choices=template_choices())), None, tpl_dd)
         v_inputs = [v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper, v_pitch, v_speed, v_clone,
-                    v_exag, v_cfg]
+                    v_exag, v_cfg, v_takes, v_studio, v_lexicon]
         run_btn.click(L(run_series), [mode, csv_in, base_in, folder_series, max_dur, title_name, out_name, q_series,
                                       tpl_dd, auto_voice] + v_inputs + vals, [series_files, series_log])
 
@@ -1727,8 +2080,12 @@ def _build_ui(lang: str) -> gr.Blocks:
         v_piper.change(L(piper_licence), v_piper, v_lic)
         v_load.click(L(load_el_voices), [v_key, v_remember], v_el)
         v_btn.click(L(gen_voice), [v_script, v_name, v_engine, v_key, v_el, v_model, v_stab, v_sim, v_style, v_piper,
-                                   v_pitch, v_speed, v_gap, v_words, v_clone, v_exag, v_cfg],
+                                   v_pitch, v_speed, v_gap, v_words, v_clone, v_exag, v_cfg, v_takes, v_studio,
+                                   v_lexicon],
                     [v_audio, v_files, v_log, voice_res])
+        v_preset.change(L(clone_preset), v_preset, [v_exag, v_cfg])
+        for sl in (v_exag, v_cfg):   # réglage à la main → style « Personnalisé »
+            sl.input(lambda: voice.CUSTOM_PRESET, None, v_preset)
         v_send.click(L(send_voice_to_montage), voice_res,
                      [FIELDS["voiceover.path"], FIELDS["subtitles.source"], FIELDS["subtitles.srt_path"],
                       FIELDS["fit_images_to_voiceover"]])

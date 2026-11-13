@@ -30,7 +30,6 @@ Seules les voix dont la licence autorise l'usage commercial sont proposées.
 
 | Voix | Langue | Licence du modèle | Obligation |
 |---|---|---|---|
-| Gilles | Français, homme | CC0 | Aucune |
 | Pierre, Jessica (UPMC) | Français, homme / femme | CC BY-SA 4.0 | Créditer la voix |
 | Siwis | Français, femme | CC BY 4.0 | Créditer la voix |
 | Tom | Français, homme | AGPL-3.0 | Compatible avec la GPL du logiciel |
@@ -42,6 +41,14 @@ Voix écartées : `en_US-ryan` (CC BY-NC-SA, usage commercial interdit), `it_IT-
 (licence non précisée). Pour l'italien, utiliser ElevenLabs.
 
 Crédit conseillé dans la description d'une vidéo : « Voix : Piper (modèle Siwis, CC BY 4.0) ».
+
+## Ma voix (clonage local, installé à la demande dans `.venv_clonage`)
+
+| Composant | Licence | Rôle |
+|---|---|---|
+| Chatterbox Multilingual (Resemble AI) | MIT | Synthèse de la voix clonée |
+| PyTorch, torchaudio | BSD-3-Clause | Calcul sur la carte graphique |
+| Whisper small (OpenAI), via transformers | MIT / Apache-2.0 | Vérification des prises (transcription) |
 
 ## Services externes
 
