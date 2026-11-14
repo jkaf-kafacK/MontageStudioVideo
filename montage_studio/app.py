@@ -1186,8 +1186,8 @@ CSS = """
 /* ---- en-tête */
 #entete {display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 6px;
          border-radius: 18px; border: 1px solid var(--border-color-primary);
-         background: linear-gradient(120deg, rgba(139,92,246,.12), rgba(67,56,202,.06) 55%, rgba(251,191,36,.08));}
-#entete .marque {width: 52px; height: 52px; flex: none; filter: drop-shadow(0 6px 14px rgba(91,33,182,.35));}
+         background: linear-gradient(120deg, rgba(196,122,18,.14), rgba(138,75,3,.06) 55%, rgba(251,191,36,.08));}
+#entete .marque {width: 52px; height: 52px; flex: none; filter: drop-shadow(0 6px 14px rgba(138,75,3,.35));}
 #entete .marque svg {width: 100%; height: 100%; display: block;}
 #entete .titres {flex: 1; min-width: 0;}
 #entete h1 {font-size: 1.65rem; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.1;}
@@ -1202,10 +1202,11 @@ CSS = """
 #entete .langues a {font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; padding: 4px 9px; border-radius: 7px;
                     text-decoration: none; color: var(--body-text-color-subdued);}
 #entete .langues a:hover {color: var(--body-text-color); background: var(--background-fill-secondary);}
-#entete .langues a.actif {color: #fff; background: linear-gradient(135deg, #8B5CF6, #4F46E5);}
+#entete .langues a.actif {color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);}
 #entete .badge {font-size: 0.75rem; font-weight: 600; padding: 5px 11px; border-radius: 999px; white-space: nowrap;
                 background: var(--background-fill-primary); border: 1px solid var(--border-color-primary);}
-#entete .badge b {color: #7C3AED;}
+#entete .badge b {color: #A85F05;}
+.dark #entete .badge b {color: #E8B46A;}
 @media (max-width: 720px) {#entete {flex-wrap: wrap;} #entete .droite {align-items: flex-start;}
                            #entete .badges {justify-content: flex-start;}}
 
@@ -1220,55 +1221,83 @@ button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
 .section-titre p {margin: 0 !important; font-weight: 700; font-size: 0.98rem; display: flex; align-items: center; gap: 10px;}
 .section-titre .num {display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 8px;
                      font-size: 0.78rem; font-weight: 800; color: #fff; flex: none;
-                     background: linear-gradient(135deg, #8B5CF6, #4338CA);}
+                     background: linear-gradient(135deg, #C47A12, #8A4B03);}
 .section-titre em {font-style: normal; font-weight: 500; font-size: 0.85rem; color: #71717A;}
 .dark .section-titre em {color: #A1A1AA;}
 
 /* ---- boutons d'action */
 #rendu-final {min-height: 54px; font-size: 1.05rem; font-weight: 700; letter-spacing: 0.01em;
-              box-shadow: 0 10px 24px -10px rgba(91,33,182,.7);}
+              box-shadow: 0 10px 24px -10px rgba(138,75,3,.7);}
 #apercu-rapide {min-height: 54px; font-size: 1rem; font-weight: 600;}
 .mono textarea {font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.82rem;}
 
 /* ---- pied de page */
 #pied {text-align: center; font-size: 0.8rem; color: var(--body-text-color-subdued); padding: 10px 0 4px;}
+
+/* ---- vidéo d'arrière-plan (assets/fond.mp4 ou assets/fond.webm, ajoutée par FOND_JS) */
+#fond-video {position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0;
+             pointer-events: none;}
+#fond-voile {position: fixed; inset: 0; z-index: 0; pointer-events: none;
+             background: rgba(246,245,250,.55);}       /* voile : plus opaque = vidéo plus discrète */
+.dark #fond-voile {background: rgba(14,14,18,.6);}
+body.avec-video gradio-app, body.avec-video .gradio-container {background: transparent !important;}
+body.avec-video .gradio-container {position: relative; z-index: 1;}
+body.avec-video #entete {backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);}
+@media (prefers-reduced-motion: reduce) {#fond-video {display: none;}}
 """
+
+# Vidéo d'arrière-plan : déposer un fichier assets/fond.mp4 (ou .webm). Absente = fond uni, comme avant.
+FOND_VIDEO = next((ASSETS / f for f in ("fond.mp4", "fond.webm") if (ASSETS / f).exists()), None)
+FOND_JS = """() => {
+  if (document.getElementById('fond-video')) return;
+  const v = document.createElement('video');
+  v.id = 'fond-video'; v.src = '/fond-video'; v.autoplay = true; v.muted = true; v.loop = true;
+  v.playsInline = true; v.setAttribute('aria-hidden', 'true');
+  const voile = document.createElement('div'); voile.id = 'fond-voile';
+  v.onerror = () => { v.remove(); voile.remove(); document.body.classList.remove('avec-video'); };
+  document.body.prepend(voile); document.body.prepend(v);
+  document.body.classList.add('avec-video');
+}""" if FOND_VIDEO else None
 
 SYSTEM_FONT = ["Segoe UI Variable Text", "Segoe UI", "ui-sans-serif", "system-ui", "-apple-system", "Roboto",
                "Helvetica Neue", "Arial", "sans-serif"]
+# Couleur principale de la plateforme : bronze #A85F05 (c600).
+BRONZE = gr.themes.Color(c50="#FDF6EC", c100="#FAEBD3", c200="#F3D3A3", c300="#E8B46A", c400="#D9943A",
+                         c500="#C47A12", c600="#A85F05", c700="#8A4B03", c800="#6B3B03", c900="#4F2C04",
+                         c950="#321C03", name="bronze")
 THEME = gr.themes.Base(
-    primary_hue="violet", secondary_hue="amber", neutral_hue="zinc", radius_size="lg", spacing_size="md",
+    primary_hue=BRONZE, secondary_hue="amber", neutral_hue="zinc", radius_size="lg", spacing_size="md",
     font=SYSTEM_FONT, font_mono=["Cascadia Code", "Consolas", "ui-monospace", "monospace"],
 ).set(
-    body_background_fill="#F6F5FA",
+    body_background_fill="#F8F6F2",
     body_background_fill_dark="#0E0E12",
     block_background_fill="#FFFFFF",
     block_background_fill_dark="#18181D",
-    block_border_color="#E7E5EF",
+    block_border_color="#ECE7DF",
     block_border_color_dark="#2A2A33",
     block_shadow="0 1px 2px rgba(24,24,27,.04), 0 4px 16px -8px rgba(24,24,27,.08)",
     block_title_text_weight="600",
     block_label_text_weight="600",
     input_background_fill="#FAFAFC",
     input_background_fill_dark="#111116",
-    button_primary_background_fill="linear-gradient(135deg, #8B5CF6, #4F46E5)",
-    button_primary_background_fill_hover="linear-gradient(135deg, #7C3AED, #4338CA)",
-    button_primary_background_fill_dark="linear-gradient(135deg, #8B5CF6, #4F46E5)",
-    button_primary_background_fill_hover_dark="linear-gradient(135deg, #A78BFA, #6366F1)",
+    button_primary_background_fill="linear-gradient(135deg, #C47A12, #A85F05)",
+    button_primary_background_fill_hover="linear-gradient(135deg, #A85F05, #8A4B03)",
+    button_primary_background_fill_dark="linear-gradient(135deg, #C47A12, #A85F05)",
+    button_primary_background_fill_hover_dark="linear-gradient(135deg, #D9943A, #C47A12)",
     button_primary_text_color="#FFFFFF",
     button_primary_border_color="transparent",
     button_primary_border_color_dark="transparent",
     button_large_radius="14px",
-    button_secondary_background_fill="#F3F0FD",
-    button_secondary_background_fill_hover="#E9E3FC",
-    button_secondary_background_fill_dark="#24212E",
-    button_secondary_background_fill_hover_dark="#2E2A3B",
-    button_secondary_text_color="#4C1D95",
-    button_secondary_text_color_dark="#E4DEFF",
-    button_secondary_border_color="#E4DCFA",
-    button_secondary_border_color_dark="#363141",
-    slider_color="#7C3AED",
-    slider_color_dark="#A78BFA",
+    button_secondary_background_fill="#FBF3E8",
+    button_secondary_background_fill_hover="#F5E6D0",
+    button_secondary_background_fill_dark="#2A241B",
+    button_secondary_background_fill_hover_dark="#362D20",
+    button_secondary_text_color="#6B3B03",
+    button_secondary_text_color_dark="#F5DDB8",
+    button_secondary_border_color="#EBD7BC",
+    button_secondary_border_color_dark="#42372A",
+    slider_color="#A85F05",
+    slider_color_dark="#D9943A",
 )
 
 def entete(lang: str) -> str:
@@ -2111,12 +2140,26 @@ def _build_ui(lang: str) -> gr.Blocks:
     return demo
 
 
-def free_port(start: int = 7860) -> int:
+DEFAULT_PORT = 7860          # adresse fixe utilisée par le bouton « Open MSV » de la page d'accueil du site
+APP_ID = "Montage Studio Video"
+
+
+def free_port(start: int = DEFAULT_PORT) -> int:
     for port in range(start, start + 100):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             if sock.connect_ex(("127.0.0.1", port)) != 0:
                 return port
-    raise RuntimeError("Aucun port libre entre 7860 et 7960")
+    raise RuntimeError(f"Aucun port libre entre {start} et {start + 100}")
+
+
+def running_instance(port: int = DEFAULT_PORT) -> bool:
+    """MSV tourne-t-il déjà sur ce port ? (évite une 2e copie sur 7861 quand on relance l'application)"""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/msv-ping", timeout=1.5) as r:
+            return json.loads(r.read().decode("utf-8")).get("app") == APP_ID
+    except (OSError, ValueError, AttributeError):
+        return False
 
 
 LOCAL_HOSTS = {"127.0.0.1", "localhost"}
@@ -2191,9 +2234,18 @@ def build_app():
         resp.set_cookie("langue", code, max_age=365 * 24 * 3600, samesite="strict", httponly=True)
         return resp
 
+    @app.get("/msv-ping", include_in_schema=False)
+    def msv_ping():
+        return {"app": APP_ID, "version": __version__}
+
     @app.get("/favicon.ico", include_in_schema=False)
     def favicon():
         return FileResponse(ASSETS / "montage_studio.ico")
+
+    if FOND_VIDEO:
+        @app.get("/fond-video", include_in_schema=False)
+        def fond_video():
+            return FileResponse(FOND_VIDEO, headers={"Cache-Control": "max-age=86400"})
 
     # Seuls les dossiers de travail sont téléchargeables ; le code, la configuration et .venv ne le sont pas.
     allowed = [str(d) for d in (OUT_DIR, MEDIA_DIR, PROJ_DIR, BASE / "exemples")]
@@ -2203,7 +2255,7 @@ def build_app():
     if paths.PRIVATE_DIR != BASE:          # clé API, voix téléchargées, cache : jamais téléchargeables
         blocked.append(str(paths.PRIVATE_DIR))
     for code in LANGS:
-        gr.mount_gradio_app(app, build_ui(code).queue(), path=f"/{code}", theme=THEME, css=CSS,
+        gr.mount_gradio_app(app, build_ui(code).queue(), path=f"/{code}", theme=THEME, css=CSS, js=FOND_JS,
                             allowed_paths=allowed, blocked_paths=blocked)
     return app
 
@@ -2214,11 +2266,21 @@ if __name__ == "__main__":
     import uvicorn
 
     ap = argparse.ArgumentParser(description="Montage Studio Video (MSV)")
-    ap.add_argument("--port", type=int, default=None, help="par défaut : premier port libre à partir de 7860")
+    ap.add_argument("--port", type=int, default=None,
+                    help=f"par défaut : {DEFAULT_PORT}, ou le premier port libre après lui s'il est occupé")
     ap.add_argument("--no-browser", action="store_true")
     ap.add_argument("--version", action="version", version=f"Montage Studio Video {__version__}")
     a = ap.parse_args()
+    if a.port is None and running_instance():
+        # Déjà ouvert (double-clic sur le raccourci, ou bouton « Open MSV » du site) : on réutilise cette copie.
+        url = f"http://127.0.0.1:{DEFAULT_PORT}/"
+        print(f"Montage Studio Video est déjà ouvert : {url}")
+        if not a.no_browser:
+            webbrowser.open(url)
+        raise SystemExit(0)
     port = a.port or free_port()
+    if port != DEFAULT_PORT and a.port is None:
+        print(f"Port {DEFAULT_PORT} occupé par un autre programme : MSV utilise le port {port}.")
     url = f"http://127.0.0.1:{port}/"
     app = build_app()
     print(f"Montage Studio Video {__version__} · dossier de travail : {paths.DATA_DIR}")

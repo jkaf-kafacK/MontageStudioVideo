@@ -95,6 +95,16 @@ def test_garde_bloque_les_sites_externes(client, headers):
     assert client.get("/fr/", headers=headers).status_code == 403
 
 
+def test_msv_ping(client):
+    import app
+    r = client.get("/msv-ping")
+    assert r.status_code == 200 and r.json()["app"] == app.APP_ID
+
+
+def test_msv_ping_refuse_les_sites_externes(client):
+    assert client.get("/msv-ping", headers={"origin": "https://evil.example"}).status_code == 403
+
+
 def test_protection_clickjacking(client):
     assert client.get("/fr/").headers["x-frame-options"] == "DENY"
 

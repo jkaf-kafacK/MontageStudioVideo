@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Montage Studio Video · Free local video editor for Shorts and YouTube</title>
+<meta name="description" content="Montage Studio Video (MSV) is a free, open-source video editor that runs entirely on your computer. Edit Shorts, Reels, TikTok and YouTube videos with animated scenes, voice-over, subtitles and batch export. No account, no upload, no cloud.">
+<meta property="og:title" content="Montage Studio Video">
+<meta property="og:description" content="Free, open-source video editor for Shorts and YouTube that runs entirely on your computer.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="video/poster.jpg">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap">
+<style>
+/* Page d'accueil MSV : vidéo de présentation en fond du bandeau, puis fonctionnalités et téléchargement.
+   Couleurs : bronze de l'application (#A85F05 / #C47A12) et ambre du logo (#FBBF24). */
+:root {
+  --bg: #F8F6F2; --surface: #FFFFFF; --ink: #1C1712; --muted: #5E554B; --line: #E8E1D6;
+  --bronze: #A85F05; --bronze-light: #C47A12; --bronze-soft: #FBF1E2; --amber: #FBBF24;
+  --hero-ink: #FFFFFF; --hero-muted: #E9E2D8;
+  --font-display: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0B08; --surface: #18140F; --ink: #F3EEE7; --muted: #B3AA9E; --line: #2C251D;
+    --bronze: #E0A23A; --bronze-light: #C47A12; --bronze-soft: #251C10; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E0B08; --surface: #18140F; --ink: #F3EEE7; --muted: #B3AA9E; --line: #2C251D;
+  --bronze: #E0A23A; --bronze-light: #C47A12; --bronze-soft: #251C10; color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 1rem;
+       line-height: 1.6; -webkit-font-smoothing: antialiased; }
+img, video { max-width: 100%; display: block; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; border-radius: 6px; }
+.wrap { width: min(1160px, 100% - 32px); margin-inline: auto; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.12; letter-spacing: -0.02em; margin: 0; }
+.skip { position: absolute; left: -9999px; top: 8px; z-index: 50; background: var(--surface); color: var(--ink); padding: 8px 14px; border-radius: 8px; }
+.skip:focus { left: 8px; }
+
+/* ---- boutons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px;
+       padding: 0 24px; border-radius: 14px; border: 1px solid transparent; font: 700 1rem/1 var(--font-display);
+       text-decoration: none; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s; }
+.btn svg { flex: none; }
+.btn-primary { color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);
+               box-shadow: 0 12px 30px -12px rgba(168,95,5,.9); }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 16px 34px -12px rgba(196,122,18,.95); }
+.btn-ghost { color: var(--hero-ink); background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.28);
+             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.btn-ghost:hover { background: rgba(255,255,255,.16); }
+.btn-line { color: var(--ink); background: var(--surface); border-color: var(--line); }
+.btn-line:hover { border-color: var(--bronze); }
+.btn-sm { min-height: 40px; padding: 0 16px; border-radius: 11px; font-size: .9rem; }
+
+/* ---- barre du haut (au-dessus de la vidéo) */
+.top { position: absolute; inset: 0 0 auto; z-index: 10; padding-top: env(safe-area-inset-top, 0px); }
+.top .wrap { display: flex; align-items: center; gap: 24px; height: 72px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--hero-ink); text-decoration: none;
+         font: 800 1.05rem/1 var(--font-display); }
+.brand img { width: 34px; height: 34px; }
+.top nav { display: flex; gap: 22px; margin-left: auto; }
+.top nav a { color: var(--hero-muted); text-decoration: none; font-weight: 500; font-size: .95rem; }
+.top nav a:hover { color: #fff; }
+
+/* ---- bandeau avec vidéo de fond */
+.hero { position: relative; min-height: 100svh; display: grid; align-items: center; overflow: hidden;
+        color: var(--hero-ink); background: #0E0B08 url("video/poster.jpg") center / cover no-repeat; isolation: isolate; }
+.hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; }
+.hero::after { content: ""; position: absolute; inset: 0; z-index: -1;
+               background: linear-gradient(90deg, rgba(14,11,8,.93) 0%, rgba(14,11,8,.8) 50%, rgba(14,11,8,.4) 100%),
+                           linear-gradient(0deg, rgba(14,11,8,.85) 0%, rgba(14,11,8,0) 35%); }
+.hero-content { padding: 120px 0 96px; max-width: 640px; }
+.pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px;
+        font: 700 .78rem/1.2 var(--font-display); letter-spacing: .08em; text-transform: uppercase;
+        color: var(--amber); background: rgba(251,191,36,.1); border: 1px solid rgba(251,191,36,.35); }
+.hero h1 { font-size: clamp(2.3rem, 5.6vw, 4.1rem); font-weight: 800; margin: 20px 0 18px; }
+.hero h1 em { font-style: normal; color: var(--amber); }
+.hero p.lead { font-size: clamp(1.05rem, 1.6vw, 1.22rem); color: var(--hero-muted); margin: 0 0 32px; max-width: 54ch; }
+.cta { display: flex; flex-wrap: wrap; gap: 14px; }
+.release { margin-top: 16px; font-size: .88rem; color: var(--hero-muted); }
+.release a { color: #fff; }
+.video-toggle { position: absolute; right: 20px; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); z-index: 2;
+                width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; cursor: pointer;
+                color: #fff; background: rgba(0,0,0,.4); border: 1px solid rgba(255,255,255,.3); }
+.video-toggle:hover { background: rgba(0,0,0,.6); }
+
+/* ---- sections */
+section.block { padding: 96px 0; }
+.kicker { font: 700 .8rem/1 var(--font-display); letter-spacing: .1em; text-transform: uppercase; color: var(--bronze); }
+.block h2 { font-size: clamp(1.8rem, 3.6vw, 2.6rem); margin: 12px 0 14px; max-width: 22ch; }
+.block .intro { color: var(--muted); max-width: 62ch; margin: 0 0 44px; font-size: 1.08rem; }
+
+.figures { background: var(--surface); border-block: 1px solid var(--line); }
+.figures .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding: 30px 0; }
+.figure b { display: block; font: 800 clamp(1.7rem, 3vw, 2.3rem)/1.1 var(--font-display); color: var(--bronze); }
+.figure span { color: var(--muted); font-size: .95rem; }
+
+.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 18px; }
+.feature { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; }
+.feature .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 16px;
+               color: var(--bronze); background: var(--bronze-soft); }
+.feature h3 { font-size: 1.08rem; margin-bottom: 6px; }
+.feature p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: step; padding: 0; margin: 0; list-style: none; }
+.steps li { position: relative; padding: 26px 24px 24px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.steps li::before { counter-increment: step; content: counter(step); display: grid; place-items: center; width: 34px; height: 34px;
+                    border-radius: 10px; margin-bottom: 14px; color: #fff; font: 800 .95rem/1 var(--font-display);
+                    background: linear-gradient(135deg, #C47A12, #8A4B03); }
+.steps h3 { font-size: 1.08rem; margin-bottom: 6px; }
+.steps p { margin: 0; color: var(--muted); font-size: .95rem; }
+
+.download { background: var(--surface); border-top: 1px solid var(--line); }
+.dl-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
+.dl-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; background: var(--bg); }
+.dl-card.main { border-color: var(--bronze); box-shadow: 0 0 0 1px var(--bronze) inset; }
+.dl-card h3 { font-size: 1.25rem; margin-bottom: 8px; }
+.dl-card p, .dl-card li { color: var(--muted); font-size: .95rem; }
+.dl-card ol { padding-left: 20px; margin: 14px 0 22px; }
+.dl-card code { font-size: .88em; background: var(--bronze-soft); padding: 1px 6px; border-radius: 5px; }
+.meta { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+.open-app { margin-top: 8px; font-size: .88rem; color: var(--hero-muted); }
+.open-app a { color: #fff; font-weight: 600; text-underline-offset: 3px; }
+.open-app a:hover { color: var(--amber); }
+.dl-open { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+.dl-open > div { flex: 1 1 320px; }
+.dl-open h3 { font-size: 1.1rem; margin-bottom: 4px; }
+.dl-open p { margin: 0; color: var(--muted); font-size: .92rem; }
+.dl-open code { font-size: .88em; background: var(--bronze-soft); padding: 1px 6px; border-radius: 5px; }
+
+footer { padding: 36px 0 calc(36px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 20px; }
+footer a { text-decoration: none; }
+footer a:hover { color: var(--ink); }
+
+/* ---- lecteur avec le son */
+dialog.player { width: min(1100px, 100% - 24px); padding: 0; border: 0; border-radius: 18px; background: #000; overflow: hidden; }
+dialog.player.portrait { width: min(420px, 100% - 24px); }
+dialog.player::backdrop { background: rgba(0,0,0,.8); }
+dialog.player video { width: 100%; max-height: 86vh; }
+.close { position: absolute; top: 10px; right: 10px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; cursor: pointer;
+         color: #fff; background: rgba(0,0,0,.55); border: 1px solid rgba(255,255,255,.3); font-size: 1.3rem; line-height: 1; }
+
+@media (max-width: 860px) {
+  .top nav { display: none; }
+  .figures .wrap { grid-template-columns: repeat(2, 1fr); }
+  .steps, .dl-grid { grid-template-columns: 1fr; }
+  .hero::after { background: linear-gradient(0deg, rgba(14,11,8,.95) 0%, rgba(14,11,8,.7) 55%, rgba(14,11,8,.45) 100%); }
+  .hero { align-items: end; }
+  .hero-content { padding: 110px 0 84px; }
+}
+@media (max-width: 480px) { .cta .btn { width: 100%; } .top .btn { display: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+</style>
+</head>
+<body>
+<a class="skip" href="#features">Skip to content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="./"><img src="img/logo.svg" alt="" width="34" height="34">Montage Studio Video</a>
+    <nav aria-label="Main">
+      <a href="#features">Features</a>
+      <a href="#how">How it works</a>
+      <a href="MSV_documentation_EN.pdf">Documentation</a>
+      <a href="https://github.com/jkaf-kafacK/MontageStudioVideo">GitHub</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" href="#download">Download</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <!-- Vidéo de présentation en fond : version sans sous-titres ni son, en boucle ; 9:16 sur écran vertical.
+         La version complète (voix + sous-titres) s'ouvre avec « Watch the presentation ». -->
+    <video class="hero-video" id="bg-video" autoplay muted loop playsinline preload="metadata" poster="video/poster.jpg" aria-hidden="true">
+      <source src="video/fond_9x16.mp4" type="video/mp4" media="(orientation: portrait)">
+      <source src="video/fond_16x9.mp4" type="video/mp4">
+    </video>
+    <div class="wrap">
+      <div class="hero-content">
+        <span class="pill">Free · Open source · 100% local</span>
+        <h1 id="hero-title">Edit Shorts and YouTube videos <em>on your own computer</em></h1>
+        <p class="lead">Montage Studio Video is a free video editor powered by FFmpeg. Animated scenes, voice-over,
+          subtitles and batch export, with no account, no upload and no cloud.</p>
+        <div class="cta">
+          <a class="btn btn-primary" id="dl-main" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
+             data-goatcounter-click="download-hero" data-goatcounter-title="Download (hero button)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+            <span id="dl-main-label">Download</span>
+          </a>
+          <button class="btn btn-ghost" type="button" id="watch"
+                  data-goatcounter-click="watch-presentation" data-goatcounter-title="Watch the presentation">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.5v13l11-6.5z"/></svg>
+            Watch the presentation <span style="opacity:.75;font-weight:600">· 1 min</span>
+          </button>
+        </div>
+        <p class="release" id="release">Windows 10 and 11 installer · macOS and Linux with Python 3.12</p>
+        <p class="open-app">Already installed? <a href="http://127.0.0.1:7860/" id="open-app"
+          data-goatcounter-click="open-app-hero" data-goatcounter-title="Open MSV (hero link)">Open Montage Studio Video&nbsp;→</a>
+          <span>(start the app on your computer first)</span></p>
+      </div>
+    </div>
+    <button class="video-toggle" type="button" id="bg-toggle" aria-label="Pause the background video">
+      <svg id="ic-pause" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      <svg id="ic-play" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" hidden><path d="M8 5.5v13l11-6.5z"/></svg>
+    </button>
+  </section>
+
+  <div class="figures" aria-label="Key figures">
+    <div class="wrap">
+      <div class="figure"><b>100%</b><span>local, nothing uploaded</span></div>
+      <div class="figure"><b>4</b><span>formats: 9:16, 16:9, 1:1, 4:5</span></div>
+      <div class="figure"><b>4</b><span>languages: EN, FR, IT, ES</span></div>
+      <div class="figure"><b>0 €</b><span>free, GPL-3.0 licence</span></div>
+    </div>
+  </div>
+
+  <section class="block" id="features" aria-labelledby="f-title">
+    <div class="wrap">
+      <span class="kicker">Features</span>
+      <h2 id="f-title">Everything you need to publish, in one place</h2>
+      <p class="intro">From a folder of raw clips to finished Shorts and YouTube videos. Your files never leave your computer.</p>
+      <div class="features">
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18M8 5v5M16 5v5"/></svg></div>
+          <h3>Timeline editor</h3>
+          <p>Set the start and end of each clip, crop, change speed, add transitions, titles, a logo and animated text.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z"/></svg></div>
+          <h3>Animated scenes</h3>
+          <p>Title cards, key figures, lists, before and after, end screens. Use them as your intro or outro.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg></div>
+          <h3>Top N rankings</h3>
+          <p>Turn your best clips into a countdown Short with a numbered list and the current rank on screen.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></div>
+          <h3>Voice-over</h3>
+          <p>Text to speech with Piper (free, offline), ElevenLabs, or your own voice cloned on your computer.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 15h4M13 15h4M7 11h10"/></svg></div>
+          <h3>Automatic subtitles</h3>
+          <p>From your script, an .srt file or Whisper speech recognition, with an optional karaoke effect.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+          <h3>Batch Shorts</h3>
+          <p>Fill in a table or point to a folder, and get one finished video for every row or every file.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div>
+          <h3>Quick tools</h3>
+          <p>Create YouTube thumbnails, and turn any video into a vertical 9:16 Short in one click.</p>
+        </article>
+        <article class="feature">
+          <div class="ic"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 9h6v6H9zM9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></svg></div>
+          <h3>Fast export</h3>
+          <p>Hardware encoding on NVIDIA, Apple and Intel graphics when available, CPU otherwise.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how" aria-labelledby="h-title" style="padding-top:0">
+    <div class="wrap">
+      <span class="kicker">How it works</span>
+      <h2 id="h-title">From raw clips to a finished video in three steps</h2>
+      <p class="intro">The interface opens in your browser, but everything runs on your computer.</p>
+      <ol class="steps">
+        <li><h3>Install</h3><p>Run the Windows installer. On first launch, Python and the components download once, automatically.</p></li>
+        <li><h3>Edit</h3><p>Import your clips and images, build the timeline, add scenes, voice-over and subtitles.</p></li>
+        <li><h3>Export</h3><p>Pick a format and export. Your videos are saved in Documents\Montage Studio Video.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="block download" id="download" aria-labelledby="d-title">
+    <div class="wrap">
+      <span class="kicker">Download</span>
+      <h2 id="d-title">Get Montage Studio Video</h2>
+      <p class="intro">Free and open source. No account needed.</p>
+      <div class="dl-grid">
+        <div class="dl-card main">
+          <h3>Windows 10 and 11</h3>
+          <p>Recommended. One installer, everything else is set up for you.</p>
+          <ol>
+            <li>Download the installer and double-click it.</li>
+            <li>If Windows shows “Windows protected your PC”, click <em>More info</em> then <em>Run anyway</em>.</li>
+            <li>The first launch needs an internet connection, once.</li>
+          </ol>
+          <a class="btn btn-primary" id="dl-win" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
+             data-goatcounter-click="download-windows" data-goatcounter-title="Download for Windows (.exe)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+            Download for Windows
+          </a>
+          <p class="meta" id="dl-win-meta">Installer (.exe) from GitHub Releases</p>
+        </div>
+        <div class="dl-card">
+          <h3>macOS and Linux</h3>
+          <p>For developers and other systems.</p>
+          <ol>
+            <li>Install <a href="https://www.python.org/downloads/">Python 3.12</a>.</li>
+            <li>Download and unzip the app.</li>
+            <li>Run <code>lancer_mac_linux.sh</code>.</li>
+          </ol>
+          <a class="btn btn-line" id="dl-zip" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
+             data-goatcounter-click="download-zip" data-goatcounter-title="Download the ZIP">Download the ZIP</a>
+          <p class="meta" id="dl-zip-meta">Source code (.zip) from GitHub Releases</p>
+        </div>
+      </div>
+      <div class="dl-card dl-open">
+        <div>
+          <h3>Already installed?</h3>
+          <p>Start Montage Studio Video from its shortcut: it opens in your browser at <code>127.0.0.1:7860</code>.
+            Closed the tab? This button takes you back. If the page does not load, the app is not running,
+            or another program uses port 7860: use the address shown in the app’s window.</p>
+        </div>
+        <a class="btn btn-line" href="http://127.0.0.1:7860/"
+           data-goatcounter-click="open-app-download" data-goatcounter-title="Open MSV (download section)">Open Montage Studio Video</a>
+      </div>
+      <div class="dl-card dl-open support" id="support" hidden>
+        <div>
+          <h3>Support the project</h3>
+          <p>Montage Studio Video is free, with no ads and no tracking. If it saves you time,
+            a small donation helps keep it updated.</p>
+        </div>
+        <a class="btn btn-primary" id="donate" href="#" target="_blank" rel="noopener"
+           data-goatcounter-click="donate" data-goatcounter-title="Donate (download section)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.4h2c.7-1.3 2.2-2.4 4.3-2.4 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+          Donate
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Montage Studio Video · Free software under the GPL-3.0 licence
+      <span class="privacy" id="privacy" hidden><br>Anonymous visit statistics with
+        <a href="https://www.goatcounter.com">GoatCounter</a>: no cookies, no personal data.</span></span>
+    <nav aria-label="Footer">
+      <a href="#" id="donate-footer" target="_blank" rel="noopener" hidden
+         data-goatcounter-click="donate-footer" data-goatcounter-title="Donate (footer)">Support the project</a>
+      <a href="MSV_documentation_EN.pdf" data-goatcounter-click="pdf-documentation">Documentation (PDF)</a>
+      <a href="MSV_technical_dossier_EN.pdf" data-goatcounter-click="pdf-technical-dossier">Technical dossier (PDF)</a>
+      <a href="documentation.html" hreflang="fr">Online documentation (French)</a>
+      <a href="https://github.com/jkaf-kafacK/MontageStudioVideo">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<dialog class="player" id="player" aria-label="Montage Studio Video presentation">
+  <button class="close" type="button" id="player-close" aria-label="Close">×</button>
+  <video id="player-video" controls playsinline preload="none"></video>
+</dialog>
+
+<script>
+// ===================== RÉGLAGES DU SITE (à remplir) =====================
+const CONFIG = {
+  // Statistiques de visites : code du compte GoatCounter (gratuit), ex. "msv" pour https://msv.goatcounter.com
+  // Vide = aucune statistique, aucun script externe chargé.
+  goatcounter: "",
+  // Bouton de don : ex. "https://ko-fi.com/votrenom" ou "https://github.com/sponsors/votrenom".
+  // Vide = bouton masqué.
+  donate: "",
+  // Compteur public de téléchargements : affiché seulement à partir de ce total (0 = toujours).
+  minDownloadsShown: 100,
+};
+// =========================================================================
+(() => {
+  const REPO = "jkaf-kafacK/MontageStudioVideo";
+  const $ = id => document.getElementById(id);
+  const portrait = () => matchMedia("(orientation: portrait)").matches;
+
+  // ---- vidéo de fond : pause possible ; pas de lecture automatique si l'utilisateur réduit les animations
+  const bg = $("bg-video");
+  const setIcon = () => {
+    const paused = bg.paused;
+    $("ic-pause").hidden = paused; $("ic-play").hidden = !paused;
+    $("bg-toggle").setAttribute("aria-label", paused ? "Play the background video" : "Pause the background video");
+  };
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) { bg.removeAttribute("autoplay"); bg.pause(); }
+  bg.addEventListener("play", setIcon); bg.addEventListener("pause", setIcon);
+  $("bg-toggle").addEventListener("click", () => bg.paused ? bg.play().catch(() => {}) : bg.pause());
+  setIcon();
+
+  // ---- lecteur avec le son
+  const player = $("player"), pv = $("player-video");
+  let bgWasPlaying = false;
+  $("watch").addEventListener("click", () => {
+    const vert = portrait();
+    player.classList.toggle("portrait", vert);
+    const src = vert ? "video/msv_presentation_en_9x16.mp4" : "video/msv_presentation_en.mp4";
+    if (!pv.src.endsWith(src)) { pv.src = src; pv.poster = vert ? "video/poster_9x16.jpg" : "video/poster.jpg"; }
+    bgWasPlaying = !bg.paused; bg.pause();
+    player.showModal(); pv.currentTime = 0; pv.play().catch(() => {});
+  });
+  const closePlayer = () => player.close();
+  $("player-close").addEventListener("click", closePlayer);
+  player.addEventListener("click", e => { if (e.target === player) closePlayer(); });
+  player.addEventListener("close", () => { pv.pause(); if (bgWasPlaying) bg.play().catch(() => {}); });
+
+  // ---- téléchargement : dernière version publiée sur GitHub (lien vers la page des versions si l'API ne répond pas)
+  const ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent;
+  const isWin = /win/i.test(ua) && !/darwin|mac/i.test(ua);
+  const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  const mb = n => (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + " MB";
+  if (isMobile) { $("dl-main").href = "#download"; $("dl-main-label").textContent = "Download for your computer"; }
+  else if (isWin) $("dl-main-label").textContent = "Download for Windows";
+
+  // ---- statistiques (GoatCounter : sans cookie, ne compte pas les visites en local) ; clics = attributs data-goatcounter-click
+  if (/^[a-z0-9-]+$/.test(CONFIG.goatcounter)) {
+    const s = document.createElement("script");
+    s.async = true; s.src = "https://gc.zgo.at/count.js";
+    s.dataset.goatcounter = `https://${CONFIG.goatcounter}.goatcounter.com/count`;
+    document.head.append(s);
+    $("privacy").hidden = false;
+  }
+
+  // ---- don
+  if (/^https:\/\//.test(CONFIG.donate)) {
+    for (const id of ["donate", "donate-footer"]) $(id).href = CONFIG.donate;
+    $("support").hidden = false; $("donate-footer").hidden = false;
+  }
+
+  // ---- toutes les versions : la plus récente pour les liens, la somme des téléchargements pour le compteur
+  fetch(`https://api.github.com/repos/${REPO}/releases?per_page=100`, { headers: { Accept: "application/vnd.github+json" } })
+    .then(r => r.ok ? r.json() : Promise.reject(r.status))
+    .then(list => {
+      const rel = list.find(r => !r.draft && !r.prerelease);
+      if (!rel) return;
+      const downloads = list.reduce((sum, r) => sum + (r.assets || []).reduce((s, a) => s + (a.download_count || 0), 0), 0);
+      const assets = rel.assets || [];
+      const exe = assets.find(a => /setup\.exe$/i.test(a.name));
+      const zip = assets.find(a => /\.zip$/i.test(a.name));
+      if (exe) { $("dl-win").href = exe.browser_download_url; $("dl-win-meta").textContent = `${exe.name} · ${mb(exe.size)}`; }
+      if (zip) { $("dl-zip").href = zip.browser_download_url; $("dl-zip-meta").textContent = `${zip.name} · ${mb(zip.size)}`; }
+      if (!isMobile) {
+        const best = isWin ? exe : zip;
+        if (best) $("dl-main").href = best.browser_download_url;
+        if (!isWin && zip) $("dl-main-label").textContent = "Download the ZIP";
+      }
+      const date = rel.published_at ? new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
+      const notes = Object.assign(document.createElement("a"), { href: rel.html_url, textContent: "Release notes" });
+      const count = downloads >= CONFIG.minDownloadsShown ? ` · ${downloads.toLocaleString("en-US")} downloads` : "";
+      $("release").replaceChildren(`Version ${rel.tag_name}${date ? " · " + date : ""}${count} · `, notes);
+    })
+    .catch(() => {});
+})();
+</script>
+</body>
+</html>
