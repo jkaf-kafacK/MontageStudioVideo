@@ -25,6 +25,8 @@ modeles_voix/
 *.wav
 *.ogg
 *.mp4
+# Exception : vidéos de la page d'accueil du site (GitHub Pages), à publier
+!docs/video/*.mp4
 # Vidéo de présentation : fichiers générés
 promo/build/
 promo/output/

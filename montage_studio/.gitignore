@@ -11,6 +11,7 @@ sorties/
 projets/
 cache/
 journal_erreurs*.log
+!docs/video/*.mp4
 
 # Voix off : clé API ElevenLabs et voix Piper téléchargées (ne jamais publier)
 voix_config.json
