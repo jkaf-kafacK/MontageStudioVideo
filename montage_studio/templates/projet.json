@@ -1,7 +1,8 @@
 {
   "name": "projet",
-  "format": "16:9",
-  "fit": "flou",
+  "format": "9:16",
+  "fit": "rogner",
+  "background": "#000000",
   "fps": 30,
   "quality": "haute",
   "encoder": "cpu (x264)",
@@ -29,7 +30,14 @@
   "music": {
     "path": "",
     "volume": 0.18,
-    "ducking": true
+    "ducking": true,
+    "auto": "aucune"
+  },
+  "intro": {
+    "enabled": false
+  },
+  "outro": {
+    "enabled": false
   },
   "title": {
     "text": "",
@@ -71,6 +79,8 @@
     "size": 0.14,
     "opacity": 0.9
   },
+  "overlays": [],
+  "texts": [],
   "tts": {
     "enabled": false,
     "provider": "piper",

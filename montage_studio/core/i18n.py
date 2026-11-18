@@ -1252,6 +1252,479 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("animation", "animation", "animazione", "animación"),
     ("texte", "text", "testo", "texto"),
     ("taille", "size", "dimensione", "tamaño"),
+
+    # ---- Screen Record (enregistrement d'écran)
+    ("Enregistrer l'écran", "Screen Record", "Registra schermo", "Grabar pantalla"),
+    ("Screen Record est un enregistreur d'écran gratuit qui capture ton écran, ta voix, ton visage et le son "
+     "de l'ordinateur — pour partager tout de suite après chaque enregistrement.",
+     "Screen Record is a free screen recorder that captures your screen, voice, face and system audio — "
+     "so you can share instantly after every recording.",
+     "Screen Record è un registratore dello schermo gratuito che cattura schermo, voce, volto e audio del "
+     "computer, così puoi condividere subito dopo ogni registrazione.",
+     "Screen Record es un grabador de pantalla gratuito que captura tu pantalla, tu voz, tu cara y el audio del "
+     "ordenador, para que compartas al instante después de cada grabación."),
+    ("Gratuit · 100 % local · sans filigrane", "Free · 100% local · no watermark",
+     "Gratis · 100% locale · senza filigrana", "Gratis · 100 % local · sin marca de agua"),
+    ("Enregistrement d'écran rapide et simple", "Fast and easy screen recording",
+     "Registrazione dello schermo facile e veloce", "Grabación de pantalla rápida y sencilla"),
+    ("Un écran entier ou une seule fenêtre, en un clic.", "A whole screen or a single window, in one click.",
+     "Uno schermo intero o una sola finestra, con un clic.", "Una pantalla completa o una sola ventana, con un clic."),
+    ("Ta voix au micro", "Record your voice from the microphone", "Registra la tua voce dal microfono",
+     "Graba tu voz con el micrófono"),
+    ("Commente pendant que tu enregistres.", "Narrate while you record.", "Commenta mentre registri.",
+     "Comenta mientras grabas."),
+    ("Le son de l'ordinateur", "Capture computer system audio", "Cattura l'audio del computer",
+     "Captura el audio del ordenador"),
+    ("Vidéos, musique, sons des applications : sans câble virtuel ni réglage.",
+     "Videos, music, app sounds: no virtual cable, no setup.",
+     "Video, musica, suoni delle app: senza cavo virtuale né configurazione.",
+     "Vídeos, música, sonidos de las apps: sin cable virtual ni configuración."),
+    ("Ta webcam", "Record from your webcam", "Registra dalla webcam", "Graba con tu webcam"),
+    ("Ton visage dans un médaillon rond, dans le coin de ton choix.",
+     "Your face in a round bubble, in the corner you choose.",
+     "Il tuo volto in un riquadro rotondo, nell'angolo che preferisci.",
+     "Tu cara en un círculo, en la esquina que elijas."),
+    ("Sans filigrane ni limite de durée", "No watermark and no time limit",
+     "Nessuna filigrana e nessun limite di tempo", "Sin marca de agua ni límite de tiempo"),
+    ("Tes vidéos t'appartiennent : enregistre aussi longtemps que tu veux.",
+     "Your videos are yours: record as long as you want.",
+     "I video sono tuoi: registra per tutto il tempo che vuoi.",
+     "Tus vídeos son tuyos: graba todo el tiempo que quieras."),
+    ("Léger, sans ralentissement", "Lightweight app (no lag)", "App leggera (nessun rallentamento)",
+     "App ligera (sin retrasos)"),
+    ("Encodage par la carte graphique quand elle le permet.", "Hardware encoding on your graphics card when available.",
+     "Codifica con la scheda video quando è disponibile.", "Codificación con la tarjeta gráfica cuando está disponible."),
+    ("Partage instantané par lien", "Instant sharing via link", "Condivisione immediata tramite link",
+     "Compartir al instante con un enlace"),
+    ("Un lien à ouvrir sur un téléphone ou un autre ordinateur de ton réseau Wi-Fi.",
+     "A link to open on a phone or another computer on your Wi-Fi network.",
+     "Un link da aprire su un telefono o un altro computer della tua rete Wi-Fi.",
+     "Un enlace para abrir en un móvil u otro ordenador de tu red Wi-Fi."),
+    ("Zoom automatique sur les clics", "Automatic zoom on clicks", "Zoom automatico sui clic",
+     "Zoom automático en los clics"),
+    ("L'image s'approche de chaque clic, suit le curseur, puis revient.",
+     "The view zooms in on every click, follows the cursor, then zooms back out.",
+     "L'inquadratura si avvicina a ogni clic, segue il cursore, poi torna indietro.",
+     "La imagen se acerca a cada clic, sigue el cursor y luego vuelve."),
+    ("Coupe automatique", "Automatic trimming", "Taglio automatico", "Recorte automático"),
+    ("Le début, la fin et les longues pauses sont retirés tout seuls.",
+     "The start, the end and long pauses are removed for you.",
+     "L'inizio, la fine e le pause lunghe vengono tolti in automatico.",
+     "El inicio, el final y las pausas largas se eliminan solos."),
+    ("Version Short 9:16", "9:16 Short version", "Versione Short 9:16", "Versión Short 9:16"),
+    ("Cadre qui suit le curseur, écran entier sur fond flou, ou écran en haut et webcam en bas : prête pour Shorts, "
+     "Reels et TikTok.",
+     "A frame that follows the cursor, the full screen on a blurred background, or the screen on top and the webcam "
+     "below: ready for Shorts, Reels and TikTok.",
+     "Inquadratura che segue il cursore, schermo intero su sfondo sfocato, oppure schermo sopra e webcam sotto: pronta "
+     "per Shorts, Reels e TikTok.",
+     "Encuadre que sigue el cursor, pantalla completa sobre fondo desenfocado, o pantalla arriba y webcam abajo: lista "
+     "para Shorts, Reels y TikTok."),
+    ("Que veux-tu enregistrer ?", "What do you want to record?", "Cosa vuoi registrare?", "¿Qué quieres grabar?"),
+    ("Son et webcam", "Sound and webcam", "Audio e webcam", "Sonido y webcam"),
+    ("Montage automatique", "Automatic editing", "Montaggio automatico", "Edición automática"),
+    ("Montage automatique…", "Automatic editing…", "Montaggio automatico…", "Edición automática…"),
+    ("Montage automatique… {pct} %", "Automatic editing… {pct}%", "Montaggio automatico… {pct}%",
+     "Edición automática… {pct} %"),
+    ("Ta vidéo", "Your video", "Il tuo video", "Tu vídeo"),
+    ("dossier sorties/screen_record", "sorties/screen_record folder", "cartella sorties/screen_record",
+     "carpeta sorties/screen_record"),
+    ("Partager par lien", "Share via link", "Condividi tramite link", "Compartir con un enlace"),
+    ("Micro", "Microphone", "Microfono", "Micrófono"),
+    ("Son de l'ordinateur", "Computer audio", "Audio del computer", "Audio del ordenador"),
+    ("Webcam", "Webcam", "Webcam", "Webcam"),
+    ("Position de la webcam", "Webcam position", "Posizione della webcam", "Posición de la webcam"),
+    ("Aucun", "None", "Nessuno", "Ninguno"),
+    ("Aucune", "None", "Nessuna", "Ninguna"),
+    ("Actualiser les listes", "Refresh lists", "Aggiorna gli elenchi", "Actualizar las listas"),
+    ("Force du zoom", "Zoom strength", "Intensità dello zoom", "Intensidad del zoom"),
+    ("Coupe automatique (début, fin, longues pauses)", "Automatic trimming (start, end, long pauses)",
+     "Taglio automatico (inizio, fine, pause lunghe)", "Recorte automático (inicio, final, pausas largas)"),
+    ("Créer aussi la version 9:16 (Shorts, Reels, TikTok)", "Also create the 9:16 version (Shorts, Reels, TikTok)",
+     "Crea anche la versione 9:16 (Shorts, Reels, TikTok)", "Crear también la versión 9:16 (Shorts, Reels, TikTok)"),
+    ("Images par seconde", "Frames per second", "Fotogrammi al secondo", "Fotogramas por segundo"),
+    ("Démarrer l'enregistrement", "Start recording", "Avvia la registrazione", "Iniciar la grabación"),
+    ("Arrêter", "Stop", "Ferma", "Detener"),
+    ("Avant de démarrer, ferme ce qui ne doit pas être vu (e-mails, mots de passe, notifications).",
+     "Before you start, close anything that should not be seen (emails, passwords, notifications).",
+     "Prima di iniziare, chiudi ciò che non deve vedersi (email, password, notifiche).",
+     "Antes de empezar, cierra lo que no deba verse (correos, contraseñas, notificaciones)."),
+    ("Les vidéos protégées (Netflix…) apparaissent en noir : c'est une protection du système.",
+     "Protected videos (Netflix…) appear black: this is a system protection.",
+     "I video protetti (Netflix…) appaiono neri: è una protezione del sistema.",
+     "Los vídeos protegidos (Netflix…) aparecen en negro: es una protección del sistema."),
+    ("Protège ta vie privée", "Protect your privacy", "Proteggi la tua privacy", "Protege tu privacidad"),
+    ("Ok, démarrer", "Ok, start", "Ok, avvia", "Ok, empezar"),
+    ("Mes enregistrements", "My recordings", "Le mie registrazioni", "Mis grabaciones"),
+    ("Ouvrir le dossier", "Open folder", "Apri la cartella", "Abrir la carpeta"),
+    ("Créer un lien de partage", "Create a share link", "Crea un link di condivisione", "Crear un enlace para compartir"),
+    ("Arrêter le partage", "Stop sharing", "Interrompi la condivisione", "Dejar de compartir"),
+    ("Lien de partage", "Share link", "Link di condivisione", "Enlace para compartir"),
+    ("Ouvre ce lien sur un téléphone ou un ordinateur connecté au même Wi-Fi. La première fois, Windows peut "
+     "demander d'autoriser l'accès au réseau : choisis « Réseaux privés ». Le lien fonctionne tant que MSV est ouvert.",
+     "Open this link on a phone or computer connected to the same Wi-Fi. The first time, Windows may ask you to "
+     "allow network access: choose “Private networks”. The link works as long as MSV is open.",
+     "Apri questo link su un telefono o un computer collegato allo stesso Wi-Fi. La prima volta Windows può "
+     "chiedere di consentire l'accesso alla rete: scegli « Reti private ». Il link funziona finché MSV è aperto.",
+     "Abre este enlace en un móvil u ordenador conectado a la misma Wi-Fi. La primera vez, Windows puede pedir "
+     "que permitas el acceso a la red: elige «Redes privadas». El enlace funciona mientras MSV esté abierto."),
+    ("⏳ Départ dans {n} s : affiche la fenêtre ou la page à enregistrer.",
+     "⏳ Starting in {n} s: bring up the window or page you want to record.",
+     "⏳ Si parte tra {n} s: mostra la finestra o la pagina da registrare.",
+     "⏳ Empieza en {n} s: muestra la ventana o la página que quieres grabar."),
+    ("🔴 Enregistrement en cours · {time}", "🔴 Recording · {time}", "🔴 Registrazione in corso · {time}",
+     "🔴 Grabando · {time}"),
+    ("Pour arrêter : bouton « Arrêter » dans MSV, ou {key} depuis n'importe quelle fenêtre.",
+     "To stop: the “Stop” button in MSV, or {key} from any window.",
+     "Per fermare: pulsante « Ferma » in MSV, oppure {key} da qualsiasi finestra.",
+     "Para detener: botón «Detener» en MSV, o {key} desde cualquier ventana."),
+    ("Prêt. Choisis ce que tu veux enregistrer, puis clique sur « Démarrer l'enregistrement ».",
+     "Ready. Choose what you want to record, then click “Start recording”.",
+     "Pronto. Scegli cosa vuoi registrare, poi clicca su « Avvia la registrazione ».",
+     "Listo. Elige qué quieres grabar y haz clic en «Iniciar la grabación»."),
+    ("✅ Vidéo prête : {dur}.", "✅ Video ready: {dur}.", "✅ Video pronto: {dur}.", "✅ Vídeo listo: {dur}."),
+    ("{cut} retirées (début, fin, pauses).", "{cut} removed (start, end, pauses).",
+     "{cut} tolti (inizio, fine, pause).", "{cut} eliminados (inicio, final, pausas)."),
+    ("{n} zooms automatiques.", "{n} automatic zooms.", "{n} zoom automatici.", "{n} zooms automáticos."),
+    ("Choisis d'abord un enregistrement.", "Choose a recording first.", "Scegli prima una registrazione.",
+     "Elige primero una grabación."),
+    ("principal", "main", "principale", "principal"),
+    ("Écran {n}", "Screen {n}", "Schermo {n}", "Pantalla {n}"),
+    ("Choisis un écran ou une fenêtre.", "Choose a screen or a window.", "Scegli uno schermo o una finestra.",
+     "Elige una pantalla o una ventana."),
+    ("Clique sur « Actualiser les listes » si la liste est vide.", "Click “Refresh lists” if the list is empty.",
+     "Clicca su « Aggiorna gli elenchi » se l'elenco è vuoto.", "Haz clic en «Actualizar las listas» si la lista está vacía."),
+    ("La fenêtre choisie est fermée ou réduite.", "The chosen window is closed or minimized.",
+     "La finestra scelta è chiusa o ridotta a icona.", "La ventana elegida está cerrada o minimizada."),
+    ("Ouvre-la à l'écran, puis clique sur « Actualiser les listes ».",
+     "Bring it up on screen, then click “Refresh lists”.",
+     "Aprila sullo schermo, poi clicca su « Aggiorna gli elenchi ».",
+     "Ábrela en pantalla y haz clic en «Actualizar las listas»."),
+    ("L'enregistrement d'écran fonctionne sous Windows, Linux (X11) et macOS.",
+     "Screen recording works on Windows, Linux (X11) and macOS.",
+     "La registrazione dello schermo funziona su Windows, Linux (X11) e macOS.",
+     "La grabación de pantalla funciona en Windows, Linux (X11) y macOS."),
+    ("Un enregistrement est déjà en cours.", "A recording is already in progress.",
+     "Una registrazione è già in corso.", "Ya hay una grabación en curso."),
+    ("{source} indisponible : {msg}", "{source} unavailable: {msg}", "{source} non disponibile: {msg}",
+     "{source} no disponible: {msg}"),
+    ("La capture de l'écran n'a pas démarré : {msg}", "Screen capture did not start: {msg}",
+     "La cattura dello schermo non è partita: {msg}", "La captura de pantalla no se inició: {msg}"),
+    ("Arrêt de l'enregistrement…", "Stopping the recording…", "Arresto della registrazione…",
+     "Deteniendo la grabación…"),
+    ("Les fichiers bruts sont conservés ici : {path}", "The raw files are kept here: {path}",
+     "I file grezzi sono conservati qui: {path}", "Los archivos sin editar se guardan aquí: {path}"),
+    ("Rien n'a été enregistré.", "Nothing was recorded.", "Non è stato registrato nulla.", "No se grabó nada."),
+    ("Recommence : l'enregistrement a été arrêté trop tôt.", "Try again: the recording was stopped too early.",
+     "Riprova: la registrazione è stata fermata troppo presto.", "Vuelve a intentarlo: la grabación se detuvo demasiado pronto."),
+    ("Recherche des pauses…", "Looking for pauses…", "Ricerca delle pause…", "Buscando pausas…"),
+    ("Export simple de secours…", "Simple backup export…", "Esportazione semplice di riserva…",
+     "Exportación simple de respaldo…"),
+    ("Terminé.", "Done.", "Fatto.", "Listo."),
+    ("Aucun réseau détecté.", "No network detected.", "Nessuna rete rilevata.", "No se detectó ninguna red."),
+    ("Connecte l'ordinateur au Wi-Fi ou à la box pour partager.",
+     "Connect the computer to Wi-Fi or to your router to share.",
+     "Collega il computer al Wi-Fi o al router per condividere.",
+     "Conecta el ordenador a la Wi-Fi o al router para compartir."),
+    ("Informations système", "System information", "Informazioni di sistema", "Información del sistema"),
+    # ---- Screen Record : pause, mises en page 9:16, réduction du bruit
+    ("Pause et reprise", "Pause and resume", "Pausa e ripresa", "Pausa y reanudación"),
+    ("Mets en pause quand tu veux : rien n'est enregistré pendant la pause.",
+     "Pause whenever you like: nothing is recorded during the pause.",
+     "Metti in pausa quando vuoi: durante la pausa non viene registrato niente.",
+     "Pausa cuando quieras: no se graba nada durante la pausa."),
+    ("Réduction du bruit", "Noise reduction", "Riduzione del rumore", "Reducción de ruido"),
+    ("Ventilateur, clavier, souffle : ta voix reste, le bruit part.",
+     "Fan, keyboard, hiss: your voice stays, the noise goes.",
+     "Ventola, tastiera, fruscio: la tua voce resta, il rumore se ne va.",
+     "Ventilador, teclado, soplido: tu voz se queda, el ruido se va."),
+    ("Pause : bouton « Pause », ou {key}.", "Pause: “Pause” button, or {key}.",
+     "Pausa: pulsante «Pausa», oppure {key}.", "Pausa: botón «Pausa», o {key}."),
+    ("⏸️ En pause · {time} enregistrées. Rien n'est capturé pendant la pause.",
+     "⏸️ Paused · {time} recorded. Nothing is captured during the pause.",
+     "⏸️ In pausa · {time} registrati. Durante la pausa non viene catturato niente.",
+     "⏸️ En pausa · {time} grabados. No se captura nada durante la pausa."),
+    ("Pour reprendre : bouton « Reprendre » (départ dans 3 s), ou {key} (tout de suite).",
+     "To resume: “Resume” button (starts in 3 s), or {key} (right away).",
+     "Per riprendere: pulsante «Riprendi» (parte tra 3 s), oppure {key} (subito).",
+     "Para reanudar: botón «Reanudar» (empieza en 3 s), o {key} (al instante)."),
+    ("⏳ Reprise dans {n} s : affiche la fenêtre ou la page à enregistrer.",
+     "⏳ Resuming in {n} s: bring up the window or page to record.",
+     "⏳ Si riprende tra {n} s: mostra la finestra o la pagina da registrare.",
+     "⏳ Se reanuda en {n} s: muestra la ventana o la página que quieres grabar."),
+    ("Reprendre", "Resume", "Riprendi", "Reanudar"),
+    ("Pause", "Pause", "Pausa", "Pausa"),
+    ("Réduction du bruit du micro", "Microphone noise reduction", "Riduzione del rumore del microfono",
+     "Reducción de ruido del micrófono"),
+    ("Mise en page 9:16", "9:16 layout", "Impaginazione 9:16", "Diseño 9:16"),
+    ("sans webcam, « écran en haut + webcam en bas » devient « écran entier + fond flou »",
+     "without a webcam, “screen on top + webcam below” becomes “full screen + blurred background”",
+     "senza webcam, «schermo sopra + webcam sotto» diventa «schermo intero + sfondo sfocato»",
+     "sin webcam, «pantalla arriba + webcam abajo» pasa a ser «pantalla completa + fondo desenfocado»"),
+    ("suivre le curseur", "follow the cursor", "segui il cursore", "seguir el cursor"),
+    ("écran entier + fond flou", "full screen + blurred background", "schermo intero + sfondo sfocato",
+     "pantalla completa + fondo desenfocado"),
+    ("écran en haut + webcam en bas", "screen on top + webcam below", "schermo sopra + webcam sotto",
+     "pantalla arriba + webcam abajo"),
+    ("légère", "light", "leggera", "ligera"),
+    ("forte (voix)", "strong (voice)", "forte (voce)", "fuerte (voz)"),
+    ("Réduction du bruit (son des clips)", "Noise reduction (clip audio)", "Riduzione del rumore (audio delle clip)",
+     "Reducción de ruido (audio de los clips)"),
+    ("légère : souffle constant ; forte : garde la voix et retire ventilateur, clavier, climatisation",
+     "light: constant hiss; strong: keeps the voice and removes fan, keyboard, air conditioning",
+     "leggera: fruscio costante; forte: tiene la voce e toglie ventola, tastiera, condizionatore",
+     "ligera: soplido constante; fuerte: conserva la voz y quita ventilador, teclado, aire acondicionado"),
+    ("Réduire le bruit", "Reduce noise", "Riduci il rumore", "Reducir el ruido"),
+    ("souffle, ventilateur, clavier", "hiss, fan, keyboard", "fruscio, ventola, tastiera", "soplido, ventilador, teclado"),
+    ("Niveau", "Level", "Livello", "Nivel"),
+    ("Extrait à partir de (s)", "Sample from (s)", "Estratto a partire da (s)", "Fragmento desde (s)"),
+    ("Écouter 10 s avant / après", "Listen to 10 s before / after", "Ascolta 10 s prima / dopo",
+     "Escuchar 10 s antes / después"),
+    ("Nettoyer le fichier", "Clean the file", "Pulisci il file", "Limpiar el archivo"),
+    ("Avant", "Before", "Prima", "Antes"),
+    ("Après", "After", "Dopo", "Después"),
+    ("Vidéo : l'image est copiée sans perte, seul le son est nettoyé (MP4). Audio seul : fichier WAV. Pour un montage, "
+     "choisis plutôt « Réduction du bruit » dans Réglages → Audio.",
+     "Video: the picture is copied losslessly, only the sound is cleaned (MP4). Audio only: WAV file. For an edit, "
+     "use “Noise reduction” in Settings → Audio instead.",
+     "Video: l'immagine viene copiata senza perdita, viene pulito solo l'audio (MP4). Solo audio: file WAV. Per un "
+     "montaggio, usa invece «Riduzione del rumore» in Impostazioni → Audio.",
+     "Vídeo: la imagen se copia sin pérdida, solo se limpia el sonido (MP4). Solo audio: archivo WAV. Para un montaje, "
+     "usa mejor «Reducción de ruido» en Ajustes → Audio."),
+    ("🔇 Réduction du bruit : {level}", "🔇 Noise reduction: {level}", "🔇 Riduzione del rumore: {level}",
+     "🔇 Reducción de ruido: {level}"),
+    ("Assemblage des morceaux…", "Joining the parts…", "Unione delle parti…", "Uniendo las partes…"),
+    ("Choisis un niveau de réduction du bruit.", "Choose a noise reduction level.",
+     "Scegli un livello di riduzione del rumore.", "Elige un nivel de reducción de ruido."),
+    ("Ce fichier n'a pas de son : {name}", "This file has no sound: {name}", "Questo file non ha audio: {name}",
+     "Este archivo no tiene sonido: {name}"),
+    # ---- Screen Record sous Linux et macOS
+    ("Le FFmpeg trouvé ne sait pas capturer l'écran ou le son ({what}).",
+     "The FFmpeg found cannot capture the screen or sound ({what}).",
+     "L'FFmpeg trovato non sa catturare lo schermo o l'audio ({what}).",
+     "El FFmpeg encontrado no sabe capturar la pantalla o el sonido ({what})."),
+    ("Installe FFmpeg avec ton gestionnaire de paquets : « sudo apt install ffmpeg » (Linux) ou « brew install ffmpeg » "
+     "(Mac), puis relance MSV.",
+     "Install FFmpeg with your package manager: “sudo apt install ffmpeg” (Linux) or “brew install ffmpeg” (Mac), "
+     "then restart MSV.",
+     "Installa FFmpeg con il gestore dei pacchetti: «sudo apt install ffmpeg» (Linux) o «brew install ffmpeg» (Mac), "
+     "poi riavvia MSV.",
+     "Instala FFmpeg con tu gestor de paquetes: «sudo apt install ffmpeg» (Linux) o «brew install ffmpeg» (Mac) y "
+     "vuelve a abrir MSV."),
+    ("Sous Wayland, l'enregistrement d'écran n'est pas encore possible.",
+     "Screen recording is not possible under Wayland yet.",
+     "Con Wayland la registrazione dello schermo non è ancora possibile.",
+     "Con Wayland todavía no se puede grabar la pantalla."),
+    ("À l'écran de connexion, choisis une session « Xorg » (par exemple « Ubuntu sur Xorg »), puis relance MSV.",
+     "On the login screen, choose an “Xorg” session (for example “Ubuntu on Xorg”), then restart MSV.",
+     "Nella schermata di accesso scegli una sessione «Xorg» (ad esempio «Ubuntu su Xorg»), poi riavvia MSV.",
+     "En la pantalla de inicio de sesión, elige una sesión «Xorg» (por ejemplo «Ubuntu en Xorg») y vuelve a abrir "
+     "MSV."),
+    ("Aucun affichage X11 trouvé (variable DISPLAY vide).", "No X11 display found (DISPLAY variable is empty).",
+     "Nessuno schermo X11 trovato (variabile DISPLAY vuota).",
+     "No se encontró ninguna pantalla X11 (variable DISPLAY vacía)."),
+    ("Lance MSV depuis ta session de bureau, pas depuis une console sans affichage.",
+     "Start MSV from your desktop session, not from a console without a display.",
+     "Avvia MSV dalla sessione desktop, non da una console senza schermo.",
+     "Abre MSV desde tu sesión de escritorio, no desde una consola sin pantalla."),
+    ("Micro par défaut", "Default microphone", "Microfono predefinito", "Micrófono predeterminado"),
+    ("Son de l'ordinateur (sortie par défaut)", "Computer audio (default output)",
+     "Audio del computer (uscita predefinita)", "Audio del ordenador (salida predeterminada)"),
+    ("le son n'a pas démarré", "the sound did not start", "l'audio non è partito", "el sonido no se inició"),
+    ("Souris et clavier non suivis (zoom et coupe automatiques limités) : {msg}",
+     "Mouse and keyboard not tracked (automatic zoom and trimming limited): {msg}",
+     "Mouse e tastiera non rilevati (zoom e taglio automatici limitati): {msg}",
+     "Ratón y teclado sin seguimiento (zoom y recorte automáticos limitados): {msg}"),
+    ("sur Mac : installe BlackHole (gratuit) et envoie le son vers lui, sinon cette liste reste vide",
+     "on Mac: install BlackHole (free) and send the sound to it, otherwise this list stays empty",
+     "su Mac: installa BlackHole (gratuito) e invia l'audio a BlackHole, altrimenti l'elenco resta vuoto",
+     "en Mac: instala BlackHole (gratis) y envía el sonido a él; si no, esta lista queda vacía"),
+    ("Mac : autorise MSV (ou le Terminal) dans Réglages Système → Confidentialité et sécurité : « Enregistrement de "
+     "l'écran », « Micro », « Caméra », et « Surveillance de l'entrée » pour les raccourcis. Sur un portable, les "
+     "touches F8 / F9 se tapent avec fn.",
+     "Mac: allow MSV (or Terminal) in System Settings → Privacy & Security: “Screen Recording”, “Microphone”, "
+     "“Camera”, and “Input Monitoring” for the shortcuts. On a laptop, press F8 / F9 together with fn.",
+     "Mac: autorizza MSV (o il Terminale) in Impostazioni di Sistema → Privacy e sicurezza: «Registrazione schermo», "
+     "«Microfono», «Fotocamera» e «Monitoraggio input» per le scorciatoie. Su un portatile, F8 / F9 si premono con fn.",
+     "Mac: autoriza MSV (o el Terminal) en Ajustes del Sistema → Privacidad y seguridad: «Grabación de pantalla», "
+     "«Micrófono», «Cámara» y «Monitorización de entrada» para los atajos. En un portátil, F8 / F9 se pulsan con fn."),
+    ("Linux : fonctionne dans une session X11 (Xorg). Sous Wayland, choisis « Xorg » à l'écran de connexion.",
+     "Linux: works in an X11 (Xorg) session. Under Wayland, choose “Xorg” on the login screen.",
+     "Linux: funziona in una sessione X11 (Xorg). Con Wayland, scegli «Xorg» nella schermata di accesso.",
+     "Linux: funciona en una sesión X11 (Xorg). Con Wayland, elige «Xorg» en la pantalla de inicio de sesión."),
+    # ---- Découper en scènes (core/scenecut.py)
+    ("Scènes et écran partagé", "Scenes & split screen", "Scene e schermo diviso", "Escenas y pantalla dividida"),
+    ("Découper en scènes", "Split into scenes", "Dividi in scene", "Dividir en escenas"),
+    ("Vidéo à découper", "Video to split", "Video da dividere", "Vídeo que dividir"),
+    ("Comment découper ?", "How to split?", "Come dividere?", "¿Cómo dividir?"),
+    ("changements de plan", "shot changes", "cambi di inquadratura", "cambios de plano"),
+    ("pauses dans la parole", "pauses in speech", "pause nel parlato", "pausas al hablar"),
+    ("toutes les N secondes", "every N seconds", "ogni N secondi", "cada N segundos"),
+    ("pauses dans la parole : quelqu'un parle sans changement de plan (tutoriel, podcast, discours) · toutes les N "
+     "secondes : morceaux de durée fixe",
+     "pauses in speech: someone talks without shot changes (tutorial, podcast, speech) · every N seconds: "
+     "fixed-length pieces",
+     "pause nel parlato: qualcuno parla senza cambi di inquadratura (tutorial, podcast, discorso) · ogni N secondi: "
+     "pezzi di durata fissa",
+     "pausas al hablar: alguien habla sin cambios de plano (tutorial, pódcast, discurso) · cada N segundos: "
+     "trozos de duración fija"),
+    ("Durée de chaque scène (s)", "Length of each scene (s)", "Durata di ogni scena (s)",
+     "Duración de cada escena (s)"),
+    ("Placer chaque coupure sur la pause la plus proche", "Move each cut to the nearest pause",
+     "Sposta ogni taglio sulla pausa più vicina", "Mover cada corte a la pausa más cercana"),
+    ("évite de couper au milieu d'un mot ; décoché : coupures exactes",
+     "avoids cutting in the middle of a word; unchecked: exact cuts",
+     "evita di tagliare a metà parola; senza spunta: tagli esatti",
+     "evita cortar en mitad de una palabra; sin marcar: cortes exactos"),
+    ("Unir les scènes plus courtes que (s)", "Merge scenes shorter than (s)", "Unisci le scene più corte di (s)",
+     "Unir las escenas más cortas que (s)"),
+    ("ne découpe pas : une scène trop courte rejoint la précédente",
+     "does not split: a scene that is too short joins the previous one",
+     "non divide: una scena troppo corta si unisce alla precedente",
+     "no divide: una escena demasiado corta se une a la anterior"),
+    ("{n} coupures trouvées, mais les scènes duraient moins de {s:g} s et ont été regroupées : baisse « Unir les "
+     "scènes plus courtes que ».",
+     "{n} cuts found, but the scenes were shorter than {s:g} s and were merged: lower “Merge scenes shorter than”.",
+     "{n} tagli trovati, ma le scene duravano meno di {s:g} s e sono state unite: abbassa «Unisci le scene più "
+     "corte di».",
+     "{n} cortes encontrados, pero las escenas duraban menos de {s:g} s y se han unido: baja «Unir las escenas más "
+     "cortas que»."),
+    ("Aucune pause trouvée : la parole est continue ou couverte par une musique. Essaie « toutes les N secondes » ou "
+     "une sensibilité plus haute.",
+     "No pause found: the speech is continuous or covered by music. Try “every N seconds” or a higher sensitivity.",
+     "Nessuna pausa trovata: il parlato è continuo o coperto dalla musica. Prova «ogni N secondi» o una sensibilità "
+     "più alta.",
+     "No se encontró ninguna pausa: el habla es continua o la tapa una música. Prueba «cada N segundos» o una "
+     "sensibilidad más alta."),
+    ("La scène {k} dure {d} sur {t} : aucune pause trouvée dans cette partie (parole continue ou musique). Essaie "
+     "« toutes les N secondes » ou une sensibilité plus haute.",
+     "Scene {k} lasts {d} of {t}: no pause found in that part (continuous speech or music). Try “every N seconds” "
+     "or a higher sensitivity.",
+     "La scena {k} dura {d} su {t}: nessuna pausa trovata in quella parte (parlato continuo o musica). Prova «ogni "
+     "N secondi» o una sensibilità più alta.",
+     "La escena {k} dura {d} de {t}: no se encontró ninguna pausa en esa parte (habla continua o música). Prueba "
+     "«cada N segundos» o una sensibilidad más alta."),
+    ("La scène {k} dure {d} sur {t} : cette partie est filmée en une seule prise de vue. Essaie « pauses dans la "
+     "parole » ou « toutes les N secondes ».",
+     "Scene {k} lasts {d} of {t}: that part is filmed in a single shot. Try “pauses in speech” or “every N seconds”.",
+     "La scena {k} dura {d} su {t}: quella parte è ripresa con un'unica inquadratura. Prova «pause nel parlato» o "
+     "«ogni N secondi».",
+     "La escena {k} dura {d} de {t}: esa parte está grabada en una sola toma. Prueba «pausas al hablar» o «cada N "
+     "segundos»."),
+    ("La vidéo est plus courte que la durée choisie : baisse « Durée de chaque scène ».",
+     "The video is shorter than the chosen length: lower “Length of each scene”.",
+     "Il video è più corto della durata scelta: abbassa «Durata di ogni scena».",
+     "El vídeo es más corto que la duración elegida: baja «Duración de cada escena»."),
+    ("Aucun changement de plan trouvé : c'est sans doute une seule prise de vue. Essaie « pauses dans la parole », "
+     "« toutes les N secondes » ou une sensibilité plus haute.",
+     "No shot change found: it is probably a single shot. Try “pauses in speech”, “every N seconds” or a higher "
+     "sensitivity.",
+     "Nessun cambio di inquadratura trovato: probabilmente è un'unica ripresa. Prova «pause nel parlato», «ogni N "
+     "secondi» o una sensibilità più alta.",
+     "No se encontró ningún cambio de plano: probablemente es una sola toma. Prueba «pausas al hablar», «cada N "
+     "segundos» o una sensibilidad más alta."),
+    ("Sensibilité", "Sensitivity", "Sensibilità", "Sensibilidad"),
+    ("basse", "low", "bassa", "baja"),
+    ("moyenne", "medium", "media", "media"),
+    ("haute = plus de scènes", "high = more scenes", "alta = più scene", "alta = más escenas"),
+    ("Trouver les scènes", "Find the scenes", "Trova le scene", "Buscar las escenas"),
+    ("Vidéo d'origine", "Original video", "Video originale", "Vídeo original"),
+    ("Choisis les scènes à garder", "Choose the scenes to keep", "Scegli le scene da tenere",
+     "Elige las escenas que conservar"),
+    ("Clic : garder ✓ / exclure · ▶ : lire la scène · clic droit (ou ⋯) : toutes les options",
+     "Click: keep ✓ / exclude · ▶: play the scene · right-click (or ⋯): all options",
+     "Clic: tieni ✓ / escludi · ▶: riproduci la scena · clic destro (o ⋯): tutte le opzioni",
+     "Clic: conservar ✓ / excluir · ▶: reproducir la escena · clic derecho (o ⋯): todas las opciones"),
+    ("Une seule vidéo avec les scènes gardées", "One video with the kept scenes", "Un unico video con le scene tenute",
+     "Un solo vídeo con las escenas conservadas"),
+    ("Créer la vidéo", "Create the video", "Crea il video", "Crear el vídeo"),
+    ("Les scènes trouvées apparaîtront ici.", "The scenes found will appear here.", "Le scene trovate appariranno qui.",
+     "Las escenas encontradas aparecerán aquí."),
+    ("**{n} scènes** · {k} gardées · durée gardée **{d}** sur {t}", "**{n} scenes** · {k} kept · kept length **{d}** of {t}",
+     "**{n} scene** · {k} tenute · durata tenuta **{d}** su {t}",
+     "**{n} escenas** · {k} conservadas · duración conservada **{d}** de {t}"),
+    ("gardée", "kept", "tenuta", "conservada"),
+    ("exclue", "excluded", "esclusa", "excluida"),
+    ("Toutes les options", "All options", "Tutte le opzioni", "Todas las opciones"),
+    ("Lire cette scène", "Play this scene", "Riproduci questa scena", "Reproducir esta escena"),
+    ("Garder cette scène", "Keep this scene", "Tieni questa scena", "Conservar esta escena"),
+    ("Exclure cette scène", "Exclude this scene", "Escludi questa scena", "Excluir esta escena"),
+    ("Garder seulement celle-ci", "Keep only this one", "Tieni solo questa", "Conservar solo esta"),
+    ("Fusionner avec la précédente", "Merge with the previous one", "Unisci alla precedente", "Unir con la anterior"),
+    ("Fusionner avec la suivante", "Merge with the next one", "Unisci alla successiva", "Unir con la siguiente"),
+    ("Couper en deux", "Split in two", "Dividi in due", "Cortar en dos"),
+    ("Exporter cette scène seule", "Export this scene only", "Esporta solo questa scena", "Exportar solo esta escena"),
+    ("Tout garder", "Keep all", "Tieni tutte", "Conservar todas"),
+    ("Tout exclure", "Exclude all", "Escludi tutte", "Excluir todas"),
+    ("Inverser la sélection", "Invert selection", "Inverti la selezione", "Invertir la selección"),
+    ("Annuler", "Undo", "Annulla", "Deshacer"),
+    ("Rien à annuler.", "Nothing to undo.", "Niente da annullare.", "Nada que deshacer."),
+    ("Recherche des scènes", "Finding the scenes", "Ricerca delle scene", "Buscando las escenas"),
+    ("Création des miniatures", "Creating thumbnails", "Creazione delle miniature", "Creando miniaturas"),
+    ("Création de la vidéo", "Creating the video", "Creazione del video", "Creando el vídeo"),
+    ("Clique d'abord sur « Trouver les scènes ».", "First click “Find the scenes”.", "Clicca prima su «Trova le scene».",
+     "Primero haz clic en «Buscar las escenas»."),
+    ("Choisis un fichier vidéo (MP4, MOV, MKV, WEBM…).", "Choose a video file (MP4, MOV, MKV, WEBM…).",
+     "Scegli un file video (MP4, MOV, MKV, WEBM…).", "Elige un archivo de vídeo (MP4, MOV, MKV, WEBM…)."),
+    ("Durée de la vidéo illisible : {name}", "Unreadable video length: {name}", "Durata del video illeggibile: {name}",
+     "Duración del vídeo ilegible: {name}"),
+    ("Le fichier est peut-être incomplet : réexporte-le puis réessaie.",
+     "The file may be incomplete: export it again, then retry.",
+     "Il file forse è incompleto: esportalo di nuovo e riprova.",
+     "Puede que el archivo esté incompleto: vuelve a exportarlo y reinténtalo."),
+    ("Cette vidéo n'a pas de son : impossible de trouver les pauses dans la parole.",
+     "This video has no sound: pauses in speech cannot be found.",
+     "Questo video non ha audio: impossibile trovare le pause nel parlato.",
+     "Este vídeo no tiene sonido: no se pueden encontrar las pausas al hablar."),
+    ("Choisis plutôt « changements de plan ».", "Choose “shot changes” instead.",
+     "Scegli invece «cambi di inquadratura».", "Elige mejor «cambios de plano»."),
+    ("Aucune scène gardée.", "No scene kept.", "Nessuna scena tenuta.", "Ninguna escena conservada."),
+    ("Clique sur une scène pour la garder (✓), puis réessaie.", "Click a scene to keep it (✓), then retry.",
+     "Clicca su una scena per tenerla (✓), poi riprova.", "Haz clic en una escena para conservarla (✓) y reinténtalo."),
+    # ---- Écran partagé (core/splitscreen.py)
+    ("Écran partagé (plusieurs vidéos)", "Split screen (several videos)", "Schermo diviso (più video)",
+     "Pantalla dividida (varios vídeos)"),
+    ("2 à 4 vidéos", "2 to 4 videos", "Da 2 a 4 video", "De 2 a 4 vídeos"),
+    ("une par case, dans l'ordre", "one per cell, in order", "uno per riquadro, in ordine", "uno por casilla, en orden"),
+    ("(facultatif)", "(optional)", "(facoltativo)", "(opcional)"),
+    ("Disposition", "Layout", "Disposizione", "Disposición"),
+    ("côte à côte", "side by side", "affiancati", "lado a lado"),
+    ("haut / bas", "top / bottom", "sopra / sotto", "arriba / abajo"),
+    ("grille", "grid", "griglia", "cuadrícula"),
+    ("une grande + petites", "one large + small ones", "uno grande + piccoli", "una grande + pequeñas"),
+    ("Espace entre les cases (px)", "Space between cells (px)", "Spazio tra i riquadri (px)",
+     "Espacio entre casillas (px)"),
+    ("Durée : comme la vidéo…", "Length: like the video that is…", "Durata: come il video…", "Duración: como el vídeo…"),
+    ("la plus courte", "shortest", "più corto", "más corto"),
+    ("la plus longue", "longest", "più lungo", "más largo"),
+    ("la plus longue : les autres se figent sur leur dernière image",
+     "longest: the others freeze on their last frame",
+     "più lungo: gli altri restano fermi sull'ultima immagine",
+     "más largo: los demás se congelan en su última imagen"),
+    ("Son", "Sound", "Audio", "Sonido"),
+    ("toutes (mélange)", "all (mixed)", "tutti (mix)", "todos (mezcla)"),
+    ("vidéo 1", "video 1", "video 1", "vídeo 1"),
+    ("vidéo 2", "video 2", "video 2", "vídeo 2"),
+    ("vidéo 3", "video 3", "video 3", "vídeo 3"),
+    ("vidéo 4", "video 4", "video 4", "vídeo 4"),
+    ("aucun son", "no sound", "nessun audio", "sin sonido"),
+    ("Aperçu et vidéo finale", "Preview and final video", "Anteprima e video finale", "Vista previa y vídeo final"),
+    ("Ajoute entre 2 et 4 vidéos.", "Add between 2 and 4 videos.", "Aggiungi da 2 a 4 video.", "Añade entre 2 y 4 vídeos."),
+    ("Une vidéo par case : « Vidéo 1 », « Vidéo 2 »…", "One video per cell: “Video 1”, “Video 2”…",
+     "Un video per riquadro: «Video 1», «Video 2»…", "Un vídeo por casilla: «Vídeo 1», «Vídeo 2»…"),
+    ("Ce fichier n'est ni une vidéo ni une image ({name}).", "This file is neither a video nor an image ({name}).",
+     "Questo file non è né un video né un'immagine ({name}).", "Este archivo no es ni un vídeo ni una imagen ({name})."),
+    ("Il faut au moins une vidéo (les images seules n'ont pas de durée).",
+     "At least one video is needed (images alone have no length).",
+     "Serve almeno un video (le immagini da sole non hanno durata).",
+     "Hace falta al menos un vídeo (las imágenes solas no tienen duración)."),
+    ("Remplace une des images par une vidéo.", "Replace one of the images with a video.",
+     "Sostituisci una delle immagini con un video.", "Sustituye una de las imágenes por un vídeo."),
+    ("Le son choisi ({a}) correspond à une case vide.", "The chosen sound ({a}) belongs to an empty cell.",
+     "L'audio scelto ({a}) corrisponde a un riquadro vuoto.", "El sonido elegido ({a}) corresponde a una casilla vacía."),
+    ("Choisis le son d'une vidéo ajoutée, ou « toutes (mélange) ».", "Choose the sound of an added video, or “all (mixed)”.",
+     "Scegli l'audio di un video aggiunto, oppure «tutti (mix)».",
+     "Elige el sonido de un vídeo añadido, o «todos (mezcla)»."),
 ]
 
 HELP = {
@@ -1311,10 +1784,29 @@ avec « Remplacer la voix d'un clip existant ».
 **Ma voix (clonage local)** : enregistre 30 à 60 s de ta voix (pièce calme, ton naturel), crée la voix une fois, puis choisis-la comme n'importe quelle autre. Tout reste sur ton PC ; la première utilisation installe environ 5 Go. Ne clone que ta voix, ou avec l'accord de la personne.
 **Voix plus naturelles** : chaque phrase est lue séparément avec une pause adaptée à sa ponctuation ; `[pause 1s]` force une pause. Nombres, heures, prix et sigles sont lus en lettres, et le **dictionnaire de prononciation** (« Pauses et prononciation ») corrige un mot mal dit (`MSV = èm-èss-vé`). « Son studio » donne à toutes les voix un son plus chaud et plus net. Pour Ma voix, choisis un **style de lecture** (Narration calme, Conversation, Promo énergique) ; avec **2 ou 3 prises par phrase**, chaque phrase est réécoutée par une transcription automatique et refaite si un mot manque ou si un mot inventé s'ajoute. Le modèle imite le ton de ton enregistrement : pour une promo, enregistre-toi avec le ton d'une promo. Écris pour l'oreille : phrases courtes, ponctuation soignée.
 
+### Scènes et écran partagé
+**Découper en scènes** : ajoute une vidéo, choisis « changements de plan » (l'image change), « pauses dans la parole » (tutoriel, podcast, discours filmé d'un seul plan) ou « toutes les N secondes » (morceaux de durée fixe, chaque coupure placée sur la pause la plus proche), puis « Trouver les scènes ». « Unir les scènes plus courtes que » ne découpe pas : il regroupe les scènes trop courtes. Clique sur une scène pour la garder (✓) ou l'exclure ; ▶ la lit. **Clic droit** (ou ⋯, ou Maj + F10 au clavier) ouvre toutes les options : garder seulement celle-ci, fusionner avec la précédente ou la suivante, couper en deux, exporter cette scène seule, tout garder, inverser, annuler. « Créer la vidéo » met bout à bout les scènes gardées.
+**Écran partagé** : 2 à 4 vidéos dans la même image (côte à côte, haut / bas, grille, une grande + petites), en 16:9, 9:16 ou 1:1. L'aperçu se met à jour à chaque réglage. Choisis la durée (la plus courte, ou la plus longue : les autres se figent) et le son (mélange ou une seule vidéo).
+
 ### Outils rapides
 - **Convertisseur de temps** (Inspecteur) : tape `90`, `1:30`, `1h 2m 3s` ou `2,5 min`, puis « → Début » / « → Fin ».
 - **Effacer un logo** : choisis la zone (coin rapide + curseurs), vérifie avec « Aperçu », puis efface sur toute la vidéo.
-- **Logo MSV** : ajoute ton logo [ ▶ ] ; sa position est mémorisée dans la vidéo pour l'enlever ensuite exactement.
+- **Logo MSV** : ajoute le logo Montage Studio ; sa position est mémorisée dans la vidéo pour l'enlever ensuite exactement.
+- **Réduire le bruit** : choisis le niveau, écoute 10 s avant / après, puis nettoie le fichier (l'image d'une vidéo est copiée sans perte). Dans un montage : Réglages → Audio → « Réduction du bruit ».
+
+### Screen Record (Windows, Linux X11, Mac)
+1. Choisis un écran ou une fenêtre, le micro (et sa **réduction du bruit**), le son de l'ordinateur et, si tu veux,
+   la webcam.
+2. « Démarrer l'enregistrement » : tu as 3 secondes pour afficher la page à filmer.
+3. **Pause** : bouton « Pause » ou **Ctrl + Shift + F8** ; rien n'est capturé pendant la pause. « Reprendre » repart
+   après 3 secondes, le raccourci repart tout de suite.
+4. Arrête avec le bouton « Arrêter » ou **Ctrl + Shift + F9** depuis n'importe quelle fenêtre.
+5. MSV coupe les passages dans MSV, raccourcit les longues pauses et zoome sur chaque clic.
+   La vidéo est rangée dans `sorties/screen_record`. Version 9:16 au choix : **suivre le curseur**, **écran entier
+   + fond flou**, ou **écran en haut + webcam en bas**.
+6. « Créer un lien de partage » : le lien s'ouvre sur les appareils du même Wi-Fi, tant que MSV est ouvert.
+
+Linux : session X11 (Xorg), écrans entiers ; micro et son de l'ordinateur par PulseAudio / PipeWire. Mac : écrans entiers ; autorise « Enregistrement de l'écran », « Micro », « Caméra » et « Surveillance de l'entrée » ; pour le son de l'ordinateur, installe BlackHole (gratuit). Le choix d'une seule fenêtre existe seulement sous Windows.
 
 ### Conseils de performance
 Les rendus « aperçu » sont 3 à 5 fois plus rapides. Si tu as une carte NVIDIA, choisis l'encodeur « nvidia (nvenc) ».
@@ -1375,10 +1867,29 @@ with “Replace the voice of an existing clip”.
 **My voice (local cloning)**: record 30 to 60 s of your voice (quiet room, natural tone), create the voice once, then pick it like any other. Everything stays on your PC; first use installs about 5 GB. Only clone your own voice, or with the person's consent.
 **More natural voices**: each sentence is read separately with a pause that matches its punctuation; `[pause 1s]` forces a pause. Numbers, times, prices and acronyms are read out in full, and the **pronunciation dictionary** ("Pauses and pronunciation") fixes a mispronounced word (`MSV = em-ess-vee`). "Studio sound" gives every voice a warmer, cleaner sound. For My voice, pick a **reading style** (Calm narration, Conversation, Energetic promo); with **2 or 3 takes per sentence**, each sentence is checked by automatic transcription and redone if a word is missing or an invented word is added. The model copies the tone of your recording: for a promo, record yourself in a promo tone. Write for the ear: short sentences, careful punctuation.
 
+### Scenes & split screen
+**Split into scenes**: add a video, choose “shot changes” (the picture changes), “pauses in speech” (tutorial, podcast, speech filmed in a single shot) or “every N seconds” (fixed-length pieces, each cut moved to the nearest pause), then “Find the scenes”. “Merge scenes shorter than” does not split: it groups scenes that are too short. Click a scene to keep it (✓) or exclude it; ▶ plays it. **Right-click** (or ⋯, or Shift + F10 on the keyboard) opens all options: keep only this one, merge with the previous or next one, split in two, export this scene only, keep all, invert, undo. “Create the video” joins the kept scenes.
+**Split screen**: 2 to 4 videos in the same frame (side by side, top / bottom, grid, one large + small ones), in 16:9, 9:16 or 1:1. The preview updates with every setting. Choose the length (shortest, or longest: the others freeze) and the sound (mixed or a single video).
+
 ### Quick tools
 - **Time converter** (Inspector): type `90`, `1:30`, `1h 2m 3s` or `2.5 min`, then “→ Start” / “→ End”.
 - **Remove a logo**: choose the area (quick corner + sliders), check with “Preview”, then remove it from the whole video.
-- **MSV logo**: add your [ ▶ ] logo; its position is stored in the video so it can be removed exactly later.
+- **MSV logo**: add the Montage Studio logo; its position is stored in the video so it can be removed exactly later.
+- **Reduce noise**: choose the level, listen to 10 s before / after, then clean the file (a video's picture is copied losslessly). In an edit: Settings → Audio → “Noise reduction”.
+
+### Screen Record (Windows, Linux X11, Mac)
+1. Choose a screen or a window, the microphone (and its **noise reduction**), the computer audio and, if you like,
+   the webcam.
+2. “Start recording”: you have 3 seconds to bring up the page you want to record.
+3. **Pause**: “Pause” button or **Ctrl + Shift + F8**; nothing is captured during the pause. “Resume” restarts after
+   3 seconds, the shortcut restarts right away.
+4. Stop with the “Stop” button or **Ctrl + Shift + F9** from any window.
+5. MSV cuts the moments spent in MSV, shortens long pauses and zooms in on every click.
+   The video is saved in `sorties/screen_record`. 9:16 version of your choice: **follow the cursor**, **full screen
+   + blurred background**, or **screen on top + webcam below**.
+6. “Create a share link”: the link opens on devices on the same Wi-Fi, as long as MSV is open.
+
+Linux: X11 (Xorg) session, whole screens; microphone and computer audio through PulseAudio / PipeWire. Mac: whole screens; allow “Screen Recording”, “Microphone”, “Camera” and “Input Monitoring”; for computer audio, install BlackHole (free). Recording a single window is available on Windows only.
 
 ### Performance tips
 “Preview” renders are 3 to 5 times faster. If you have an NVIDIA card, choose the “nvidia (nvenc)” encoder.
@@ -1440,10 +1951,29 @@ con «Sostituisci la voce di una clip esistente».
 **La mia voce (clonazione locale)**: registra da 30 a 60 s della tua voce (stanza silenziosa, tono naturale), crea la voce una volta, poi sceglila come le altre. Tutto resta sul tuo PC; il primo utilizzo installa circa 5 GB. Clona solo la tua voce, o con il consenso della persona.
 **Voci più naturali**: ogni frase viene letta separatamente con una pausa adatta alla punteggiatura; `[pause 1s]` forza una pausa. Numeri, orari, prezzi e sigle vengono letti per esteso, e il **dizionario di pronuncia** («Pause e pronuncia») corregge una parola pronunciata male (`MSV = emme-esse-vu`). «Suono da studio» dà a tutte le voci un suono più caldo e pulito. Per La mia voce, scegli uno **stile di lettura** (Narrazione calma, Conversazione, Promo energica); con **2 o 3 riprese per frase**, ogni frase viene verificata da una trascrizione automatica e rifatta se manca una parola o se ne viene aggiunta una inventata. Il modello imita il tono della tua registrazione: per una promo, registrati con un tono da promo. Scrivi per l'orecchio: frasi brevi, punteggiatura curata.
 
+### Scene e schermo diviso
+**Dividi in scene**: aggiungi un video, scegli «cambi di inquadratura» (l'immagine cambia), «pause nel parlato» (tutorial, podcast, discorso ripreso con un'unica inquadratura) o «ogni N secondi» (pezzi di durata fissa, ogni taglio spostato sulla pausa più vicina), poi «Trova le scene». «Unisci le scene più corte di» non divide: raggruppa le scene troppo corte. Clicca su una scena per tenerla (✓) o escluderla; ▶ la riproduce. Il **clic destro** (o ⋯, o Maiusc + F10 da tastiera) apre tutte le opzioni: tieni solo questa, unisci alla precedente o alla successiva, dividi in due, esporta solo questa scena, tieni tutte, inverti, annulla. «Crea il video» mette in fila le scene tenute.
+**Schermo diviso**: da 2 a 4 video nella stessa immagine (affiancati, sopra / sotto, griglia, uno grande + piccoli), in 16:9, 9:16 o 1:1. L'anteprima si aggiorna a ogni impostazione. Scegli la durata (più corto, oppure più lungo: gli altri restano fermi) e l'audio (mix o un solo video).
+
 ### Strumenti rapidi
 - **Convertitore di tempo** (Ispettore): scrivi `90`, `1:30`, `1h 2m 3s` o `2,5 min`, poi «→ Inizio» / «→ Fine».
 - **Rimuovi un logo**: scegli la zona (angolo rapido + cursori), controlla con «Anteprima», poi rimuovilo da tutto il video.
-- **Logo MSV**: aggiungi il tuo logo [ ▶ ]; la posizione resta memorizzata nel video per poterlo togliere con precisione.
+- **Logo MSV**: aggiungi il logo Montage Studio; la posizione resta memorizzata nel video per poterlo togliere con precisione.
+- **Riduci il rumore**: scegli il livello, ascolta 10 s prima / dopo, poi pulisci il file (l'immagine di un video viene copiata senza perdita). In un montaggio: Impostazioni → Audio → «Riduzione del rumore».
+
+### Screen Record (Windows, Linux X11, Mac)
+1. Scegli uno schermo o una finestra, il microfono (e la sua **riduzione del rumore**), l'audio del computer e, se
+   vuoi, la webcam.
+2. «Avvia la registrazione»: hai 3 secondi per mostrare la pagina da registrare.
+3. **Pausa**: pulsante «Pausa» oppure **Ctrl + Shift + F8**; durante la pausa non viene catturato niente. «Riprendi»
+   riparte dopo 3 secondi, la scorciatoia riparte subito.
+4. Ferma con il pulsante «Ferma» oppure con **Ctrl + Shift + F9** da qualsiasi finestra.
+5. MSV taglia i momenti passati in MSV, accorcia le pause lunghe e fa zoom su ogni clic.
+   Il video viene salvato in `sorties/screen_record`. Versione 9:16 a scelta: **segui il cursore**, **schermo intero
+   + sfondo sfocato**, oppure **schermo sopra + webcam sotto**.
+6. «Crea un link di condivisione»: il link si apre sui dispositivi della stessa rete Wi-Fi, finché MSV è aperto.
+
+Linux: sessione X11 (Xorg), schermi interi; microfono e audio del computer tramite PulseAudio / PipeWire. Mac: schermi interi; autorizza «Registrazione schermo», «Microfono», «Fotocamera» e «Monitoraggio input»; per l'audio del computer installa BlackHole (gratuito). La scelta di una sola finestra esiste solo su Windows.
 
 ### Consigli sulle prestazioni
 I rendering «anteprima» sono da 3 a 5 volte più veloci. Se hai una scheda NVIDIA, scegli l'encoder «nvidia (nvenc)».
@@ -1506,10 +2036,29 @@ con «Reemplazar la voz de un clip existente».
 **Mi voz (clonación local)**: graba de 30 a 60 s de tu voz (habitación tranquila, tono natural), crea la voz una vez y elígela como cualquier otra. Todo se queda en tu PC; el primer uso instala unos 5 GB. Clona solo tu voz, o con el consentimiento de la persona.
 **Voces más naturales**: cada frase se lee por separado con una pausa adaptada a su puntuación; `[pause 1s]` fuerza una pausa. Números, horas, precios y siglas se leen en letras, y el **diccionario de pronunciación** («Pausas y pronunciación») corrige una palabra mal dicha (`MSV = eme-ese-uve`). «Sonido de estudio» da a todas las voces un sonido más cálido y limpio. Para Mi voz, elige un **estilo de lectura** (Narración tranquila, Conversación, Promo enérgica); con **2 o 3 tomas por frase**, cada frase se verifica con una transcripción automática y se rehace si falta una palabra o se añade una inventada. El modelo imita el tono de tu grabación: para una promo, grábate con tono de promo. Escribe para el oído: frases cortas, puntuación cuidada.
 
+### Escenas y pantalla dividida
+**Dividir en escenas**: añade un vídeo, elige «cambios de plano» (la imagen cambia), «pausas al hablar» (tutorial, pódcast, discurso grabado en un solo plano) o «cada N segundos» (trozos de duración fija, cada corte movido a la pausa más cercana) y luego «Buscar las escenas». «Unir las escenas más cortas que» no divide: agrupa las escenas demasiado cortas. Haz clic en una escena para conservarla (✓) o excluirla; ▶ la reproduce. El **clic derecho** (o ⋯, o Mayús + F10 con el teclado) abre todas las opciones: conservar solo esta, unir con la anterior o la siguiente, cortar en dos, exportar solo esta escena, conservar todas, invertir, deshacer. «Crear el vídeo» une las escenas conservadas.
+**Pantalla dividida**: de 2 a 4 vídeos en la misma imagen (lado a lado, arriba / abajo, cuadrícula, una grande + pequeñas), en 16:9, 9:16 o 1:1. La vista previa se actualiza con cada ajuste. Elige la duración (el más corto, o el más largo: los demás se congelan) y el sonido (mezcla o un solo vídeo).
+
 ### Herramientas rápidas
 - **Conversor de tiempo** (Inspector): escribe `90`, `1:30`, `1h 2m 3s` o `2,5 min`, y luego «→ Inicio» / «→ Fin».
 - **Quitar un logo**: elige la zona (esquina rápida + controles), compruébalo con «Vista previa» y quítalo de todo el vídeo.
-- **Logo MSV**: añade tu logo [ ▶ ]; su posición se guarda en el vídeo para poder quitarlo con precisión.
+- **Logo MSV**: añade el logo de Montage Studio; su posición se guarda en el vídeo para poder quitarlo con precisión.
+- **Reducir el ruido**: elige el nivel, escucha 10 s antes / después y limpia el archivo (la imagen de un vídeo se copia sin pérdida). En un montaje: Ajustes → Audio → «Reducción de ruido».
+
+### Screen Record (Windows, Linux X11, Mac)
+1. Elige una pantalla o una ventana, el micrófono (y su **reducción de ruido**), el audio del ordenador y, si
+   quieres, la webcam.
+2. «Iniciar la grabación»: tienes 3 segundos para mostrar la página que quieres grabar.
+3. **Pausa**: botón «Pausa» o **Ctrl + Shift + F8**; no se captura nada durante la pausa. «Reanudar» vuelve a empezar
+   tras 3 segundos, el atajo vuelve a empezar al instante.
+4. Detén con el botón «Detener» o con **Ctrl + Shift + F9** desde cualquier ventana.
+5. MSV recorta los momentos pasados en MSV, acorta las pausas largas y hace zoom en cada clic.
+   El vídeo se guarda en `sorties/screen_record`. Versión 9:16 a elegir: **seguir el cursor**, **pantalla completa
+   + fondo desenfocado**, o **pantalla arriba + webcam abajo**.
+6. «Crear un enlace para compartir»: el enlace se abre en los dispositivos de la misma Wi-Fi, mientras MSV esté abierto.
+
+Linux: sesión X11 (Xorg), pantallas completas; micrófono y audio del ordenador mediante PulseAudio / PipeWire. Mac: pantallas completas; autoriza «Grabación de pantalla», «Micrófono», «Cámara» y «Monitorización de entrada»; para el audio del ordenador, instala BlackHole (gratis). Grabar una sola ventana solo es posible en Windows.
 
 ### Consejos de rendimiento
 Los renderizados de «vista previa» son de 3 a 5 veces más rápidos. Si tienes una tarjeta NVIDIA, elige el codificador «nvidia (nvenc)».
@@ -1542,6 +2091,16 @@ def opts(values) -> list[tuple[str, str]]:
 
 def help_text() -> str:
     return HELP.get(LANG.get(), HELP[DEFAULT_LANG])
+
+
+def help_sections(lang: str | None = None) -> list[tuple[str, str]]:
+    """L'aide découpée en sections (titre, texte Markdown), dans le même ordre pour toutes les langues."""
+    text = HELP.get(lang or LANG.get(), HELP[DEFAULT_LANG])
+    out = []
+    for block in text.split("\n### ")[1:]:
+        title, _sep, body = block.partition("\n")
+        out.append((title.strip(), body.strip()))
+    return out
 
 
 def pick_lang(accept_language: str | None) -> str:

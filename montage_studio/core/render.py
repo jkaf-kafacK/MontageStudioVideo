@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import ff, layers, subs
+from . import denoise, ff, layers, subs
 from .i18n import _
 from .textimg import DEFAULT_STYLE, blank, render_text
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -91,6 +91,7 @@ DEFAULT_PROJECT = {
     "fade_out": 0.0,
     "remove_silence": {"enabled": False, "threshold_db": -35, "min_silence": 0.45, "padding": 0.12},
     "normalize_audio": True,
+    "denoise": "aucune",               # réduction du bruit du son des clips : aucune | légère | forte (voix)
     "image_duration": 3.0,
     "image_zoom": "zoom avant",        # voir MOTIONS ; une image peut avoir son propre mouvement (clip "zoom")
     "fit_images_to_voiceover": False,
@@ -665,6 +666,13 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
         chain.append(f"fade=t=out:st={max(0, T - fo):.3f}:d={fo:.2f}")
     chain.append("format=yuv420p")
     vf.append(f"[{cur_v}]{','.join(chain)}[vout]")
+
+    # Réduction du bruit : sur le son des clips assemblés (en continu, avant la voix off et la musique)
+    dn = denoise.denoise_filter(p.get("denoise", "aucune"), highpass=False)
+    if dn:
+        af.append(f"[{cur_a}]{dn},aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo[dn]")
+        cur_a = "dn"
+        log.append(_("🔇 Réduction du bruit : {level}", level=_(p["denoise"])))
 
     # Voix off
     vo = p["voiceover"]

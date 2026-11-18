@@ -129,6 +129,23 @@ def test_traductions_completes():
     assert set(HELP) == set(LANGS)
 
 
+def test_aide_en_liste_depliable():
+    import app
+    from core.i18n import LANG, LANGS, help_sections
+
+    counts = {code: len(help_sections(code)) for code in LANGS}
+    assert len(set(counts.values())) == 1, counts          # mêmes sections partout : les icônes restent alignées
+    assert counts["fr"] == len(app._HELP_ICONS)
+    token = LANG.set("it")
+    try:
+        page = app.help_html("Whisper : `ok`")
+    finally:
+        LANG.reset(token)
+    assert page.count('<details class="aide-item"') == counts["it"] + 1
+    assert "<summary>" in page and "Informazioni di sistema" in page and "<h3>" not in page
+    assert "<code>sorties/screen_record</code>" in page
+
+
 # --------------------------------------------------------------------------- recadrage et sous-titres intégrés
 
 def test_recadrage_texte():
@@ -202,6 +219,88 @@ def test_champs_texte_vides_envoyes_comme_none(clip, tmp_path):
                           "title": {"text": None}, "subtitles": {"source": "script", "script": None}},
                          tmp_path / "vide.mp4", quality="aperçu")
     assert Path(res["video"]).exists()
+
+
+def test_rappel_avant_l_enregistrement(monkeypatch):
+    """« Démarrer » ouvre le rappel ; X le ferme sans rien lancer ; « Ok » le ferme puis lance l'enregistrement."""
+    import app
+    from core import screenrec
+    from core.errors import UserError
+
+    monkeypatch.setattr(screenrec.RECORDER, "state", "idle")
+    assert app.sr_ask("screen:0,0,1920,1080").visible is True
+    assert app.sr_close_popup().visible is False
+    with pytest.raises(UserError):
+        app.sr_ask("")                                         # aucune source : pas de rappel, une erreur claire
+    monkeypatch.setattr(screenrec.RECORDER, "state", "recording")
+    with pytest.raises(UserError):
+        app.sr_ask("screen:0,0,1920,1080")                     # déjà en cours
+
+    demo = app.build_ui("it")
+    by_id = {getattr(b, "elem_id", None): b for b in demo.blocks.values()}
+    assert by_id["sr-popup"].visible is False                  # caché au départ
+    links = []
+    for f in demo.fns.values():
+        trig = {getattr(demo.blocks.get(t[0]), "elem_id", None) for t in f.targets}
+        links.append((getattr(f.fn, "__name__", ""), trig, [getattr(o, "elem_id", None) for o in f.outputs]))
+    assert ("sr_ask", {"sr-start"}, ["sr-popup"]) in links
+    assert ("sr_close_popup", {"sr-popup-x"}, ["sr-popup"]) in links
+    assert ("sr_close_popup", {"sr-popup-ok"}, ["sr-popup"]) in links
+    assert not any(name == "sr_start" and "sr-start" in trig for name, trig, _o in links)   # plus de départ direct
+    assert any(name == "sr_start" and outs[0] == "sr-status" for name, _t, outs in links)   # lancé après « Ok »
+
+
+def test_decouper_en_scenes_grille_et_menu():
+    """Grille des scènes : menu du clic droit complet ; les actions envoyées par la page modifient la liste."""
+    import gradio as gr
+
+    import app
+    from core.i18n import LANG
+
+    token = LANG.set("it")
+    try:
+        st = {**app.cut_empty_state(), "path": "x.mp4", "total": 6.0,
+              "scenes": [{"start": 0.0, "end": 2.0, "keep": True}, {"start": 2.0, "end": 4.0, "keep": True},
+                         {"start": 4.0, "end": 6.0, "keep": True}]}
+        html = app.cut_html(st)
+        for act, _ic, label in app.CUT_MENU:                    # toutes les options, traduites
+            if act != "-":
+                assert f"data-act='{act}'" in html and app._(label) in html
+        assert "Unisci alla successiva" in html and html.count("class='cut-card") == 3
+        assert "Le scene trovate" in app.cut_html(app.cut_empty_state())
+
+        st2, grid, info, *_ = app.cut_command("toggle:1", st)
+        assert [s["keep"] for s in st2["scenes"]] == [True, False, True] and "cut-card off" in grid
+        assert "**3 scene** · 2 tenute" in info
+        st3, *_ = app.cut_command("merge_next:0", st2)
+        assert [(s["start"], s["end"]) for s in st3["scenes"]] == [(0, 4), (4, 6)]
+        st4, *_ = app.cut_command("undo:0", st3)                # annuler : retour à l'état précédent
+        assert st4["scenes"] == st2["scenes"]
+        st5, *_ = app.cut_command("undo:0", st4)
+        assert st5["scenes"] == st["scenes"]
+        same = app.cut_command("n'importe quoi", st)            # commande inconnue : rien ne change
+        assert same[0] is st
+    finally:
+        LANG.reset(token)
+
+    demo = app.build_ui("it")
+    links = []
+    for f in demo.fns.values():
+        trig = {getattr(demo.blocks.get(t[0]), "elem_id", None) for t in f.targets}
+        links.append((getattr(f.fn, "__name__", ""), trig, [getattr(o, "elem_id", None) for o in f.outputs]))
+    assert any(n == "cut_select" and "cut-grid" in t and o[1] == "cut-grid" for n, t, o in links)
+    assert any(n == "cut_detect" and "cut-find" in t for n, t, _o in links)
+    assert any(n == "cut_mode_changed" and "cut-mode" in t and o == ["cut-every-row", "cut-tune-row"]
+               for n, t, o in links)
+    every, tune = app.cut_mode_changed("toutes les N secondes")
+    assert every.visible is True and tune.visible is False
+    assert [c.visible for c in app.cut_mode_changed("pauses dans la parole")] == [False, True]
+    assert any(n == "cut_export" and "cut-export" in t for n, t, _o in links)
+    assert any(n == "ss_render" and "ss-export" in t for n, t, _o in links)
+    grid = next(b for b in demo.blocks.values() if getattr(b, "elem_id", None) == "cut-grid")
+    assert "contextmenu" in grid.js_on_load and "trigger('select'" in grid.js_on_load
+    sel = gr.SelectData(None, {"index": 2, "value": "keep_only"})     # ce que la page envoie au clic droit
+    assert [s["keep"] for s in app.cut_select(st, sel)[0]["scenes"]] == [False, False, True]
 
 
 def test_interface_titre_jamais_rempli(clip):

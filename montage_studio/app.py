@@ -12,6 +12,7 @@ import math
 import re
 import shutil
 import socket
+import sys
 import threading
 import time
 import webbrowser
@@ -31,9 +32,10 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import batch, errors, ff, layers, paths, ranking, scenes, subs, tools, voice
+from core import (batch, denoise, errors, ff, layers, paths, ranking, scenecut, scenes, screenrec, share,
+                  splitscreen, subs, tools, voice)
 from core.errors import UserError
-from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_text, opts, pick_lang
+from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_sections, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
                          crop_text, fit_image, merge_defaults, parse_crop, render_project)
 from core.music import MOODS
@@ -43,6 +45,7 @@ from core.version import __version__
 BASE = Path(__file__).resolve().parent          # code de l'application (lecture seule une fois installée)
 MEDIA_DIR, OUT_DIR, PROJ_DIR = paths.MEDIA_DIR, paths.OUT_DIR, paths.PROJ_DIR   # fichiers de l'utilisateur
 paths.ensure_dirs()
+screenrec.OUT_DIR.mkdir(parents=True, exist_ok=True)     # sorties/screen_record : vidéos de Screen Record
 
 COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img", "recadrage_%",
         "mouvement"]
@@ -98,7 +101,6 @@ def get_path(d: dict, key: str, default=None):
             return default
         d = d[k]
     return d
-
 
 def set_path(d: dict, key: str, value) -> None:
     ks = key.split(".")
@@ -1031,6 +1033,269 @@ def tool_msv_logo(file, action, variant, position, size, opacity, mode, progress
     return str(out), str(out), msg
 
 
+def tool_denoise_preview(file, level, start):
+    if not file:
+        raise gr.Error(_("Ajoute un fichier audio ou vidéo."))
+    try:
+        return denoise.preview(file, level, float(start or 0))
+    except Exception as e:
+        raise fail(e)
+
+
+def tool_denoise(file, level, progress=gr.Progress()):
+    if not file:
+        raise gr.Error(_("Ajoute un fichier audio ou vidéo."))
+    msg = _("Réduction du bruit")
+    progress(0, desc=msg)
+    try:
+        return str(denoise.clean_file(file, OUT_DIR, level, lambda f: progress(f, desc=msg)))
+    except Exception as e:
+        raise fail(e)
+
+
+# --------------------------------------------------------------------------- découper en scènes
+# Le menu du clic droit (et du bouton ⋯) : (action, icône, libellé). toggle_on / toggle_off -> « toggle ».
+CUT_MENU = [
+    ("play", "▶", "Lire cette scène"),
+    ("toggle_on", "✓", "Garder cette scène"),
+    ("toggle_off", "✕", "Exclure cette scène"),
+    ("keep_only", "◎", "Garder seulement celle-ci"),
+    ("merge_prev", "⇤", "Fusionner avec la précédente"),
+    ("merge_next", "⇥", "Fusionner avec la suivante"),
+    ("split", "✂", "Couper en deux"),
+    ("export_one", "⬇", "Exporter cette scène seule"),
+    ("-", "", ""),
+    ("keep_all", "✓", "Tout garder"),
+    ("drop_all", "✕", "Tout exclure"),
+    ("invert", "⇄", "Inverser la sélection"),
+    ("undo", "↶", "Annuler"),
+]
+
+# Grille des scènes : clic = garder / exclure ; ▶ = lire ; clic droit, ⋯ ou touche Menu = toutes les options.
+# Les actions partent vers Python par l'événement « select » du composant (gr.SelectData : index, value = action).
+CUT_JS = r"""
+const send = (act, i) => trigger('select', {index: +i, value: act});
+const play = card => {
+  const v = document.querySelector('#cut-player video');
+  if (!v) return;
+  const s = +card.dataset.start, e = +card.dataset.end;
+  if (v._cutStop) v.removeEventListener('timeupdate', v._cutStop);
+  v._cutStop = () => { if (v.currentTime >= e - 0.03) { v.pause(); v.removeEventListener('timeupdate', v._cutStop); } };
+  v.addEventListener('timeupdate', v._cutStop);
+  v.currentTime = s; v.play();
+  v.scrollIntoView({block: 'nearest', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+};
+let menu = document.getElementById('cut-menu');
+if (!menu) {
+  menu = document.createElement('div');
+  menu.id = 'cut-menu'; menu.setAttribute('role', 'menu'); menu.hidden = true;
+  document.body.appendChild(menu);
+  const close = (refocus) => { menu.hidden = true; if (refocus && menu._card) menu._card.focus(); };
+  menu.addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]');
+    if (!b || b.disabled) return;
+    const card = menu._card, act = b.dataset.act;
+    close(true);
+    if (act === 'play') menu._play(card);
+    else menu._send(act.startsWith('toggle') ? 'toggle' : act, card.dataset.i);
+  });
+  menu.addEventListener('keydown', e => {
+    const items = [...menu.querySelectorAll('button:not([hidden]):not(:disabled)')];
+    const k = items.indexOf(document.activeElement);
+    if (e.key === 'Escape') { e.preventDefault(); close(true); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); items[(k + 1) % items.length].focus(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); items[(k - 1 + items.length) % items.length].focus(); }
+    else if (e.key === 'Tab') close(false);
+  });
+  document.addEventListener('mousedown', e => { if (!menu.hidden && !menu.contains(e.target)) close(false); });
+  window.addEventListener('scroll', () => close(false), true);
+  window.addEventListener('resize', () => close(false));
+}
+menu._send = send; menu._play = play;      // toujours ceux du composant affiché
+const open = (card, x, y) => {
+  const tpl = element.querySelector('.cut-menu-tpl');
+  if (!tpl) return;
+  menu._card = card;
+  menu.innerHTML = tpl.innerHTML;
+  const i = +card.dataset.i, n = element.querySelectorAll('.cut-card').length, keep = card.dataset.keep === '1';
+  menu.querySelector('[data-act=toggle_on]').hidden = keep;
+  menu.querySelector('[data-act=toggle_off]').hidden = !keep;
+  menu.querySelector('[data-act=merge_prev]').disabled = i === 0;
+  menu.querySelector('[data-act=merge_next]').disabled = i === n - 1;
+  menu.querySelector('[data-act=split]').disabled = (+card.dataset.end - +card.dataset.start) < 0.4;
+  menu.querySelector('.cut-menu-title').textContent = card.querySelector('.cut-time').textContent;
+  menu.hidden = false;
+  const r = menu.getBoundingClientRect();
+  menu.style.left = Math.max(8, Math.min(x, innerWidth - r.width - 8)) + 'px';
+  menu.style.top = Math.max(8, Math.min(y, innerHeight - r.height - 8)) + 'px';
+  menu.querySelector('button:not([hidden]):not(:disabled)').focus();
+};
+element.addEventListener('contextmenu', e => {
+  const c = e.target.closest('.cut-card');
+  if (!c) return;
+  e.preventDefault();
+  open(c, e.clientX, e.clientY);
+});
+element.addEventListener('click', e => {
+  const c = e.target.closest('.cut-card');
+  if (!c) return;
+  if (e.target.closest('.cut-more')) { const r = e.target.closest('.cut-more').getBoundingClientRect(); open(c, r.left, r.bottom + 4); return; }
+  if (e.target.closest('.cut-play')) { play(c); return; }
+  const keep = c.dataset.keep !== '1';
+  c.dataset.keep = keep ? '1' : '0'; c.classList.toggle('off', !keep); c.setAttribute('aria-pressed', keep);
+  send('toggle', c.dataset.i);
+});
+element.addEventListener('keydown', e => {
+  const c = e.target.closest('.cut-card');
+  if (!c || e.target !== c) return;
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.click(); }
+  else if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+    e.preventDefault(); const r = c.getBoundingClientRect(); open(c, r.left + 24, r.top + 24);
+  }
+});
+"""
+
+
+def cut_empty_state() -> dict:
+    return {"path": "", "total": 0.0, "scenes": [], "thumbs": {}, "history": []}
+
+
+def cut_summary(st: dict) -> str:
+    sc = st.get("scenes") or []
+    if not sc:
+        return ""
+    kept = sum(1 for s in sc if s["keep"])
+    return _("**{n} scènes** · {k} gardées · durée gardée **{d}** sur {t}", n=len(sc), k=kept,
+             d=tools.format_time(scenecut.kept_duration(sc)), t=tools.format_time(st["total"]))
+
+
+def cut_time(seconds: float) -> str:
+    """Temps court pour les cartes : 0:02.0 · 12:45.3 · 1:02:03."""
+    h, rest = divmod(max(0.0, float(seconds)), 3600)
+    m, s = divmod(rest, 60)
+    return f"{int(h)}:{int(m):02d}:{int(s):02d}" if h >= 1 else f"{int(m)}:{s:04.1f}"
+
+
+def cut_html(st: dict) -> str:
+    """Grille des scènes (miniature, numéro, temps) + modèle du menu du clic droit."""
+    sc = st.get("scenes") or []
+    if not sc:
+        return f"<div class='cut-empty'>{_('Les scènes trouvées apparaîtront ici.')}</div>"
+    menu = "".join("<hr>" if act == "-" else
+                   f"<button type='button' role='menuitem' data-act='{act}'><span aria-hidden='true'>{ic}</span>"
+                   f"{_(label)}</button>" for act, ic, label in CUT_MENU)
+    cards = []
+    for i, s in enumerate(sc):
+        img = st["thumbs"].get(f"{s['start']:.3f}", "")
+        src = f"<img src='data:image/jpeg;base64,{img}' alt=''>" if img else "<span class='cut-noimg'></span>"
+        span = f"{cut_time(s['start'])} → {cut_time(s['end'])}"
+        state = _("gardée") if s["keep"] else _("exclue")
+        cards.append(
+            f"<div class='cut-card{'' if s['keep'] else ' off'}' role='button' tabindex='0' "
+            f"aria-pressed='{str(s['keep']).lower()}' data-i='{i}' data-start='{s['start']}' data-end='{s['end']}' "
+            f"data-keep='{1 if s['keep'] else 0}' aria-label='{_('Scène')} {i + 1}, {span}, {state}'>"
+            f"<div class='cut-thumb'>{src}<span class='cut-num'>{i + 1}</span>"
+            f"<span class='cut-badge' aria-hidden='true'></span>"
+            f"<span class='cut-dur'>{s['end'] - s['start']:.1f} s</span></div>"
+            f"<div class='cut-meta'><span class='cut-time'>{span}</span>"
+            f"<button type='button' class='cut-play' tabindex='-1' title='{_('Lire cette scène')}' "
+            f"aria-label='{_('Lire cette scène')}'>▶</button>"
+            f"<button type='button' class='cut-more' tabindex='-1' title='{_('Toutes les options')}' "
+            f"aria-label='{_('Toutes les options')}'>⋯</button></div></div>")
+    return (f"<div class='cut-grid'>{''.join(cards)}</div>"
+            f"<div class='cut-menu-tpl' hidden><div class='cut-menu-title'></div>{menu}</div>")
+
+
+def cut_mode_changed(mode):
+    """« toutes les N secondes » : durée + placement sur les pauses ; sinon sensibilité + durée minimale."""
+    fixed = mode == "toutes les N secondes"
+    return gr.Column(visible=fixed), gr.Column(visible=not fixed)
+
+
+def cut_detect(file, mode, sensitivity, min_len, every=10.0, snap=True, progress=gr.Progress()):
+    if not file:
+        raise gr.Error(_("Ajoute une vidéo."))
+    msg = _("Recherche des scènes")
+    progress(0, desc=msg)
+    every = max(1.0, num(every, 10.0))
+    cuts, total = scenecut.detect_cuts(file, mode, sensitivity, lambda f: progress(f * 0.85, desc=msg),
+                                       every=every, snap=bool(snap))
+    # durée fixe : seul le dernier petit morceau est regroupé ; sinon, le réglage « Unir les scènes plus courtes que »
+    min_len = every / 4 if mode == "toutes les N secondes" else max(0.0, num(min_len, 1.0))
+    sc = scenecut.make_scenes(cuts, total, min_len)
+    progress(0.9, desc=_("Création des miniatures"))
+    st = {"path": file, "total": total, "scenes": sc, "thumbs": scenecut.thumbnails(file, sc), "history": []}
+    hint = scenecut.few_scenes_hint(mode, len(cuts), sc, total, min_len)
+    if hint:
+        gr.Warning(hint, duration=12)
+    return st, cut_html(st), cut_summary(st) + (f"\n\n⚠️ {hint}" if hint else ""), file
+
+
+def _cut_export(st: dict, ranges, name: str, progress) -> tuple[str, str]:
+    out = OUT_DIR / f"{slug(Path(st['path']).stem)}_{name}_{time.strftime('%H%M%S')}.mp4"
+    msg = _("Création de la vidéo")
+    progress(0, desc=msg)
+    scenecut.export(st["path"], ranges, out, lambda f: progress(f, desc=msg))
+    return str(out), str(out)
+
+
+def cut_select(st, evt: gr.SelectData, progress=gr.Progress()):
+    """Action envoyée par la grille (clic, clic droit, ⋯) : evt.value = action, evt.index = numéro de la scène."""
+    return cut_command(f"{evt.value}:{int(evt.index or 0)}", st, progress)
+
+
+def cut_command(cmd, st, progress=gr.Progress()):
+    """Action sur la liste des scènes : « action:numéro » (grille ou boutons sous la grille)."""
+    skip = (gr.update(), gr.update())
+    st = st or cut_empty_state()
+    m = re.fullmatch(r"(\w+):(\d+)", (cmd or "").strip())
+    if not m or not st.get("scenes"):
+        return st, gr.update(), gr.update(), *skip
+    act, i = m.group(1), int(m.group(2))
+    if act == "export_one":
+        s = st["scenes"][min(i, len(st["scenes"]) - 1)]
+        return st, gr.update(), gr.update(), *_cut_export(st, [(s["start"], s["end"])], f"scene{i + 1}", progress)
+    if act == "undo":
+        if not st["history"]:
+            gr.Info(_("Rien à annuler."))
+            return st, gr.update(), gr.update(), *skip
+        st = {**st, "scenes": st["history"][-1], "history": st["history"][:-1]}
+    elif act in scenecut.ACTIONS:
+        new = scenecut.apply(st["scenes"], act, i)
+        if new == st["scenes"]:
+            return st, gr.update(), gr.update(), *skip
+        st = {**st, "scenes": new, "history": (st["history"] + [st["scenes"]])[-scenecut.MAX_HISTORY:]}
+        if act == "split":
+            st["thumbs"] = scenecut.thumbnails(st["path"], new, st["thumbs"])
+    else:
+        return st, gr.update(), gr.update(), *skip
+    return st, cut_html(st), cut_summary(st), *skip
+
+
+def cut_export(st, progress=gr.Progress()):
+    if not st or not st.get("scenes"):
+        raise gr.Error(_("Clique d'abord sur « Trouver les scènes »."))
+    return _cut_export(st, scenecut.kept_ranges(st["scenes"]), "scenes", progress)
+
+
+# --------------------------------------------------------------------------- écran partagé
+def ss_preview(f1, f2, f3, f4, layout, fmt, gap, fit, bg, length, t):
+    files = [f for f in (f1, f2, f3, f4) if f]
+    if len(files) < splitscreen.MIN:
+        return None
+    return splitscreen.preview(files, layout, fmt, int(gap or 0), fit, bg, length, num(t, 1.0))
+
+
+def ss_render(f1, f2, f3, f4, layout, fmt, gap, fit, bg, length, audio, progress=gr.Progress()):
+    files = [f for f in (f1, f2, f3, f4) if f]
+    out = OUT_DIR / f"ecran_partage_{time.strftime('%Y%m%d_%H%M%S')}.mp4"
+    msg = _("Création de la vidéo")
+    progress(0, desc=msg)
+    splitscreen.render(files, out, layout, fmt, int(gap or 0), fit, bg, length, audio,
+                       lambda f: progress(f, desc=msg))
+    return str(out), str(out)
+
+
 def tool_transcribe(file, lang, model, max_words, progress=gr.Progress()):
     if not subs.whisper_available():
         raise gr.Error(_("Whisper n'est pas installé. Lance : pip install faster-whisper"))
@@ -1187,7 +1452,7 @@ CSS = """
 #entete {display: flex; align-items: center; gap: 16px; padding: 18px 22px; margin-bottom: 6px;
          border-radius: 18px; border: 1px solid var(--border-color-primary);
          background: linear-gradient(120deg, rgba(196,122,18,.14), rgba(138,75,3,.06) 55%, rgba(251,191,36,.08));}
-#entete .marque {width: 52px; height: 52px; flex: none; filter: drop-shadow(0 6px 14px rgba(138,75,3,.35));}
+#entete .marque {width: 52px; height: 52px; flex: none; filter: drop-shadow(0 4px 10px rgba(24,24,27,.22));}
 #entete .marque svg {width: 100%; height: 100%; display: block;}
 #entete .titres {flex: 1; min-width: 0;}
 #entete h1 {font-size: 1.65rem; font-weight: 800; margin: 0; letter-spacing: -0.03em; line-height: 1.1;}
@@ -1244,6 +1509,108 @@ body.avec-video gradio-app, body.avec-video .gradio-container {background: trans
 body.avec-video .gradio-container {position: relative; z-index: 1;}
 body.avec-video #entete {backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);}
 @media (prefers-reduced-motion: reduce) {#fond-video {display: none;}}
+
+/* ---- Screen Record : présentation et avantages */
+#sr-hero {padding: 22px 24px; border-radius: 18px; border: 1px solid var(--border-color-primary); margin-bottom: 6px;
+          background: linear-gradient(125deg, rgba(196,122,18,.16), rgba(138,75,3,.05) 55%, rgba(251,191,36,.10));}
+#sr-hero .sr-pill {display: inline-block; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em;
+                   text-transform: uppercase; padding: 5px 12px; border-radius: 999px; color: #8A4B03;
+                   background: rgba(251,191,36,.18); border: 1px solid rgba(196,122,18,.35);}
+.dark #sr-hero .sr-pill {color: #F5DDB8;}
+#sr-hero h2 {font-size: 1.9rem; font-weight: 800; letter-spacing: -0.03em; margin: 10px 0 6px;}
+#sr-hero .sr-tag {font-size: 1.02rem; max-width: 72ch; margin: 0 0 18px; color: var(--body-text-color);}
+#sr-hero .sr-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px;}
+#sr-hero .sr-feat {display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 14px;
+                   background: var(--background-fill-primary); border: 1px solid var(--border-color-primary);}
+#sr-hero .sr-ic {flex: none; width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px;
+                 font-size: 1.05rem; background: rgba(196,122,18,.14);}
+#sr-hero .sr-feat b {display: block; font-size: 0.92rem; line-height: 1.3;}
+#sr-hero .sr-feat p {margin: 3px 0 0; font-size: 0.82rem; line-height: 1.4; color: var(--body-text-color-subdued);}
+#sr-hero .sr-feat.extra .sr-ic {background: rgba(251,191,36,.22);}
+#sr-start {min-height: 54px; font-size: 1.05rem; font-weight: 700; box-shadow: 0 10px 24px -10px rgba(138,75,3,.7);}
+#sr-stop, #sr-pause {min-height: 54px; font-size: 1.05rem; font-weight: 700;}
+#sr-status {padding: 10px 14px !important; border-radius: 12px; border: 1px solid var(--border-color-primary);
+            background: var(--background-fill-secondary);}
+.sr-note p {font-size: 0.82rem !important; color: var(--body-text-color-subdued) !important;}
+#sr-popup {position: fixed !important; inset: 0; z-index: 1000; margin: 0 !important; padding: 16px;
+           align-items: center; justify-content: center; background: rgba(14,14,18,.55);
+           backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);}
+#sr-popup-card {flex: 0 0 auto !important; width: min(460px, 100%); padding: 20px 22px 22px; gap: 14px;
+                border-radius: 18px; border: 1px solid var(--border-color-primary);
+                background: var(--background-fill-primary); box-shadow: 0 24px 60px -20px rgba(0,0,0,.45);}
+#sr-popup-head {align-items: center; flex-wrap: nowrap;}
+#sr-popup-head h3 {margin: 0; font-size: 1.15rem; font-weight: 800;}
+#sr-popup-x {flex: 0 0 auto; min-width: 36px !important; width: 36px; height: 36px; padding: 0 !important;
+             border-radius: 10px; font-size: 1rem;}
+#sr-popup-msg p {margin: 0; font-size: 1rem; line-height: 1.5;}
+#sr-popup-ok {min-height: 46px; font-weight: 700;}
+
+/* ---- Aide : liste dépliable (icône, titre, flèche) */
+#aide {max-width: 980px; margin: 8px auto 4px; border: 1px solid var(--border-color-primary); border-radius: 14px;
+       overflow: hidden; background: var(--block-background-fill);}
+#aide .aide-item + .aide-item {border-top: 1px solid var(--border-color-primary);}
+#aide summary {display: flex; align-items: center; gap: 22px; padding: 22px 28px; cursor: pointer; list-style: none;
+               font-weight: 700; font-size: 1.08rem; color: var(--body-text-color); transition: background .15s;}
+#aide summary::-webkit-details-marker {display: none;}
+#aide summary:hover {background: var(--background-fill-secondary);}
+#aide summary:focus-visible {outline: 2px solid #C47A12; outline-offset: -2px;}
+#aide .aide-ic {flex: none; color: var(--body-text-color);}
+#aide .aide-titre {flex: 1; min-width: 0;}
+#aide .aide-chevron {flex: none; color: var(--body-text-color); transition: transform .2s;}
+#aide details[open] > summary .aide-chevron {transform: rotate(180deg);}
+#aide .aide-corps {padding: 0 28px 22px 78px; font-size: 0.95rem; line-height: 1.6;}
+#aide .aide-corps > :first-child {margin-top: 0;}
+#aide .aide-corps p, #aide .aide-corps li {margin: 6px 0;}
+#aide .aide-corps code {font-size: 0.86em; padding: 1px 5px; border-radius: 5px; word-break: break-word;
+                        background: var(--background-fill-secondary);}
+@media (max-width: 640px) {#aide summary {gap: 14px; padding: 18px 16px; font-size: 1rem;}
+                           #aide .aide-corps {padding: 0 16px 18px 16px;}}
+@media (prefers-reduced-motion: reduce) {#aide summary, #aide .aide-chevron {transition: none;}}
+
+/* ---- Découper en scènes : grille des scènes et menu du clic droit */
+#cut-find, #cut-export, #ss-export {min-height: 50px; font-weight: 700;}
+#cut-grid .cut-empty {padding: 40px 16px; text-align: center; border-radius: 14px; color: var(--body-text-color-subdued);
+                      border: 1px dashed var(--border-color-primary);}
+#cut-grid .cut-grid {display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px;
+                     max-height: 560px; overflow-y: auto; padding: 2px;}
+#cut-grid .cut-card {border-radius: 12px; border: 2px solid #C47A12; background: var(--block-background-fill);
+                     overflow: hidden; cursor: pointer; user-select: none; transition: opacity .15s, border-color .15s;}
+#cut-grid .cut-card:focus-visible {outline: 3px solid #C47A12; outline-offset: 2px;}
+#cut-grid .cut-card.off {border-color: var(--border-color-primary); opacity: .5;}
+#cut-grid .cut-card.off img {filter: grayscale(1);}
+#cut-grid .cut-thumb {position: relative; aspect-ratio: 16 / 9; background: #111;}
+#cut-grid .cut-thumb img, #cut-grid .cut-noimg {width: 100%; height: 100%; object-fit: cover; display: block;}
+#cut-grid .cut-num, #cut-grid .cut-dur {position: absolute; font-size: 0.72rem; font-weight: 700; color: #fff;
+                                        padding: 2px 7px; border-radius: 7px; background: rgba(0,0,0,.65);}
+#cut-grid .cut-num {top: 6px; left: 6px;}
+#cut-grid .cut-dur {bottom: 6px; right: 6px;}
+#cut-grid .cut-badge {position: absolute; top: 6px; right: 6px; width: 22px; height: 22px; border-radius: 50%;
+                      display: grid; place-items: center; font-size: 0.8rem; font-weight: 800; color: #fff;
+                      background: linear-gradient(135deg, #C47A12, #A85F05);}
+#cut-grid .cut-badge::after {content: "✓";}
+#cut-grid .cut-card.off .cut-badge {background: #52525B;}
+#cut-grid .cut-card.off .cut-badge::after {content: "✕";}
+#cut-grid .cut-meta {display: flex; align-items: center; gap: 4px; padding: 6px 6px 6px 9px;}
+#cut-grid .cut-time {flex: 1; min-width: 0; font-size: 0.74rem; font-variant-numeric: tabular-nums;
+                     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;}
+#cut-grid .cut-meta button {flex: none; width: 26px; height: 26px; border-radius: 8px; border: 1px solid var(--border-color-primary);
+                            background: var(--background-fill-secondary); color: var(--body-text-color); cursor: pointer;
+                            font-size: 0.8rem; line-height: 1;}
+#cut-grid .cut-meta button:hover {border-color: #C47A12;}
+#cut-menu {position: fixed; z-index: 1100; min-width: 250px; padding: 6px; border-radius: 12px;
+           background: var(--background-fill-primary, #fff); color: var(--body-text-color, #18181B);
+           border: 1px solid var(--border-color-primary, #E4E4E7); box-shadow: 0 18px 50px -12px rgba(0,0,0,.45);}
+#cut-menu .cut-menu-title {font-size: 0.74rem; font-weight: 700; padding: 6px 10px 4px; opacity: .65;
+                           font-variant-numeric: tabular-nums;}
+#cut-menu button {display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: 0;
+                  border-radius: 8px; background: none; color: inherit; font: inherit; font-size: 0.9rem;
+                  text-align: left; cursor: pointer;}
+#cut-menu button span {width: 18px; text-align: center; flex: none;}
+#cut-menu button:hover, #cut-menu button:focus-visible {background: rgba(196,122,18,.14); outline: none;}
+#cut-menu button:disabled {opacity: .4; cursor: default; background: none;}
+#cut-menu button[hidden] {display: none;}
+#cut-menu hr {border: 0; border-top: 1px solid var(--border-color-primary, #E4E4E7); margin: 5px 4px;}
+@media (prefers-reduced-motion: reduce) {#cut-grid .cut-card {transition: none;}}
 """
 
 # Vidéo d'arrière-plan : déposer un fichier assets/fond.mp4 (ou .webm). Absente = fond uni, comme avant.
@@ -1342,6 +1709,251 @@ def bind(fn, lang: str):
         finally:
             LANG.reset(token)
     return wrapper
+
+
+# ------------------------------------------------------------------------- Screen Record (enregistrement d'écran)
+SR_TAGLINE = ("Screen Record est un enregistreur d'écran gratuit qui capture ton écran, ta voix, ton visage et le son "
+              "de l'ordinateur — pour partager tout de suite après chaque enregistrement.")
+SR_FEATURES = [   # (icône, titre, description, avantage en plus) ; textes traduits par _()
+    ("⚡", "Enregistrement d'écran rapide et simple", "Un écran entier ou une seule fenêtre, en un clic.", False),
+    ("🎙️", "Ta voix au micro", "Commente pendant que tu enregistres.", False),
+    ("🔊", "Le son de l'ordinateur", "Vidéos, musique, sons des applications : sans câble virtuel ni réglage.", False),
+    ("📷", "Ta webcam", "Ton visage dans un médaillon rond, dans le coin de ton choix.", False),
+    ("♾️", "Sans filigrane ni limite de durée", "Tes vidéos t'appartiennent : enregistre aussi longtemps que tu veux.",
+     False),
+    ("🪶", "Léger, sans ralentissement", "Encodage par la carte graphique quand elle le permet.", False),
+    ("🔗", "Partage instantané par lien",
+     "Un lien à ouvrir sur un téléphone ou un autre ordinateur de ton réseau Wi-Fi.", False),
+    ("🔍", "Zoom automatique sur les clics", "L'image s'approche de chaque clic, suit le curseur, puis revient.", True),
+    ("✂️", "Coupe automatique", "Le début, la fin et les longues pauses sont retirés tout seuls.", True),
+    ("📱", "Version Short 9:16", "Cadre qui suit le curseur, écran entier sur fond flou, ou écran en haut et webcam "
+                                 "en bas : prête pour Shorts, Reels et TikTok.", True),
+    ("⏸️", "Pause et reprise", "Mets en pause quand tu veux : rien n'est enregistré pendant la pause.", True),
+    ("🔇", "Réduction du bruit", "Ventilateur, clavier, souffle : ta voix reste, le bruit part.", True),
+]
+
+
+def sr_hero() -> str:
+    esc = lambda s: s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")   # noqa: E731
+    cards = "".join(
+        f'<div class="sr-feat{" extra" if extra else ""}"><span class="sr-ic" aria-hidden="true">{ic}</span>'
+        f'<div><b>{esc(_(title))}</b><p>{esc(_(desc))}</p></div></div>'
+        for ic, title, desc, extra in SR_FEATURES)
+    return (f'<div id="sr-hero"><span class="sr-pill">{esc(_("Gratuit · 100 % local · sans filigrane"))}</span>'
+            f'<h2>Screen Record</h2><p class="sr-tag">{esc(_(SR_TAGLINE))}</p>'
+            f'<div class="sr-grid" role="list">{cards}</div></div>')
+
+
+# ----------------------------------------------------------------------------- page Aide : liste dépliable
+
+# Icônes au trait, dans l'ordre des sections de HELP (identique dans les 4 langues).
+_HELP_ICONS = [
+    '<circle cx="12" cy="12" r="9"/><path d="M10 8.5v7l6-3.5z"/>',                                   # démarrage
+    '<rect x="7" y="7" width="13" height="13" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',         # série
+    '<rect x="3" y="5" width="18" height="14" rx="2"/>'
+    '<path d="M10.5 10.2a2.2 2.2 0 1 0 0 3.6M17 10.2a2.2 2.2 0 1 0 0 3.6"/>',                       # sous-titres
+    '<path d="M11 3l1.8 5.2L18 10l-5.2 1.8L11 17l-1.8-5.2L4 10l5.2-1.8z"/>'
+    '<path d="M18.5 14.5l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/>',                         # scènes
+    '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',      # musique
+    '<path d="M12 3 2 8l10 5 10-5z"/><path d="m2 12.5 10 5 10-5"/><path d="m2 17 10 5 10-5"/>',     # calques
+    '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/>'
+    '<path d="M12 13v6M8.5 21h7"/>',                                                                  # classement
+    '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',      # voix off
+    '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16M12 12h9"/>',                  # scènes / écran partagé
+    '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.6 7.6 20 18M8.6 16.4 20 6"/>',  # outils
+    '<rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>'
+    '<circle cx="12" cy="10.5" r="2.6" fill="currentColor" stroke="none"/>',                          # screen record
+    '<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',                                                         # performance
+]
+_HELP_INFO_ICON = '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6v.4"/>'
+_CHEVRON = ('<svg class="aide-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+            'stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            '<path d="m6 9 6 6 6-6"/></svg>')
+
+
+def _help_item(icon: str, title: str, body_html: str) -> str:
+    esc = lambda s: s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")   # noqa: E731
+    svg = (f'<svg class="aide-ic" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" '
+           f'stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">{icon}</svg>')
+    return (f'<details class="aide-item" name="aide"><summary>{svg}<span class="aide-titre">{esc(title)}</span>'
+            f'{_CHEVRON}</summary><div class="aide-corps">{body_html}</div></details>')
+
+
+def help_html(extra_info: str = "") -> str:
+    """Page Aide : une ligne par section (icône, titre, flèche) qui se déplie au clic, comme une FAQ."""
+    from markdown_it import MarkdownIt
+
+    md = MarkdownIt("commonmark", {"html": False})
+    items = [_help_item(_HELP_ICONS[i % len(_HELP_ICONS)], title, md.render(body))
+             for i, (title, body) in enumerate(help_sections())]
+    if extra_info:
+        items.append(_help_item(_HELP_INFO_ICON, _("Informations système"), md.render(extra_info)))
+    return f'<div id="aide">{"".join(items)}</div>'
+
+
+def _mmss(seconds: float) -> str:
+    s = int(seconds)
+    return f"{s // 3600}:{s % 3600 // 60:02d}:{s % 60:02d}" if s >= 3600 else f"{s // 60:02d}:{s % 60:02d}"
+
+
+def _md_lines(text: str) -> str:
+    return text.replace("\n", "  \n")
+
+
+def sr_status_md(st: dict) -> str:
+    state = st["state"]
+    if state == "countdown":
+        msg = _("⏳ Départ dans {n} s : affiche la fenêtre ou la page à enregistrer.", n=math.ceil(st["countdown"]))
+    elif state == "recording":
+        msg = (_("🔴 Enregistrement en cours · {time}", time=_mmss(st["elapsed"])) + "  \n" +
+               _("Pour arrêter : bouton « Arrêter » dans MSV, ou {key} depuis n'importe quelle fenêtre.",
+                 key=screenrec.HOTKEY) + "  \n" +
+               _("Pause : bouton « Pause », ou {key}.", key=screenrec.PAUSE_HOTKEY))
+    elif state == "paused":
+        msg = (_("⏸️ En pause · {time} enregistrées. Rien n'est capturé pendant la pause.",
+                 time=_mmss(st["elapsed"])) + "  \n" +
+               _("Pour reprendre : bouton « Reprendre » (départ dans 3 s), ou {key} (tout de suite).",
+                 key=screenrec.PAUSE_HOTKEY))
+    elif state == "resuming":
+        msg = _("⏳ Reprise dans {n} s : affiche la fenêtre ou la page à enregistrer.", n=math.ceil(st["countdown"]))
+    elif state == "processing":
+        msg = "⚙️ " + (st["message"] or _("Montage automatique…"))
+    else:
+        msg = _("Prêt. Choisis ce que tu veux enregistrer, puis clique sur « Démarrer l'enregistrement ».")
+    for w in st.get("warnings", []):
+        msg += "  \n⚠️ " + w
+    return msg
+
+
+def _safe_list(fn) -> list[tuple[str, str]]:
+    """Liste de périphériques ; vide si le système ne répond pas (FFmpeg sans capture, permission refusée…)."""
+    try:
+        return fn()
+    except (OSError, UserError):
+        return []
+
+
+def _keep(value, choices: list[tuple[str, str]], default):
+    return value if value in {v for _label, v in choices} else default
+
+
+def sr_recent_dropdown(value: str | None = None) -> gr.Dropdown:
+    choices = []
+    for p in screenrec.recordings()[:40]:
+        st = p.stat()
+        choices.append((f"{p.name} · {st.st_size / 1048576:.1f} MB · {time.strftime('%d/%m %H:%M', time.localtime(st.st_mtime))}",
+                        str(p)))
+    return gr.Dropdown(choices=choices, value=value or (choices[0][1] if choices else None))
+
+
+def sr_refresh(src, mic, out, cam):
+    """Listes des écrans, fenêtres, micros, sorties audio et webcams (le choix en cours est gardé s'il existe)."""
+    sources = _safe_list(screenrec.source_choices)
+    mics = [(_("Aucun"), "")] + screenrec.audio_devices("mic")
+    outs = [(_("Aucun"), "")] + screenrec.audio_devices("system")
+    cams = [(_("Aucune"), "")] + _safe_list(screenrec.list_webcams)
+    return (gr.Dropdown(choices=sources, value=_keep(src, sources, sources[0][1] if sources else None)),
+            gr.Dropdown(choices=mics, value=_keep(mic, mics, mics[1][1] if len(mics) > 1 else "")),
+            gr.Dropdown(choices=outs, value=_keep(out, outs, outs[1][1] if len(outs) > 1 else "")),
+            gr.Dropdown(choices=cams, value=_keep(cam, cams, "")),
+            sr_recent_dropdown())
+
+
+def sr_start(src, mic, out, cam, cam_pos, zoom, level, trim, vertical, fps, layout, noise):
+    opts = screenrec.Options(source=src or "", mic=mic or "", system_audio=out or "", webcam=cam or "",
+                             cam_position=cam_pos or "bas droite", zoom=bool(zoom), zoom_level=float(level or 1.8),
+                             trim=bool(trim), vertical=bool(vertical), fps=int(fps or 30),
+                             vertical_layout=layout or screenrec.VERTICAL_LAYOUTS[0], denoise=noise or "aucune")
+    screenrec.RECORDER.start(opts, LANG.get())
+    return sr_status_md(screenrec.RECORDER.status()), gr.Timer(active=True)
+
+
+SR_BUSY = ("countdown", "recording", "paused", "resuming", "processing")
+
+
+def sr_ask(src):
+    """« Démarrer » : ouvre d'abord le rappel (fermer ce qui ne doit pas être vu) ; « Ok » lance l'enregistrement."""
+    if screenrec.RECORDER.state in SR_BUSY:
+        raise UserError(_("Un enregistrement est déjà en cours."))
+    if not src:
+        raise UserError(_("Choisis un écran ou une fenêtre."), _("Clique sur « Actualiser les listes » si la liste est vide."))
+    return gr.Column(visible=True)
+
+
+def sr_close_popup():
+    return gr.Column(visible=False)
+
+
+def sr_stop():
+    screenrec.RECORDER.stop()
+    return sr_status_md(screenrec.RECORDER.status())
+
+
+def sr_pause_label(state: str) -> str:
+    return "▶ " + _("Reprendre") if state in ("paused", "resuming") else "⏸ " + _("Pause")
+
+
+def sr_pause():
+    screenrec.RECORDER.toggle_pause()
+    st = screenrec.RECORDER.status()
+    return sr_status_md(st), gr.Button(value=sr_pause_label(st["state"]))
+
+
+def sr_tick():
+    """Chaque seconde : compte à rebours, durée, pause, avancement du montage, puis la vidéo terminée."""
+    out = _sr_tick()
+    return (*out, gr.Button(value=sr_pause_label(screenrec.RECORDER.state)))
+
+
+def _sr_tick():
+    st = screenrec.RECORDER.status()
+    skip = (gr.skip(), gr.skip(), gr.skip())
+    if st["state"] in ("done", "error"):
+        res = screenrec.RECORDER.take_result()
+        if res is None:
+            return (sr_status_md(st), *skip, gr.skip())
+        if "error" in res:
+            return (_md_lines(res["error"]), *skip, gr.Timer(active=False))
+        files = [res["video"]] + ([res["vertical"]] if res.get("vertical") else [])
+        msg = _("✅ Vidéo prête : {dur}.", dur=_mmss(res["duration"]))
+        if res["removed"] >= 0.5:
+            msg += " " + _("{cut} retirées (début, fin, pauses).", cut=_mmss(res["removed"]))
+        if res["zooms"]:
+            msg += " " + _("{n} zooms automatiques.", n=res["zooms"])
+        for w in res.get("warnings", []):
+            msg += "  \n⚠️ " + w
+        return (msg, res["video"], files, sr_recent_dropdown(res["video"]), gr.Timer(active=False))
+    if st["state"] == "idle":
+        return (sr_status_md(st), *skip, gr.Timer(active=False))
+    return (sr_status_md(st), *skip, gr.skip())
+
+
+def sr_pick(path):
+    if not path or not Path(path).exists():
+        return None, None
+    p = Path(path)
+    twin = p.with_name(p.stem + "_9x16.mp4") if not p.stem.endswith("_9x16") else p.with_name(p.stem[:-5] + ".mp4")
+    return str(p), [str(p)] + ([str(twin)] if twin.exists() else [])
+
+
+def sr_open_folder():
+    screenrec.OUT_DIR.mkdir(parents=True, exist_ok=True)
+    if sys.platform == "win32":
+        os.startfile(screenrec.OUT_DIR)                         # noqa: S606 (dossier de l'application)
+    else:
+        import subprocess
+        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(screenrec.OUT_DIR)])
+
+
+def sr_share(path):
+    if not path:
+        raise UserError(_("Choisis d'abord un enregistrement."))
+    return share.share(path)
+
+
+def sr_unshare():
+    share.stop()
+    return ""
 
 
 def build_ui(lang: str = DEFAULT_LANG) -> gr.Blocks:
@@ -1540,6 +2152,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                                        "de la vidéo")))
                             mu_listen = gr.Button(_("Écouter 12 s"), size="sm", scale=1)
                         mu_audio = gr.Audio(label=_("Extrait"), type="filepath")
+                        reg("denoise", gr.Dropdown(opts(denoise.LEVELS), value=DEF["denoise"],
+                                                   label="🔇 " + _("Réduction du bruit (son des clips)"),
+                                                   info=_("légère : souffle constant ; forte : garde la voix et retire "
+                                                          "ventilateur, clavier, climatisation")))
                         reg("normalize_audio", gr.Checkbox(value=True, label=_("Normaliser le volume (-14 LUFS, cible YouTube)")))
                         reg("remove_silence.enabled", gr.Checkbox(value=False, label=_("Couper les silences automatiquement")))
                         with gr.Row():
@@ -1960,6 +2576,89 @@ def _build_ui(lang: str) -> gr.Blocks:
                     series_files = gr.File(label=_("Vidéos produites"), file_count="multiple")
                     series_log = gr.Textbox(label=_("Rapport"), lines=18, elem_classes="mono")
 
+        # ------------------------------------------------------------- scènes et écran partagé
+        with gr.Tab("✂️ " + _("Scènes et écran partagé")):
+            with gr.Tabs():
+                with gr.Tab(_("Découper en scènes")):
+                    cut_state = gr.State(cut_empty_state())
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=1, min_width=300):
+                            section("1", "Vidéo à découper")
+                            cut_file = gr.File(label=_("Vidéo"), type="filepath", height=90, elem_id="cut-file")
+                            cut_mode = gr.Radio(opts(scenecut.MODES), value="changements de plan",
+                                                label=_("Comment découper ?"),
+                                                info=_("pauses dans la parole : quelqu'un parle sans changement de "
+                                                       "plan (tutoriel, podcast, discours) · toutes les N secondes : "
+                                                       "morceaux de durée fixe"), elem_id="cut-mode")
+                            with gr.Column(visible=False, elem_id="cut-every-row") as cut_every_row:
+                                cut_every = gr.Slider(2, 120, value=10, step=1, label=_("Durée de chaque scène (s)"))
+                                cut_snap = gr.Checkbox(value=True, label=_("Placer chaque coupure sur la pause la plus "
+                                                                           "proche"),
+                                                       info=_("évite de couper au milieu d'un mot ; décoché : coupures "
+                                                              "exactes"))
+                            with gr.Column(elem_id="cut-tune-row") as cut_tune_row:
+                                cut_sens = gr.Radio(opts(scenecut.SENSITIVITY), value="moyenne",
+                                                    label=_("Sensibilité"),
+                                                    info=_("haute = plus de scènes"))
+                                cut_min = gr.Slider(0, 30, value=1.0, step=0.5, elem_id="cut-min",
+                                                    label=_("Unir les scènes plus courtes que (s)"),
+                                                    info=_("ne découpe pas : une scène trop courte rejoint la "
+                                                           "précédente"))
+                            cut_btn = gr.Button("🔎 " + _("Trouver les scènes"), variant="primary", elem_id="cut-find")
+                            cut_player = gr.Video(label=_("Vidéo d'origine"), height=300, interactive=False,
+                                                  elem_id="cut-player")
+                        with gr.Column(scale=2):
+                            section("2", "Choisis les scènes à garder")
+                            cut_info = gr.Markdown(elem_id="cut-info")
+                            gr.Markdown(_("Clic : garder ✓ / exclure · ▶ : lire la scène · clic droit (ou ⋯) : "
+                                          "toutes les options"), elem_classes="sr-note")
+                            cut_grid = gr.HTML(cut_html(cut_empty_state()), js_on_load=CUT_JS, elem_id="cut-grid")
+                            with gr.Row():
+                                cut_undo = gr.Button("↶ " + _("Annuler"), size="sm")
+                                cut_all = gr.Button("✓ " + _("Tout garder"), size="sm")
+                                cut_none = gr.Button("✕ " + _("Tout exclure"), size="sm")
+                                cut_inv = gr.Button("⇄ " + _("Inverser la sélection"), size="sm")
+                            section("3", "Une seule vidéo avec les scènes gardées")
+                            cut_go = gr.Button(_("Créer la vidéo"), variant="primary", elem_id="cut-export")
+                            with gr.Row():
+                                cut_vid = gr.Video(label=_("Résultat"), height=320, elem_id="cut-result")
+                                cut_out = gr.File(label=_("Télécharger"), height=80)
+                with gr.Tab(_("Écran partagé (plusieurs vidéos)")):
+                    with gr.Row(equal_height=False):
+                        with gr.Column(scale=1, min_width=320):
+                            section("1", "2 à 4 vidéos", "une par case, dans l'ordre")
+                            with gr.Row():
+                                ss_f1 = gr.File(label=_("Vidéo") + " 1", type="filepath", height=80, elem_id="ss-f1")
+                                ss_f2 = gr.File(label=_("Vidéo") + " 2", type="filepath", height=80, elem_id="ss-f2")
+                            with gr.Row():
+                                ss_f3 = gr.File(label=_("Vidéo") + " 3 " + _("(facultatif)"), type="filepath",
+                                                height=80)
+                                ss_f4 = gr.File(label=_("Vidéo") + " 4 " + _("(facultatif)"), type="filepath",
+                                                height=80)
+                            section("2", "Disposition")
+                            ss_layout = gr.Radio(opts(splitscreen.LAYOUTS), value="côte à côte", label=_("Disposition"))
+                            with gr.Row():
+                                ss_fmt = gr.Radio(list(splitscreen.FORMATS), value="16:9", label=_("Format"))
+                                ss_fit = gr.Radio(opts(splitscreen.FITS), value="rogner", label=_("Cadrage"))
+                            with gr.Row():
+                                ss_gap = gr.Slider(0, 60, value=8, step=2, label=_("Espace entre les cases (px)"))
+                                ss_bg = gr.ColorPicker(value="#000000", label=_("Fond"))
+                            with gr.Row():
+                                ss_len = gr.Radio(opts(splitscreen.LENGTHS), value="la plus courte",
+                                                  label=_("Durée : comme la vidéo…"),
+                                                  info=_("la plus longue : les autres se figent sur leur dernière image"))
+                                ss_audio = gr.Dropdown(opts(splitscreen.AUDIO), value="toutes (mélange)",
+                                                       label=_("Son"))
+                        with gr.Column(scale=1):
+                            section("3", "Aperçu et vidéo finale")
+                            with gr.Row():
+                                ss_t = gr.Number(value=1.0, label=_("Moment (s)"), precision=1)
+                                ss_prev_btn = gr.Button(_("Aperçu"))
+                            ss_img = gr.Image(label=_("Aperçu"), interactive=False, height=360, elem_id="ss-img")
+                            ss_go = gr.Button(_("Créer la vidéo"), variant="primary", elem_id="ss-export")
+                            ss_vid = gr.Video(label=_("Résultat"), height=320)
+                            ss_out = gr.File(label=_("Télécharger"), height=80)
+
         # ------------------------------------------------------------- outils
         with gr.Tab(_("Outils rapides")):
             with gr.Row(equal_height=False):
@@ -2044,11 +2743,109 @@ def _build_ui(lang: str) -> gr.Blocks:
                     ml_info = gr.Markdown()
                     ml_vid = gr.Video(label=_("Résultat"), height=320)
                     ml_out = gr.File(label=_("Télécharger"))
+            with gr.Row(equal_height=False):
+                with gr.Column():
+                    section("G", "Réduire le bruit", "souffle, ventilateur, clavier")
+                    dn_file = gr.File(label=_("Audio ou vidéo"), type="filepath", height=80)
+                    with gr.Row():
+                        dn_level = gr.Radio(opts(denoise.LEVELS[1:]), value="forte (voix)", label=_("Niveau"))
+                        dn_start = gr.Number(value=0, label=_("Extrait à partir de (s)"), precision=1)
+                    with gr.Row():
+                        dn_prev_btn = gr.Button("🎧 " + _("Écouter 10 s avant / après"))
+                        dn_btn = gr.Button(_("Nettoyer le fichier"), variant="primary")
+                    with gr.Row():
+                        dn_before = gr.Audio(label=_("Avant"), type="filepath", interactive=False)
+                        dn_after = gr.Audio(label=_("Après"), type="filepath", interactive=False)
+                    dn_out = gr.File(label=_("Télécharger"), height=80)
+                    gr.Markdown(_("Vidéo : l'image est copiée sans perte, seul le son est nettoyé (MP4). Audio seul : "
+                                  "fichier WAV. Pour un montage, choisis plutôt « Réduction du bruit » dans "
+                                  "Réglages → Audio."), elem_classes="sr-note")
+                with gr.Column():
+                    pass
+
+        # ------------------------------------------------------------- Screen Record
+        with gr.Tab("🎥 " + _("Enregistrer l'écran")):
+            gr.HTML(sr_hero())
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=2):
+                    with gr.Group():
+                        section("1", "Que veux-tu enregistrer ?")
+                        sr_src = gr.Dropdown([], label=_("Source"))
+                    with gr.Group():
+                        section("2", "Son et webcam")
+                        with gr.Row():
+                            sr_mic = gr.Dropdown([], label="🎙️ " + _("Micro"), scale=3)
+                            sr_noise = gr.Dropdown(opts(denoise.LEVELS), value="légère", scale=2,
+                                                   label="🔇 " + _("Réduction du bruit du micro"))
+                        sr_out = gr.Dropdown([], label="🔊 " + _("Son de l'ordinateur"),
+                                             info=_("sur Mac : installe BlackHole (gratuit) et envoie le son vers "
+                                                    "lui, sinon cette liste reste vide") if screenrec.MAC else None)
+                        with gr.Row():
+                            sr_cam = gr.Dropdown([], label="📷 " + _("Webcam"))
+                            sr_campos = gr.Dropdown(opts(screenrec.CAM_POSITIONS), value="bas droite",
+                                                    label=_("Position de la webcam"))
+                    sr_refresh_btn = gr.Button("🔄 " + _("Actualiser les listes"), size="sm")
+                    with gr.Group():
+                        section("3", "Montage automatique")
+                        sr_zoom = gr.Checkbox(value=True, label=_("Zoom automatique sur les clics"))
+                        sr_level = gr.Slider(1.2, 2.5, value=1.8, step=0.1, label=_("Force du zoom"))
+                        sr_trim = gr.Checkbox(value=True, label=_("Coupe automatique (début, fin, longues pauses)"))
+                        sr_vert = gr.Checkbox(value=False, label=_("Créer aussi la version 9:16 (Shorts, Reels, TikTok)"))
+                        sr_layout = gr.Radio(opts(screenrec.VERTICAL_LAYOUTS), value=screenrec.VERTICAL_LAYOUTS[0],
+                                             label=_("Mise en page 9:16"),
+                                             info=_("sans webcam, « écran en haut + webcam en bas » devient "
+                                                    "« écran entier + fond flou »"))
+                        sr_fps = gr.Radio([15, 30, 60], value=30, label=_("Images par seconde"))
+                    sr_start_btn = gr.Button("● " + _("Démarrer l'enregistrement"), variant="primary",
+                                             elem_id="sr-start")
+                    with gr.Row():
+                        sr_pause_btn = gr.Button(sr_pause_label("idle"), elem_id="sr-pause")
+                        sr_stop_btn = gr.Button("■ " + _("Arrêter"), variant="stop", elem_id="sr-stop")
+                    sr_status = gr.Markdown(sr_status_md(screenrec.RECORDER.status()), elem_id="sr-status")
+                    gr.Markdown(_("Les vidéos protégées (Netflix…) apparaissent en noir : c'est une protection du "
+                                  "système."), elem_classes="sr-note")
+                    # rappel affiché à chaque démarrage, fermé par X (annule) ou Ok (lance l'enregistrement)
+                    with gr.Column(visible=False, elem_id="sr-popup") as sr_popup:
+                        with gr.Column(elem_id="sr-popup-card"):
+                            with gr.Row(elem_id="sr-popup-head"):
+                                gr.HTML(f"<h3>🔒 {_('Protège ta vie privée')}</h3>")
+                                sr_popup_x = gr.Button("✕", elem_id="sr-popup-x", size="sm", min_width=40,
+                                                       scale=0)
+                            gr.Markdown(_("Avant de démarrer, ferme ce qui ne doit pas être vu (e-mails, mots de "
+                                          "passe, notifications)."), elem_id="sr-popup-msg")
+                            sr_popup_ok = gr.Button(_("Ok, démarrer"), variant="primary", elem_id="sr-popup-ok")
+                    if screenrec.MAC:
+                        gr.Markdown(_("Mac : autorise MSV (ou le Terminal) dans Réglages Système → Confidentialité "
+                                      "et sécurité : « Enregistrement de l'écran », « Micro », « Caméra », et "
+                                      "« Surveillance de l'entrée » pour les raccourcis. Sur un portable, les touches "
+                                      "F8 / F9 se tapent avec fn."), elem_classes="sr-note")
+                    elif screenrec.LINUX:
+                        gr.Markdown(_("Linux : fonctionne dans une session X11 (Xorg). Sous Wayland, choisis "
+                                      "« Xorg » à l'écran de connexion."), elem_classes="sr-note")
+                with gr.Column(scale=3):
+                    with gr.Group():
+                        section("4", "Ta vidéo", "dossier sorties/screen_record")
+                        sr_video = gr.Video(label=_("Résultat"), height=420, interactive=False)
+                        sr_files = gr.File(label=_("Télécharger"), file_count="multiple", interactive=False, height=110)
+                        with gr.Row(equal_height=True):
+                            sr_recent = gr.Dropdown([], label=_("Mes enregistrements"), scale=3)
+                            sr_folder_btn = gr.Button("📂 " + _("Ouvrir le dossier"), scale=1)
+                    with gr.Group():
+                        section("5", "Partager par lien")
+                        with gr.Row():
+                            sr_share_btn = gr.Button("🔗 " + _("Créer un lien de partage"), variant="primary")
+                            sr_unshare_btn = gr.Button(_("Arrêter le partage"))
+                        sr_link = gr.Textbox(label=_("Lien de partage"), buttons=["copy"], interactive=False)
+                        gr.Markdown(_("Ouvre ce lien sur un téléphone ou un ordinateur connecté au même Wi-Fi. "
+                                      "La première fois, Windows peut demander d'autoriser l'accès au réseau : choisis "
+                                      "« Réseaux privés ». Le lien fonctionne tant que MSV est ouvert."),
+                                    elem_classes="sr-note")
+            sr_timer = gr.Timer(1.0, active=False)
 
         with gr.Tab(_("Aide")):
-            gr.Markdown(help_text())
-            gr.Markdown(f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
-                        f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}")
+            gr.HTML(help_html(
+                f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
+                f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}"))
         pied = _("Montage Studio Video · tout est traité sur ton ordinateur, rien n'est envoyé sur Internet")
         gr.HTML(f"<div id='pied'>{pied} · v{__version__}</div>")
 
@@ -2137,6 +2934,44 @@ def _build_ui(lang: str) -> gr.Blocks:
         rl_btn.click(L(tool_remove_logo), [rl_file, rl_x, rl_y, rl_w, rl_h, rl_mode], [rl_vid, rl_out])
         ml_btn.click(L(tool_msv_logo), [ml_file, ml_action, ml_variant, ml_pos, ml_size, ml_op, ml_mode],
                      [ml_vid, ml_out, ml_info])
+        dn_prev_btn.click(L(tool_denoise_preview), [dn_file, dn_level, dn_start], [dn_before, dn_after])
+        dn_btn.click(L(tool_denoise), [dn_file, dn_level], dn_out)
+
+        cut_mode.change(cut_mode_changed, cut_mode, [cut_every_row, cut_tune_row])
+        cut_btn.click(L(cut_detect), [cut_file, cut_mode, cut_sens, cut_min, cut_every, cut_snap],
+                      [cut_state, cut_grid, cut_info, cut_player])
+        cut_outputs = [cut_state, cut_grid, cut_info, cut_vid, cut_out]
+        cut_grid.select(L(cut_select), cut_state, cut_outputs, show_progress="hidden")
+        for btn, act in ((cut_undo, "undo"), (cut_all, "keep_all"), (cut_none, "drop_all"), (cut_inv, "invert")):
+            btn.click(L(functools.partial(cut_command, f"{act}:0")), cut_state, cut_outputs)
+        cut_go.click(L(cut_export), cut_state, [cut_vid, cut_out])
+
+        ss_files = [ss_f1, ss_f2, ss_f3, ss_f4]
+        ss_look = [ss_layout, ss_fmt, ss_gap, ss_fit, ss_bg, ss_len]
+        ss_prev_in = ss_files + ss_look + [ss_t]
+        ss_prev_btn.click(L(ss_preview), ss_prev_in, ss_img)
+        for comp in ss_files + [ss_layout, ss_fmt, ss_fit, ss_bg, ss_len]:    # aperçu mis à jour à chaque réglage
+            comp.change(L(ss_preview), ss_prev_in, ss_img, show_progress="minimal")
+        ss_gap.release(L(ss_preview), ss_prev_in, ss_img, show_progress="minimal")
+        ss_t.submit(L(ss_preview), ss_prev_in, ss_img)
+        ss_go.click(L(ss_render), ss_files + ss_look + [ss_audio], [ss_vid, ss_out])
+
+        sr_devices = [sr_src, sr_mic, sr_out, sr_cam]
+        demo.load(L(sr_refresh), sr_devices, sr_devices + [sr_recent])
+        sr_refresh_btn.click(L(sr_refresh), sr_devices, sr_devices + [sr_recent])
+        sr_start_btn.click(L(sr_ask), sr_src, sr_popup)
+        sr_popup_x.click(sr_close_popup, None, sr_popup)
+        sr_popup_ok.click(sr_close_popup, None, sr_popup).then(
+            L(sr_start), [sr_src, sr_mic, sr_out, sr_cam, sr_campos, sr_zoom, sr_level, sr_trim, sr_vert, sr_fps,
+                          sr_layout, sr_noise], [sr_status, sr_timer])
+        sr_pause_btn.click(L(sr_pause), None, [sr_status, sr_pause_btn])
+        sr_stop_btn.click(L(sr_stop), None, sr_status)
+        sr_timer.tick(L(sr_tick), None, [sr_status, sr_video, sr_files, sr_recent, sr_timer, sr_pause_btn],
+                      show_progress="hidden", trigger_mode="once")
+        sr_recent.change(L(sr_pick), sr_recent, [sr_video, sr_files])
+        sr_folder_btn.click(L(sr_open_folder), None, None)
+        sr_share_btn.click(L(sr_share), sr_recent, sr_link)
+        sr_unshare_btn.click(L(sr_unshare), None, sr_link)
     return demo
 
 

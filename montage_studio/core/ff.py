@@ -168,13 +168,32 @@ def run_ffmpeg(
         raise FFmpegError(_("FFmpeg a échoué (code {code}) :\n{msg}", code=proc.returncode, msg=msg))
 
 
-def run_capture(args: list[str]) -> str:
-    """Lance FFmpeg et renvoie stderr (utile pour silencedetect)."""
-    res = subprocess.run(
-        [ffmpeg_exe(), "-hide_banner"] + [str(a) for a in args],
-        capture_output=True, text=True, encoding="utf-8", errors="replace",
+def run_capture(args: list[str], duration: float | None = None,
+                on_progress: Optional[Callable[[float], None]] = None) -> str:
+    """Lance FFmpeg et renvoie stderr (utile pour silencedetect, scdet).
+    Avec `duration` et `on_progress`, la progression 0..1 est envoyée pendant l'analyse."""
+    if not (duration and on_progress):
+        res = subprocess.run(
+            [ffmpeg_exe(), "-hide_banner"] + [str(a) for a in args],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        return res.stderr
+    proc = subprocess.Popen(
+        [ffmpeg_exe(), "-hide_banner", "-nostats", "-progress", "pipe:1"] + [str(a) for a in args],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding="utf-8", errors="replace",
     )
-    return res.stderr
+    err_chunks: list[str] = []
+    t = threading.Thread(target=lambda: err_chunks.append(proc.stderr.read()), daemon=True)
+    t.start()
+    for line in proc.stdout:
+        if line.startswith("out_time_us="):
+            try:
+                on_progress(max(0.0, min(1.0, int(line.split("=", 1)[1]) / 1e6 / duration)))
+            except ValueError:
+                pass
+    proc.wait()
+    t.join(timeout=5)
+    return "".join(err_chunks)
 
 
 def _quote(s: str) -> str:

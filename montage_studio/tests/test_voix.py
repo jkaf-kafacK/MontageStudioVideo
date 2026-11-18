@@ -268,7 +268,9 @@ def test_tous_les_textes_affiches_sont_traduits():
 
     cles = {ligne[0] for ligne in _STRINGS}
     manquants = []
-    for f in ["app.py", "core/batch.py", "core/render.py", "core/voice.py", "core/ranking.py"]:
+    for f in ["app.py", "core/batch.py", "core/render.py", "core/voice.py", "core/ranking.py", "core/screenrec.py",
+              "core/share.py", "core/denoise.py", "core/capture_unix.py", "core/scenecut.py",
+              "core/splitscreen.py"]:
         src = (ROOT / f).read_text(encoding="utf-8")
         for m in re.finditer(r'(?<![\w.])_\(\s*((?:"(?:[^"\\]|\\.)*"\s*)+)', src):
             texte = "".join(re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1)))
