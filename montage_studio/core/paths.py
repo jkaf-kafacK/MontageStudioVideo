@@ -84,6 +84,7 @@ USER_TEMPLATES = SHIPPED_TEMPLATES if MODE == "developpement" else DATA_DIR / "m
 CACHE_DIR = PRIVATE_DIR / "cache"
 VOICE_MODELS_DIR = PRIVATE_DIR / "modeles_voix"
 VOICE_CONFIG = PRIVATE_DIR / "voix_config.json"
+BAR_CONFIG = PRIVATE_DIR / "barre.json"        # barre flottante de Screen Record : position, source, ouverture auto
 
 
 def ensure_dirs() -> None:

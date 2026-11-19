@@ -32,7 +32,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import (batch, denoise, errors, ff, layers, paths, ranking, scenecut, scenes, screenrec, share,
+from core import (barapi, batch, denoise, errors, ff, layers, paths, ranking, scenecut, scenes, screenrec, share,
                   splitscreen, subs, tools, voice)
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_sections, opts, pick_lang
@@ -1626,6 +1626,22 @@ FOND_JS = """() => {
   document.body.classList.add('avec-video');
 }""" if FOND_VIDEO else None
 
+# Adresse …/#screen-record (bouton ⚙ de la barre flottante) : ouvre directement l'onglet Screen Record.
+TAB_JS = """() => {
+  const go = (n = 0) => {
+    if (location.hash !== '#screen-record') return;
+    // l'onglet lui-même ; s'il est rangé dans le menu « More tabs » (fenêtre étroite), l'entrée de ce menu
+    // (les copies dans .visually-hidden servent seulement à Gradio pour mesurer la place : les cliquer ne fait rien)
+    const all = [...document.querySelectorAll('button')].filter(b => b.textContent.trim().startsWith('🎥') &&
+                                                                     !b.closest('.visually-hidden'));
+    const t = all.find(b => b.getAttribute('role') === 'tab') || all[0];
+    if (t) t.click(); else if (n < 60) setTimeout(() => go(n + 1), 250);
+  };
+  go();
+  window.addEventListener('hashchange', () => go());
+}"""
+PAGE_JS = f"() => {{ ({TAB_JS})(); {f'({FOND_JS})();' if FOND_JS else ''} }}"
+
 SYSTEM_FONT = ["Segoe UI Variable Text", "Segoe UI", "ui-sans-serif", "system-ui", "-apple-system", "Roboto",
                "Helvetica Neue", "Arial", "sans-serif"]
 # Couleur principale de la plateforme : bronze #A85F05 (c600).
@@ -1865,7 +1881,22 @@ def sr_start(src, mic, out, cam, cam_pos, zoom, level, trim, vertical, fps, layo
                              trim=bool(trim), vertical=bool(vertical), fps=int(fps or 30),
                              vertical_layout=layout or screenrec.VERTICAL_LAYOUTS[0], denoise=noise or "aucune")
     screenrec.RECORDER.start(opts, LANG.get())
+    screenrec.save_last_options(opts)          # la barre flottante reprendra ces réglages
     return sr_status_md(screenrec.RECORDER.status()), gr.Timer(active=True)
+
+
+def bar_show():
+    """Ouvre la barre flottante (programme à part, toujours au premier plan)."""
+    lang = LANG.get()
+    barapi.write_config(lang=lang)
+    if barapi.launch(lang):
+        gr.Info(_("Barre ouverte sur le bord droit de l'écran. Fais-la glisser où tu veux."))
+    else:
+        gr.Info(_("La barre est déjà ouverte."))
+
+
+def bar_auto(on):
+    barapi.write_config(auto=bool(on), lang=LANG.get())
 
 
 SR_BUSY = ("countdown", "recording", "paused", "resuming", "processing")
@@ -2804,6 +2835,13 @@ def _build_ui(lang: str) -> gr.Blocks:
                     sr_status = gr.Markdown(sr_status_md(screenrec.RECORDER.status()), elem_id="sr-status")
                     gr.Markdown(_("Les vidéos protégées (Netflix…) apparaissent en noir : c'est une protection du "
                                   "système."), elem_classes="sr-note")
+                    with gr.Group(elem_id="sr-bar"):
+                        sr_bar_btn = gr.Button("🧭 " + _("Afficher la barre sur le bureau"), elem_id="sr-bar-btn")
+                        sr_bar_auto = gr.Checkbox(value=barapi.auto_open(), label=_("Ouvrir la barre au démarrage "
+                                                                                    "de MSV"),
+                                                  info=_("toujours au premier plan : enregistrer, pause, arrêter, "
+                                                         "photo de l'écran ou d'une zone, sans revenir dans MSV"),
+                                                  elem_id="sr-bar-auto")
                     # rappel affiché à chaque démarrage, fermé par X (annule) ou Ok (lance l'enregistrement)
                     with gr.Column(visible=False, elem_id="sr-popup") as sr_popup:
                         with gr.Column(elem_id="sr-popup-card"):
@@ -2961,6 +2999,8 @@ def _build_ui(lang: str) -> gr.Blocks:
         sr_refresh_btn.click(L(sr_refresh), sr_devices, sr_devices + [sr_recent])
         sr_start_btn.click(L(sr_ask), sr_src, sr_popup)
         sr_popup_x.click(sr_close_popup, None, sr_popup)
+        sr_bar_btn.click(L(bar_show), None, None)
+        sr_bar_auto.change(L(bar_auto), sr_bar_auto, None)
         sr_popup_ok.click(sr_close_popup, None, sr_popup).then(
             L(sr_start), [sr_src, sr_mic, sr_out, sr_cam, sr_campos, sr_zoom, sr_level, sr_trim, sr_vert, sr_fps,
                           sr_layout, sr_noise], [sr_status, sr_timer])
@@ -3077,6 +3117,8 @@ def build_app():
     def favicon():
         return FileResponse(ASSETS / "montage_studio.ico")
 
+    app.include_router(barapi.router())        # adresses de la barre flottante (clé secrète obligatoire)
+
     if FOND_VIDEO:
         @app.get("/fond-video", include_in_schema=False)
         def fond_video():
@@ -3090,7 +3132,7 @@ def build_app():
     if paths.PRIVATE_DIR != BASE:          # clé API, voix téléchargées, cache : jamais téléchargeables
         blocked.append(str(paths.PRIVATE_DIR))
     for code in LANGS:
-        gr.mount_gradio_app(app, build_ui(code).queue(), path=f"/{code}", theme=THEME, css=CSS, js=FOND_JS,
+        gr.mount_gradio_app(app, build_ui(code).queue(), path=f"/{code}", theme=THEME, css=CSS, js=PAGE_JS,
                             allowed_paths=allowed, blocked_paths=blocked)
     return app
 
@@ -3117,7 +3159,16 @@ if __name__ == "__main__":
     if port != DEFAULT_PORT and a.port is None:
         print(f"Port {DEFAULT_PORT} occupé par un autre programme : MSV utilise le port {port}.")
     url = f"http://127.0.0.1:{port}/"
+    barapi.SERVER["port"] = port
     app = build_app()
+    if barapi.auto_open():                     # « Ouvrir la barre au démarrage de MSV »
+        def _open_bar():
+            for _i in range(60):
+                if running_instance(port):
+                    barapi.launch(barapi.read_config().get("lang", DEFAULT_LANG))
+                    return
+                time.sleep(0.5)
+        threading.Thread(target=_open_bar, daemon=True).start()
     print(f"Montage Studio Video {__version__} · dossier de travail : {paths.DATA_DIR}")
     print(f"Montage Studio Video : {url}  (FR {url}fr/ · EN {url}en/ · IT {url}it/ · ES {url}es/)")
     if not a.no_browser:

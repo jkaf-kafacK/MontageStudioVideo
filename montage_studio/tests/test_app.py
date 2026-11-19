@@ -250,6 +250,44 @@ def test_rappel_avant_l_enregistrement(monkeypatch):
     assert any(name == "sr_start" and outs[0] == "sr-status" for name, _t, outs in links)   # lancé après « Ok »
 
 
+def test_barre_flottante_dans_l_onglet(monkeypatch, tmp_path):
+    """Bouton « Afficher la barre sur le bureau », case « au démarrage », réglages repris par la barre."""
+    import app
+    from core import barapi, screenrec
+    from core.i18n import LANG
+
+    monkeypatch.setattr(barapi, "CONFIG", tmp_path / "barre.json")
+    lances, infos = [], []
+    monkeypatch.setattr(barapi, "launch", lambda lang: lances.append(lang) or len(lances) == 1)
+    monkeypatch.setattr(app.gr, "Info", lambda msg, **k: infos.append(msg))
+    token = LANG.set("it")
+    try:
+        app.bar_show()
+        app.bar_show()
+        assert lances == ["it", "it"] and "Barra aperta" in infos[0] and infos[1] == "La barra è già aperta."
+        app.bar_auto(True)
+        assert barapi.auto_open() and barapi.read_config()["lang"] == "it"
+        app.bar_auto(False)
+        assert not barapi.auto_open()
+        # un enregistrement lancé depuis MSV : ses réglages sont gardés pour la barre
+        monkeypatch.setattr(screenrec, "LAST_OPTIONS", tmp_path / "opts.json")
+        monkeypatch.setattr(screenrec.RECORDER, "start", lambda opts, lang: None)
+        app.sr_start("screen:0,0,800,600", "micro", "", "", "bas droite", True, 1.8, True, False, 60,
+                     screenrec.VERTICAL_LAYOUTS[0], "légère")
+        o = screenrec.last_options("screen:0,0,100,100")
+        assert (o.mic, o.fps, o.denoise) == ("micro", 60, "légère")
+    finally:
+        LANG.reset(token)
+
+    demo = app.build_ui("it")
+    links = []
+    for f in demo.fns.values():
+        trig = {getattr(demo.blocks.get(t[0]), "elem_id", None) for t in f.targets}
+        links.append((getattr(f.fn, "__name__", ""), trig))
+    assert ("bar_show", {"sr-bar-btn"}) in links and ("bar_auto", {"sr-bar-auto"}) in links
+    assert "#screen-record" in app.PAGE_JS and "🎥" in app.PAGE_JS      # ⚙ de la barre : ouvre l'onglet
+
+
 def test_decouper_en_scenes_grille_et_menu():
     """Grille des scènes : menu du clic droit complet ; les actions envoyées par la page modifient la liste."""
     import gradio as gr

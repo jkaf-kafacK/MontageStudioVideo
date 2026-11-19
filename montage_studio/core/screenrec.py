@@ -272,15 +272,73 @@ def capture_exe(opts: "Options") -> str:
     return cu.capture_ffmpeg(("avfoundation",))
 
 
-def screen_input(source: str, rect: tuple[int, int, int, int], fps: int) -> list[str]:
+def screen_input(source: str, rect: tuple[int, int, int, int], fps: int, mouse: bool = True) -> list[str]:
     """Arguments FFmpeg d'entrée pour capturer l'écran (ou la zone) choisi."""
     l, t, r, b = rect
     if source.startswith("mac:"):
         return cu.mac_screen_input(source.split(":")[1], fps)
     if WINDOWS:
-        return ["-f", "gdigrab", "-framerate", str(fps), "-draw_mouse", "1", "-offset_x", str(l), "-offset_y", str(t),
-                "-video_size", f"{r - l}x{b - t}", "-i", "desktop"]
+        return ["-f", "gdigrab", "-framerate", str(fps), "-draw_mouse", "1" if mouse else "0",
+                "-offset_x", str(l), "-offset_y", str(t), "-video_size", f"{r - l}x{b - t}", "-i", "desktop"]
     return cu.x11_screen_input(rect, fps)
+
+
+def zone_supported() -> bool:
+    """Zone dessinée à la souris : Windows et Linux (sous macOS, avfoundation capture l'écran entier)."""
+    return WINDOWS or LINUX
+
+
+def zone_source(l: int, t: int, r: int, b: int) -> str:
+    """Valeur de source pour une zone libre (même format qu'un écran : resolve_source sait la lire)."""
+    l, r = sorted((int(l), int(r)))
+    t, b = sorted((int(t), int(b)))
+    return f"screen:{l},{t},{r},{b}"
+
+
+def screenshot(source: str, out_dir: Optional[Path] = None) -> Path:
+    """Photo de l'écran, de la fenêtre ou de la zone choisie (PNG, sans le pointeur de la souris)."""
+    rect = resolve_source(source)
+    out_dir = Path(out_dir or OUT_DIR)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out = out_dir / f"capture_{time.strftime('%Y%m%d_%H%M%S')}.png"
+    n = 2
+    while out.exists():
+        out = out_dir / f"capture_{time.strftime('%Y%m%d_%H%M%S')}_{n}.png"
+        n += 1
+    exe = capture_exe(Options(source=source))
+    res = subprocess.run([exe, "-hide_banner", "-loglevel", "error", "-y", *screen_input(source, rect, 5, mouse=False),
+                          "-frames:v", "1", str(out)], capture_output=True, **_NO_WINDOW)
+    if res.returncode != 0 or not out.exists():
+        msg = res.stderr.decode("utf-8", "replace").strip()[-400:]
+        raise UserError(_("La capture de l'écran n'a pas démarré : {msg}", msg=msg))
+    return out
+
+
+# Dernières options choisies dans l'onglet Screen Record : la barre flottante les reprend pour enregistrer.
+LAST_OPTIONS = paths.PRIVATE_DIR / "screen_record_options.json"
+
+
+def save_last_options(opts: "Options") -> None:
+    data = {k: v for k, v in asdict(opts).items() if k != "source"}
+    try:
+        LAST_OPTIONS.parent.mkdir(parents=True, exist_ok=True)
+        LAST_OPTIONS.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def last_options(source: str) -> "Options":
+    """Options du dernier enregistrement lancé depuis MSV, avec la source donnée. Jamais lancé : micro et son de
+    l'ordinateur par défaut, sans webcam."""
+    try:
+        data = json.loads(LAST_OPTIONS.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        data = None
+    if not isinstance(data, dict):
+        mics, outs = audio_devices("mic"), audio_devices("system")
+        data = {"mic": mics[0][1] if mics else "", "system_audio": outs[0][1] if outs else ""}
+    known = set(Options.__dataclass_fields__) - {"source"}
+    return Options(source=source, **{k: v for k, v in data.items() if k in known})
 
 
 def cam_input(webcam: str) -> list[str]:

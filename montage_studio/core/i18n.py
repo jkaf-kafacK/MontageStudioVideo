@@ -1681,6 +1681,70 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Aucune scène gardée.", "No scene kept.", "Nessuna scena tenuta.", "Ninguna escena conservada."),
     ("Clique sur une scène pour la garder (✓), puis réessaie.", "Click a scene to keep it (✓), then retry.",
      "Clicca su una scena per tenerla (✓), poi riprova.", "Haz clic en una escena para conservarla (✓) y reinténtalo."),
+    # ---- Barre flottante de Screen Record (core/floatbar.py, core/barapi.py)
+    ("Afficher la barre sur le bureau", "Show the bar on the desktop", "Mostra la barra sul desktop",
+     "Mostrar la barra en el escritorio"),
+    ("Ouvrir la barre au démarrage de MSV", "Open the bar when MSV starts", "Apri la barra all'avvio di MSV",
+     "Abrir la barra al iniciar MSV"),
+    ("toujours au premier plan : enregistrer, pause, arrêter, photo de l'écran ou d'une zone, sans revenir dans MSV",
+     "always on top: record, pause, stop, screenshot of the screen or of an area, without going back to MSV",
+     "sempre in primo piano: registra, pausa, ferma, foto dello schermo o di una zona, senza tornare in MSV",
+     "siempre en primer plano: grabar, pausa, detener, captura de la pantalla o de una zona, sin volver a MSV"),
+    ("Barre ouverte sur le bord droit de l'écran. Fais-la glisser où tu veux.",
+     "Bar opened on the right edge of the screen. Drag it wherever you like.",
+     "Barra aperta sul bordo destro dello schermo. Trascinala dove vuoi.",
+     "Barra abierta en el borde derecho de la pantalla. Arrástrala donde quieras."),
+    ("La barre est déjà ouverte.", "The bar is already open.", "La barra è già aperta.", "La barra ya está abierta."),
+    ("Ouvrir la barre", "Open the bar", "Apri la barra", "Abrir la barra"),
+    ("Réduire la barre", "Collapse the bar", "Riduci la barra", "Reducir la barra"),
+    ("Photo de l'écran", "Screenshot", "Foto dello schermo", "Captura de pantalla"),
+    ("Réglages", "Settings", "Impostazioni", "Ajustes"),
+    ("Annuler le compte à rebours", "Cancel the countdown", "Annulla il conto alla rovescia",
+     "Cancelar la cuenta atrás"),
+    ("Arrêter l'enregistrement", "Stop recording", "Ferma la registrazione", "Detener la grabación"),
+    ("Montage en cours… {p} %", "Editing in progress… {p}%", "Montaggio in corso… {p}%", "Montaje en curso… {p} %"),
+    ("Ouvrir la vidéo", "Open the video", "Apri il video", "Abrir el vídeo"),
+    ("MSV ne répond pas.", "MSV is not responding.", "MSV non risponde.", "MSV no responde."),
+    ("📷 Photo enregistrée : {name}", "📷 Screenshot saved: {name}", "📷 Foto salvata: {name}",
+     "📷 Captura guardada: {name}"),
+    ("Ouvrir l'image", "Open the image", "Apri l'immagine", "Abrir la imagen"),
+    ("Dessiner une zone…", "Draw an area…", "Disegna una zona…", "Dibujar una zona…"),
+    ("Zone {w}×{h}", "Area {w}×{h}", "Zona {w}×{h}", "Zona {w}×{h}"),
+    ("Ouvrir Screen Record dans MSV", "Open Screen Record in MSV", "Apri Screen Record in MSV",
+     "Abrir Screen Record en MSV"),
+    ("Ouvrir le dossier des enregistrements", "Open the recordings folder", "Apri la cartella delle registrazioni",
+     "Abrir la carpeta de grabaciones"),
+    ("Fermer la barre", "Close the bar", "Chiudi la barra", "Cerrar la barra"),
+    ("Fais glisser pour choisir la zone · Échap pour annuler", "Drag to choose the area · Esc to cancel",
+     "Trascina per scegliere la zona · Esc per annullare", "Arrastra para elegir la zona · Esc para cancelar"),
+    ("Zone trop petite (64 × 64 pixels minimum).", "Area too small (64 × 64 pixels minimum).",
+     "Zona troppo piccola (minimo 64 × 64 pixel).", "Zona demasiado pequeña (mínimo 64 × 64 píxeles)."),
+    ("choisis la zone", "choose the area", "scegli la zona", "elige la zona"),
+    ("Photo", "Screenshot", "Foto", "Captura"),
+    ("Enregistrer", "Record", "Registra", "Grabar"),
+    ("📷 Fais glisser pour choisir la zone de la photo, ou clique sur un écran pour le prendre entier · Échap pour "
+     "annuler",
+     "📷 Drag to choose the area of the screenshot, or click a screen to take all of it · Esc to cancel",
+     "📷 Trascina per scegliere la zona della foto, o clicca su uno schermo per prenderlo intero · Esc per annullare",
+     "📷 Arrastra para elegir la zona de la captura, o haz clic en una pantalla para tomarla entera · Esc para "
+     "cancelar"),
+    ("🎥 Fais glisser pour choisir la zone à filmer, ou clique sur un écran pour le prendre entier · Échap pour "
+     "annuler",
+     "🎥 Drag to choose the area to record, or click a screen to record all of it · Esc to cancel",
+     "🎥 Trascina per scegliere la zona da registrare, o clicca su uno schermo per prenderlo intero · Esc per "
+     "annullare",
+     "🎥 Arrastra para elegir la zona que grabar, o haz clic en una pantalla para tomarla entera · Esc para "
+     "cancelar"),
+    ("Fais glisser pour choisir la zone, ou clique sur un écran · Échap pour annuler",
+     "Drag to choose the area, or click a screen · Esc to cancel",
+     "Trascina per scegliere la zona, o clicca su uno schermo · Esc per annullare",
+     "Arrastra para elegir la zona, o haz clic en una pantalla · Esc para cancelar"),
+    ("{name} · clic : tout l'écran", "{name} · click: whole screen", "{name} · clic: tutto lo schermo",
+     "{name} · clic: toda la pantalla"),
+    ("📷 Photo copiée : colle-la où tu veux avec {keys}.", "📷 Screenshot copied: paste it anywhere with {keys}.",
+     "📷 Foto copiata: incollala dove vuoi con {keys}.", "📷 Captura copiada: pégala donde quieras con {keys}."),
+    ("Enregistrée aussi : {name}", "Also saved as: {name}", "Salvata anche come: {name}",
+     "Guardada también como: {name}"),
     # ---- Écran partagé (core/splitscreen.py)
     ("Écran partagé (plusieurs vidéos)", "Split screen (several videos)", "Schermo diviso (più video)",
      "Pantalla dividida (varios vídeos)"),
@@ -1806,6 +1870,8 @@ avec « Remplacer la voix d'un clip existant ».
    + fond flou**, ou **écran en haut + webcam en bas**.
 6. « Créer un lien de partage » : le lien s'ouvre sur les appareils du même Wi-Fi, tant que MSV est ouvert.
 
+**Barre sur le bureau** (« Afficher la barre sur le bureau ») : une petite barre bronze, toujours au premier plan. › la replie. 📷 et 🎥 assombrissent l'écran : **fais glisser pour choisir une zone, ou clique sur un écran pour le prendre entier** (pratique avec plusieurs écrans). 📷 enregistre la photo **et la copie** : colle-la tout de suite avec Ctrl+V. 🎥 enregistre (avec les derniers réglages choisis dans MSV) puis ■ arrête, ⏸ met en pause. ▭ choisit un écran, une fenêtre ou une zone dessinée, puis « Photo » ou « Enregistrer ». ⚙ ouvre MSV ou le dossier. Fais-la glisser où tu veux. Sous Windows 10 / 11, elle n'apparaît ni dans les vidéos ni dans les photos.
+
 Linux : session X11 (Xorg), écrans entiers ; micro et son de l'ordinateur par PulseAudio / PipeWire. Mac : écrans entiers ; autorise « Enregistrement de l'écran », « Micro », « Caméra » et « Surveillance de l'entrée » ; pour le son de l'ordinateur, installe BlackHole (gratuit). Le choix d'une seule fenêtre existe seulement sous Windows.
 
 ### Conseils de performance
@@ -1888,6 +1954,8 @@ with “Replace the voice of an existing clip”.
    The video is saved in `sorties/screen_record`. 9:16 version of your choice: **follow the cursor**, **full screen
    + blurred background**, or **screen on top + webcam below**.
 6. “Create a share link”: the link opens on devices on the same Wi-Fi, as long as MSV is open.
+
+**Desktop bar** (“Show the bar on the desktop”): a small bronze bar, always on top. › collapses it. 📷 and 🎥 dim the screen: **drag to choose an area, or click a screen to take all of it** (handy with several screens). 📷 saves the screenshot **and copies it**: paste it right away with Ctrl+V. 🎥 records (with the last settings chosen in MSV) then ■ stops, ⏸ pauses. ▭ chooses a screen, a window or a drawn area, then “Screenshot” or “Record”. ⚙ opens MSV or the folder. Drag it wherever you like. On Windows 10 / 11 it appears neither in videos nor in screenshots.
 
 Linux: X11 (Xorg) session, whole screens; microphone and computer audio through PulseAudio / PipeWire. Mac: whole screens; allow “Screen Recording”, “Microphone”, “Camera” and “Input Monitoring”; for computer audio, install BlackHole (free). Recording a single window is available on Windows only.
 
@@ -1973,6 +2041,8 @@ con «Sostituisci la voce di una clip esistente».
    + sfondo sfocato**, oppure **schermo sopra + webcam sotto**.
 6. «Crea un link di condivisione»: il link si apre sui dispositivi della stessa rete Wi-Fi, finché MSV è aperto.
 
+**Barra sul desktop** («Mostra la barra sul desktop»): una piccola barra bronzo, sempre in primo piano. › la riduce. 📷 e 🎥 scuriscono lo schermo: **trascina per scegliere una zona, o clicca su uno schermo per prenderlo intero** (comodo con più schermi). 📷 salva la foto **e la copia**: incollala subito con Ctrl+V. 🎥 registra (con le ultime impostazioni scelte in MSV) poi ■ ferma, ⏸ mette in pausa. ▭ sceglie uno schermo, una finestra o una zona disegnata, poi «Foto» o «Registra». ⚙ apre MSV o la cartella. Trascinala dove vuoi. Su Windows 10 / 11 non compare né nei video né nelle foto.
+
 Linux: sessione X11 (Xorg), schermi interi; microfono e audio del computer tramite PulseAudio / PipeWire. Mac: schermi interi; autorizza «Registrazione schermo», «Microfono», «Fotocamera» e «Monitoraggio input»; per l'audio del computer installa BlackHole (gratuito). La scelta di una sola finestra esiste solo su Windows.
 
 ### Consigli sulle prestazioni
@@ -2057,6 +2127,8 @@ con «Reemplazar la voz de un clip existente».
    El vídeo se guarda en `sorties/screen_record`. Versión 9:16 a elegir: **seguir el cursor**, **pantalla completa
    + fondo desenfocado**, o **pantalla arriba + webcam abajo**.
 6. «Crear un enlace para compartir»: el enlace se abre en los dispositivos de la misma Wi-Fi, mientras MSV esté abierto.
+
+**Barra en el escritorio** («Mostrar la barra en el escritorio»): una pequeña barra bronce, siempre en primer plano. › la reduce. 📷 y 🎥 oscurecen la pantalla: **arrastra para elegir una zona, o haz clic en una pantalla para tomarla entera** (práctico con varias pantallas). 📷 guarda la captura **y la copia**: pégala enseguida con Ctrl+V. 🎥 graba (con los últimos ajustes elegidos en MSV) y luego ■ detiene, ⏸ pausa. ▭ elige una pantalla, una ventana o una zona dibujada, y luego «Captura» o «Grabar». ⚙ abre MSV o la carpeta. Arrástrala donde quieras. En Windows 10 / 11 no aparece ni en los vídeos ni en las capturas.
 
 Linux: sesión X11 (Xorg), pantallas completas; micrófono y audio del ordenador mediante PulseAudio / PipeWire. Mac: pantallas completas; autoriza «Grabación de pantalla», «Micrófono», «Cámara» y «Monitorización de entrada»; para el audio del ordenador, instala BlackHole (gratis). Grabar una sola ventana solo es posible en Windows.
 
