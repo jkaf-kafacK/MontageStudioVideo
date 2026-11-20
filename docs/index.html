@@ -53,7 +53,7 @@ h1, h2, h3 { font-family: var(--font-display); line-height: 1.12; letter-spacing
 /* ---- boutons */
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px;
        padding: 0 24px; border-radius: 14px; border: 1px solid transparent; font: 700 1rem/1 var(--font-display);
-       text-decoration: none; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s; }
+       text-decoration: none; text-align: center; cursor: pointer; transition: transform .15s, box-shadow .15s, background .15s; }
 .btn svg { flex: none; }
 .btn-primary { color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);
                box-shadow: 0 12px 30px -12px rgba(168,95,5,.9); }
@@ -124,22 +124,48 @@ section.block { padding: 96px 0; }
 .steps p { margin: 0; color: var(--muted); font-size: .95rem; }
 
 .download { background: var(--surface); border-top: 1px solid var(--line); }
-.dl-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; }
 .dl-card { border: 1px solid var(--line); border-radius: var(--radius); padding: 28px; background: var(--bg); }
-.dl-card.main { border-color: var(--bronze); box-shadow: 0 0 0 1px var(--bronze) inset; }
 .dl-card h3 { font-size: 1.25rem; margin-bottom: 8px; }
-.dl-card p, .dl-card li { color: var(--muted); font-size: .95rem; }
-.dl-card ol { padding-left: 20px; margin: 14px 0 22px; }
-.dl-card code { font-size: .88em; background: var(--bronze-soft); padding: 1px 6px; border-radius: 5px; }
+.dl-card p { color: var(--muted); font-size: .95rem; }
 .meta { font-size: .85rem; color: var(--muted); margin-top: 12px; }
+
+/* ---- téléchargement : titre centré, choix du système en trois cartes, un seul grand bouton */
+.dl-center { text-align: center; }
+.dl-center h2 { margin-inline: auto; }
+.dl-center .intro { margin: 0 auto 40px; }
+.os-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 190px)); justify-content: center; gap: 22px; }
+.os { display: grid; justify-items: center; align-content: center; gap: 22px; aspect-ratio: 1 / 1.05; padding: 18px 10px;
+      border: 2px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); cursor: pointer;
+      font: 700 1.15rem/1.2 var(--font-display); transition: border-color .15s, box-shadow .15s, color .15s; }
+.os:hover { border-color: var(--muted); }
+.os[aria-checked="true"] { border-color: var(--bronze); color: var(--bronze);
+                           box-shadow: 0 14px 40px -14px rgba(168,95,5,.55); }
+.os svg { width: 64px; height: 64px; }
+.dl-version { margin: 34px 0 22px; font-size: .92rem; color: var(--muted); }
+.dl-version a { color: var(--bronze); font-weight: 600; text-decoration: none; }
+.dl-version a:hover { text-decoration: underline; }
+.dl-version .sep { margin: 0 6px; opacity: .6; }
+.btn-lg { min-height: 60px; padding: 0 38px; font-size: 1.1rem; }
+.dl-center .meta { margin-top: 14px; }
+.dl-mobile { margin: 10px auto 0; max-width: 46ch; font-size: .9rem; color: var(--muted); }
+.dl-steps { max-width: 600px; margin: 30px auto 0; padding: 22px 26px 22px 46px; text-align: left; color: var(--muted);
+            background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); font-size: .95rem; }
+.dl-steps li + li { margin-top: 6px; }
+.dl-steps code, .dl-open code { font-size: .88em; background: var(--bronze-soft); padding: 1px 6px; border-radius: 5px; }
+.trust { list-style: none; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 18px 32px;
+         margin: 60px 0 0; padding: 0; text-align: left; }
+.trust li { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 1.02rem; }
+.trust b { color: var(--ink); font-weight: 700; }
+.trust .ck { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+             color: var(--bronze); border: 2px solid var(--bronze); }
+.dl-more { margin-top: 56px; display: grid; gap: 18px; }
 .open-app { margin-top: 8px; font-size: .88rem; color: var(--hero-muted); }
 .open-app a { color: #fff; font-weight: 600; text-underline-offset: 3px; }
 .open-app a:hover { color: var(--amber); }
-.dl-open { margin-top: 18px; display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
+.dl-open { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 24px; }
 .dl-open > div { flex: 1 1 320px; }
 .dl-open h3 { font-size: 1.1rem; margin-bottom: 4px; }
 .dl-open p { margin: 0; color: var(--muted); font-size: .92rem; }
-.dl-open code { font-size: .88em; background: var(--bronze-soft); padding: 1px 6px; border-radius: 5px; }
 
 footer { padding: 36px 0 calc(36px + env(safe-area-inset-bottom, 0px)); color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; }
@@ -158,13 +184,21 @@ dialog.player video { width: 100%; max-height: 86vh; }
 @media (max-width: 860px) {
   .top nav { display: none; }
   .figures .wrap { grid-template-columns: repeat(2, 1fr); }
-  .steps, .dl-grid { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: 1fr; }
+  .trust { flex-direction: column; align-items: flex-start; max-width: 420px; margin-inline: auto; }
   .hero::after { background: linear-gradient(0deg, rgba(14,11,8,.95) 0%, rgba(14,11,8,.7) 55%, rgba(14,11,8,.45) 100%); }
   .hero { align-items: end; }
   .hero-content { padding: 110px 0 84px; }
 }
+@media (max-width: 560px) {
+  .os-picker { gap: 10px; }
+  .os { gap: 12px; font-size: .95rem; border-radius: 12px; }
+  .os svg { width: 40px; height: 40px; }
+  .btn-lg { width: 100%; padding: 0 20px; }
+  .dl-steps { padding: 18px 18px 18px 38px; }
+}
 @media (max-width: 480px) { .cta .btn { width: 100%; } .top .btn { display: none; } }
-@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn { transition: none; } }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } .btn, .os { transition: none; } }
 </style>
 </head>
 <body>
@@ -294,39 +328,44 @@ dialog.player video { width: 100%; max-height: 86vh; }
   </section>
 
   <section class="block download" id="download" aria-labelledby="d-title">
-    <div class="wrap">
+    <div class="wrap dl-center">
       <span class="kicker">Download</span>
-      <h2 id="d-title">Get Montage Studio Video</h2>
-      <p class="intro">Free and open source. No account needed.</p>
-      <div class="dl-grid">
-        <div class="dl-card main">
-          <h3>Windows 10 and 11</h3>
-          <p>Recommended. One installer, everything else is set up for you.</p>
-          <ol>
-            <li>Download the installer and double-click it.</li>
-            <li>If Windows shows “Windows protected your PC”, click <em>More info</em> then <em>Run anyway</em>.</li>
-            <li>The first launch needs an internet connection, once.</li>
-          </ol>
-          <a class="btn btn-primary" id="dl-win" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
-             data-goatcounter-click="download-windows" data-goatcounter-title="Download for Windows (.exe)">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
-            Download for Windows
-          </a>
-          <p class="meta" id="dl-win-meta">Installer (.exe) from GitHub Releases</p>
-        </div>
-        <div class="dl-card">
-          <h3>macOS and Linux</h3>
-          <p>For developers and other systems.</p>
-          <ol>
-            <li>Install <a href="https://www.python.org/downloads/">Python 3.12</a>.</li>
-            <li>Download and unzip the app.</li>
-            <li>Run <code>lancer_mac_linux.sh</code>.</li>
-          </ol>
-          <a class="btn btn-line" id="dl-zip" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
-             data-goatcounter-click="download-zip" data-goatcounter-title="Download the ZIP">Download the ZIP</a>
-          <p class="meta" id="dl-zip-meta">Source code (.zip) from GitHub Releases</p>
-        </div>
+      <h2 id="d-title">Get more done with Montage Studio Video</h2>
+      <p class="intro">Edit your videos, record your screen and publish. Everything runs on your own computer.</p>
+
+      <div class="os-picker" id="os-picker" role="radiogroup" aria-label="Your computer's system">
+        <button class="os" type="button" role="radio" aria-checked="true" tabindex="0" data-os="win">
+          <svg viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"><rect x="6" y="6" width="24.5" height="24.5" rx="1.5"/><rect x="33.5" y="6" width="24.5" height="24.5" rx="1.5"/><rect x="6" y="33.5" width="24.5" height="24.5" rx="1.5"/><rect x="33.5" y="33.5" width="24.5" height="24.5" rx="1.5"/></svg>
+          Windows
+        </button>
+        <button class="os" type="button" role="radio" aria-checked="false" tabindex="-1" data-os="linux">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><ellipse cx="32" cy="39" rx="17" ry="21" fill="currentColor"/><circle cx="32" cy="17" r="12" fill="currentColor"/><ellipse cx="32" cy="43" rx="11" ry="15" style="fill:var(--surface)"/><circle cx="27.5" cy="15.5" r="3.4" style="fill:var(--surface)"/><circle cx="36.5" cy="15.5" r="3.4" style="fill:var(--surface)"/><circle cx="28.2" cy="16" r="1.5" fill="currentColor"/><circle cx="35.8" cy="16" r="1.5" fill="currentColor"/><ellipse cx="32" cy="22.5" rx="5" ry="2.8" fill="#F2A900"/><ellipse cx="21" cy="59" rx="8.5" ry="3.6" fill="#F2A900"/><ellipse cx="43" cy="59" rx="8.5" ry="3.6" fill="#F2A900"/></svg>
+          Linux
+        </button>
+        <button class="os" type="button" role="radio" aria-checked="false" tabindex="-1" data-os="mac">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg>
+          macOS
+        </button>
       </div>
+
+      <p class="dl-version" id="dl-version" aria-live="polite">Latest version on GitHub Releases<span class="sep">|</span><span id="dl-works">Works on Windows 10 and 11</span></p>
+      <a class="btn btn-primary btn-lg" id="dl-btn" href="https://github.com/jkaf-kafacK/MontageStudioVideo/releases/latest"
+         data-goatcounter-click="download-windows" data-goatcounter-title="Download for Windows (.exe)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0-5-5m5 5 5-5M4 20h16"/></svg>
+        <span id="dl-btn-label">Download free for Windows</span>
+      </a>
+      <p class="meta" id="dl-meta">Installer (.exe) from GitHub Releases</p>
+      <p class="dl-mobile" id="dl-mobile" hidden>Montage Studio Video runs on a computer. Open this page on your Windows, Linux or Mac computer to install it.</p>
+      <ol class="dl-steps" id="dl-steps"></ol>
+
+      <ul class="trust" aria-label="Why Montage Studio Video">
+        <li><span class="ck"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>No ads, no account, no spam</li>
+        <li><span class="ck"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>100% local: your files never leave your computer</li>
+        <li><span class="ck"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><span id="dl-count">Free and open source (GPL-3.0)</span></li>
+      </ul>
+    </div>
+
+    <div class="wrap dl-more">
       <div class="dl-card dl-open">
         <div>
           <h3>Already installed?</h3>
@@ -424,9 +463,59 @@ const CONFIG = {
   const ua = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent;
   const isWin = /win/i.test(ua) && !/darwin|mac/i.test(ua);
   const isMobile = /android|iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isMac = !isWin && /mac|darwin/i.test(ua) && !isMobile;
+  const isLinux = !isWin && !isMac && /linux|x11|cros/i.test(ua) && !isMobile;
   const mb = n => (n / 1048576).toFixed(n > 10485760 ? 0 : 1) + " MB";
   if (isMobile) { $("dl-main").href = "#download"; $("dl-main-label").textContent = "Download for your computer"; }
   else if (isWin) $("dl-main-label").textContent = "Download for Windows";
+
+  // ---- section Téléchargement : trois cartes (Windows / Linux / macOS), un seul grand bouton
+  const LATEST = `https://github.com/${REPO}/releases/latest`;
+  const assets = { exe: null, zip: null };
+  const zipSteps = [
+    'Install <a href="https://www.python.org/downloads/">Python 3.12</a>.',
+    "Download and unzip the app.",
+    "Run <code>lancer_mac_linux.sh</code>.",
+  ];
+  const OS = {
+    win: { name: "Windows", works: "Works on Windows 10 and 11", asset: "exe", click: "download-windows",
+           title: "Download for Windows (.exe)", meta: "Installer (.exe) from GitHub Releases",
+           steps: ["Download the installer and double-click it.",
+                   "If Windows shows “Windows protected your PC”, click <em>More info</em> then <em>Run anyway</em>.",
+                   "The first launch needs an internet connection, once."] },
+    linux: { name: "Linux", works: "Works on Linux with Python 3.12", asset: "zip", click: "download-linux",
+             title: "Download for Linux (.zip)", meta: "App (.zip) from GitHub Releases", steps: zipSteps },
+    mac: { name: "macOS", works: "Works on macOS with Python 3.12", asset: "zip", click: "download-mac",
+           title: "Download for macOS (.zip)", meta: "App (.zip) from GitHub Releases", steps: zipSteps },
+  };
+  let current = isMac ? "mac" : isLinux ? "linux" : "win";
+  const cards = [...document.querySelectorAll("#os-picker .os")];
+  const showOs = (os, focus = false) => {
+    current = os;
+    const o = OS[os], a = assets[o.asset];
+    for (const c of cards) {
+      const on = c.dataset.os === os;
+      c.setAttribute("aria-checked", on); c.tabIndex = on ? 0 : -1;
+      if (on && focus) c.focus();
+    }
+    const btn = $("dl-btn");
+    btn.href = a ? a.browser_download_url : LATEST;
+    btn.dataset.goatcounterClick = o.click; btn.dataset.goatcounterTitle = o.title;   // lus par GoatCounter au clic
+    $("dl-btn-label").textContent = `Download free for ${o.name}`;
+    $("dl-meta").textContent = a ? `${a.name} · ${mb(a.size)}` : o.meta;
+    $("dl-works").textContent = o.works;
+    $("dl-steps").innerHTML = o.steps.map(s => `<li>${s}</li>`).join("");
+  };
+  for (const c of cards) c.addEventListener("click", () => showOs(c.dataset.os));
+  $("os-picker").addEventListener("keydown", e => {         // flèches : carte précédente / suivante
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const i = cards.findIndex(c => c.dataset.os === current);
+    showOs(cards[(i + step + cards.length) % cards.length].dataset.os, true);
+  });
+  $("dl-mobile").hidden = !isMobile;
+  showOs(current);
 
   // ---- statistiques (GoatCounter : sans cookie, ne compte pas les visites en local) ; clics = attributs data-goatcounter-click
   if (/^[a-z0-9-]+$/.test(CONFIG.goatcounter)) {
@@ -453,8 +542,8 @@ const CONFIG = {
       const assets = rel.assets || [];
       const exe = assets.find(a => /setup\.exe$/i.test(a.name));
       const zip = assets.find(a => /\.zip$/i.test(a.name));
-      if (exe) { $("dl-win").href = exe.browser_download_url; $("dl-win-meta").textContent = `${exe.name} · ${mb(exe.size)}`; }
-      if (zip) { $("dl-zip").href = zip.browser_download_url; $("dl-zip-meta").textContent = `${zip.name} · ${mb(zip.size)}`; }
+      assets.exe = exe || null; assets.zip = zip || null;
+      showOs(current);
       if (!isMobile) {
         const best = isWin ? exe : zip;
         if (best) $("dl-main").href = best.browser_download_url;
@@ -462,8 +551,17 @@ const CONFIG = {
       }
       const date = rel.published_at ? new Date(rel.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }) : "";
       const notes = Object.assign(document.createElement("a"), { href: rel.html_url, textContent: "Release notes" });
-      const count = downloads >= CONFIG.minDownloadsShown ? ` · ${downloads.toLocaleString("en-US")} downloads` : "";
+      const shown = downloads >= CONFIG.minDownloadsShown;
+      const count = shown ? ` · ${downloads.toLocaleString("en-US")} downloads` : "";
       $("release").replaceChildren(`Version ${rel.tag_name}${date ? " · " + date : ""}${count} · `, notes);
+      // « Latest version – v2.1 | Release date: … | Works on … » sous les cartes
+      const sep = () => Object.assign(document.createElement("span"), { className: "sep", textContent: "|" });
+      const tag = Object.assign(document.createElement("a"), { href: rel.html_url, textContent: rel.tag_name });
+      $("dl-version").replaceChildren("Latest version – ", tag, ...(date ? [sep(), `Release date: ${date}`] : []), sep(), $("dl-works"));
+      if (shown) {
+        const b = Object.assign(document.createElement("b"), { textContent: downloads.toLocaleString("en-US") });
+        $("dl-count").replaceChildren(b, " downloads and counting…");
+      }
     })
     .catch(() => {});
 })();

@@ -288,6 +288,26 @@ def test_barre_flottante_dans_l_onglet(monkeypatch, tmp_path):
     assert "#screen-record" in app.PAGE_JS and "🎥" in app.PAGE_JS      # ⚙ de la barre : ouvre l'onglet
 
 
+def test_bouton_theme_a_cote_des_langues():
+    """Un seul bouton clair / sombre dans l'en-tête, juste après les langues, traduit dans les 4 langues."""
+    import app
+    from core.i18n import LANG
+    for lang, dark, light, tip in (("fr", "Sombre", "Clair", "Passer au thème sombre"),
+                                   ("it", "Scuro", "Chiaro", "Passa al tema scuro"),
+                                   ("en", "Dark", "Light", "Switch to dark theme")):
+        token = LANG.set(lang)
+        try:
+            html = app.entete(lang)
+        finally:
+            LANG.reset(token)
+        haut = html.split('class="reglages-haut"')[1].split('class="badges"')[0]
+        assert haut.index('class="langues"') < haut.index('id="theme-btn"')        # accanto alle lingue
+        assert html.count('id="theme-btn"') == 1 and f">{dark}<" in haut and f">{light}<" in haut
+        assert f'data-t-dark="{tip}"' in haut
+    assert "theme-btn" in app.PAGE_JS and "msv-theme" in app.PAGE_JS and "__theme" in app.PAGE_JS
+    assert ".dark #entete .theme-btn .ic-soleil" in app.CSS
+
+
 def test_decouper_en_scenes_grille_et_menu():
     """Grille des scènes : menu du clic droit complet ; les actions envoyées par la page modifient la liste."""
     import gradio as gr

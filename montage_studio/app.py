@@ -1468,6 +1468,22 @@ CSS = """
                     text-decoration: none; color: var(--body-text-color-subdued);}
 #entete .langues a:hover {color: var(--body-text-color); background: var(--background-fill-secondary);}
 #entete .langues a.actif {color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);}
+#entete .reglages-haut {display: flex; align-items: center; gap: 8px;}
+/* un seul bouton : en clair il propose « Sombre » (lune), en sombre « Clair » (soleil) */
+#entete .theme-btn {display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 10px;
+                    cursor: pointer; font: inherit; font-size: 0.78rem; font-weight: 600; line-height: 1;
+                    color: var(--body-text-color-subdued); background: var(--background-fill-primary);
+                    border: 1px solid var(--border-color-primary); transition: color .15s, border-color .15s;}
+#entete .theme-btn:hover {color: var(--body-text-color); border-color: #C47A12;}
+#entete .theme-btn:focus-visible {outline: 2px solid #C47A12; outline-offset: 2px;}
+/* une règle par sélecteur : Gradio réécrit mal les sélecteurs « .dark » groupés par une virgule */
+#entete .theme-btn .ic-soleil {display: none;}
+#entete .theme-btn .t-clair {display: none;}
+.dark #entete .theme-btn .ic-soleil {display: inline;}
+.dark #entete .theme-btn .t-clair {display: inline;}
+.dark #entete .theme-btn .ic-lune {display: none;}
+.dark #entete .theme-btn .t-sombre {display: none;}
+@media (prefers-reduced-motion: reduce) {#entete .theme-btn {transition: none;}}
 #entete .badge {font-size: 0.75rem; font-weight: 600; padding: 5px 11px; border-radius: 999px; white-space: nowrap;
                 background: var(--background-fill-primary); border: 1px solid var(--border-color-primary);}
 #entete .badge b {color: #A85F05;}
@@ -1640,7 +1656,38 @@ TAB_JS = """() => {
   go();
   window.addEventListener('hashchange', () => go());
 }"""
-PAGE_JS = f"() => {{ ({TAB_JS})(); {f'({FOND_JS})();' if FOND_JS else ''} }}"
+# Bouton clair / sombre de l'en-tête : Gradio met la classe « dark » sur <body>. On la bascule sans recharger,
+# on garde le choix (localStorage, et ?__theme= dans l'adresse pour qu'un rechargement le respecte aussi).
+THEME_JS = """() => {
+  const KEY = 'msv-theme', body = document.body;
+  const btn = () => document.getElementById('theme-btn');
+  const sync = () => {
+    const b = btn(); if (!b) return;
+    const dark = body.classList.contains('dark');
+    b.setAttribute('aria-pressed', String(dark));
+    b.title = dark ? b.dataset.tLight : b.dataset.tDark;
+    b.setAttribute('aria-label', b.title);
+  };
+  const apply = mode => {
+    body.classList.toggle('dark', mode === 'dark');
+    const u = new URL(location.href); u.searchParams.set('__theme', mode);
+    history.replaceState(history.state, '', u);
+    sync();
+  };
+  let saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  if (!new URL(location.href).searchParams.get('__theme') && (saved === 'dark' || saved === 'light')) apply(saved);
+  document.addEventListener('click', e => {
+    if (!e.target.closest('#theme-btn')) return;
+    const mode = body.classList.contains('dark') ? 'light' : 'dark';
+    try { localStorage.setItem(KEY, mode); } catch (e) {}
+    apply(mode);
+  });
+  new MutationObserver(sync).observe(body, { attributes: true, attributeFilter: ['class'] });
+  const wait = (n = 0) => { if (btn()) sync(); else if (n < 60) setTimeout(() => wait(n + 1), 250); };
+  wait();
+}"""
+PAGE_JS = f"() => {{ ({THEME_JS})(); ({TAB_JS})(); {f'({FOND_JS})();' if FOND_JS else ''} }}"
 
 SYSTEM_FONT = ["Segoe UI Variable Text", "Segoe UI", "ui-sans-serif", "system-ui", "-apple-system", "Roboto",
                "Helvetica Neue", "Arial", "sans-serif"]
@@ -1694,7 +1741,20 @@ def entete(lang: str) -> str:
     <p>{_("Montage vidéo local pour Shorts et vidéos YouTube, propulsé par FFmpeg.")}</p>
   </div>
   <div class="droite">
-    <nav class="langues" aria-label="{_("Langue de l'interface")}">{langues}</nav>
+    <div class="reglages-haut">
+      <nav class="langues" aria-label="{_("Langue de l'interface")}">{langues}</nav>
+      <button type="button" id="theme-btn" class="theme-btn" aria-pressed="false"
+              data-t-dark="{_("Passer au thème sombre")}" data-t-light="{_("Passer au thème clair")}"
+              title="{_("Passer au thème sombre")}" aria-label="{_("Passer au thème sombre")}">
+        <svg class="ic-lune" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+        <svg class="ic-soleil" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        <span class="t-sombre">{_("Sombre")}</span><span class="t-clair">{_("Clair")}</span>
+      </button>
+    </div>
     <div class="badges">
       <span class="badge"><b>●</b> {_("100 % local")}</span>
       <span class="badge">9:16 · 16:9 · 1:1 · 4:5</span>
