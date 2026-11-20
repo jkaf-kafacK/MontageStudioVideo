@@ -32,8 +32,8 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import (barapi, batch, denoise, errors, ff, layers, paths, ranking, scenecut, scenes, screenrec, share,
-                  splitscreen, subs, tools, voice)
+from core import (audiostudio, barapi, batch, beats, denoise, effects, errors, ff, layers, paths, ranking, rhythm,
+                  scenecut, scenes, screenrec, sfx, share, splitscreen, stickers, subs, tools, voice)
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_sections, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
@@ -55,7 +55,10 @@ TABLES = {
                  ["path", "start", "end", "x", "y", "width", "opacity", "animation"], layers.norm_overlay),
     "texts": (["texte", "début", "fin", "x_%", "y_%", "taille", "couleur", "animation", "fond"],
               ["text", "start", "end", "x", "y", "size", "color", "animation", "box"], layers.norm_text),
+    "effects": (["effet", "début", "fin", "intensité"], ["type", "start", "end", "intensity"], effects.norm_effect),
+    "sfx": (["fichier", "début", "volume"], ["path", "start", "volume"], sfx.norm_sfx),
 }
+TRANSLATED_KEYS = ("animation", "type")   # colonnes dont la valeur est un choix traduit à l'affichage
 FROM_MONTAGE = "(réglages de l'onglet Montage)"   # valeur interne ; seul le libellé affiché est traduit
 FONTS = list_fonts()
 
@@ -204,9 +207,9 @@ def df_from_clips(clips: list[dict]) -> pd.DataFrame:
 
 
 def table_df(key: str, items) -> pd.DataFrame:
-    """Calques du projet -> tableau affiché (animation traduite)."""
+    """Calques ou effets du projet -> tableau affiché (animation et type d'effet traduits)."""
     names, keys, norm = TABLES[key]
-    rows = [[_(it[k]) if k == "animation" else it[k] for k in keys] for it in map(norm, items or []) if it]
+    rows = [[_(it[k]) if k in TRANSLATED_KEYS else it[k] for k in keys] for it in map(norm, items or []) if it]
     return pd.DataFrame(rows, columns=[_(c) for c in names])
 
 
@@ -409,7 +412,7 @@ def drop_last(df):
 def add_overlay(df, path, start, end, x, y, width, opacity, anim):
     if not path:
         raise gr.Error(_("Choisis d'abord un média dans la médiathèque."))
-    if ff.media_kind(path) not in ("image", "video"):
+    if layers.layer_kind(path) not in ("image", "video", "animated"):
         raise gr.Error(_("Une incrustation doit être une image ou une vidéo."))
     check_times(start, end)
     item = {"path": path, "start": start, "end": end, "x": x, "y": y, "width": width, "opacity": opacity,
@@ -450,6 +453,170 @@ def drop_last_layer(key: str, df):
 
 def layer_position(name):
     return layers.POSITIONS.get(name, (50, 50))
+
+
+# --------------------------------------------------------------------------- actions : stickers et effets
+
+STICKER_EXT = [".png", ".gif", ".webp", ".webm", ".mov"]
+
+
+def sticker_choice(path: str):
+    """Sticker choisi -> (chemin gardé, aperçu, légende). Un sticker vidéo (WebM) n'a pas d'aperçu image."""
+    kind = layers.layer_kind(path)
+    if kind not in ("image", "animated", "video"):
+        raise gr.Error(_("Un sticker doit être une image (PNG, GIF, WebP) ou une vidéo transparente (WebM)."))
+    note = _("Sticker choisi : {name}", name=Path(path).name)
+    if kind == "video" and not ff.probe(path).alpha:
+        note += " · " + _("⚠ cette vidéo n'est pas transparente : elle s'affichera comme une carte.")
+    return path, (path if kind != "video" else None), note
+
+
+def pick_emoji(emoji):
+    return sticker_choice(str(stickers.emoji_path(emoji)))
+
+
+def import_sticker(file):
+    if not file:
+        raise gr.Error(_("Choisis un fichier."))
+    return sticker_choice(persist(file))
+
+
+def add_sticker(df, path, start, end, x, y, width, anim):
+    if not path:
+        raise gr.Error(_("Clique d'abord sur un sticker (ou choisis un emoji)."))
+    return add_overlay(df, path, start, end, x, y, width, 1.0, anim)
+
+
+def add_effect(df, kind, start, end, intensity):
+    s, e = num(start, 0) or 0.0, num(end)
+    if s < 0:
+        raise UserError(_("Le début ne peut pas être négatif."), _("Écris 0 ou plus dans « Début »."))
+    if e and e <= s:
+        raise UserError(_("L'effet finirait ({e:g} s) avant de commencer ({s:g} s).", e=e, s=s),
+                        _("Mets dans « Fin » une heure plus grande que « Début », ou 0 pour aller jusqu'à la fin."))
+    item = {"type": kind, "start": s, "end": e, "intensity": intensity}
+    gr.Info(_("Effet ajouté : {name}, de {s} s à {e} s.", name=_(kind), s=f"{s:g}", e=f"{e:g}") if e
+            else _("Effet ajouté : {name}, de {s} s jusqu'à la fin.", name=_(kind), s=f"{s:g}"))
+    return table_df("effects", table_items("effects", df) + [item])
+
+
+# --------------------------------------------------------------------------- actions : rythme et effets sonores
+
+EVERY_CHOICES = [("tous les temps", 1), ("tous les 2 temps", 2), ("tous les 4 temps (1 mesure)", 4),
+                 ("tous les 8 temps", 8)]
+
+
+def choose_sound(name):
+    """Son de la bibliothèque -> (chemin gardé, lecteur)."""
+    p = str(sfx.sound_path(name)) if name in sfx.SOUNDS else ""
+    return p, p or None
+
+
+def import_sound(file):
+    if not file:
+        raise gr.Error(_("Choisis un fichier."))
+    p = persist(file)
+    if ff.media_kind(p) not in ("audio", "video"):
+        raise gr.Error(_("Un effet sonore doit être un fichier audio (MP3, WAV…)."))
+    return p, p
+
+
+def add_sound(df, path, start, volume):
+    if not path:
+        raise gr.Error(_("Choisis d'abord un son."))
+    s = num(start, 0) or 0.0
+    if s < 0:
+        raise UserError(_("Le début ne peut pas être négatif."), _("Écris 0 ou plus dans « Au moment (s) »."))
+    gr.Info(_("Son ajouté à {s} s.", s=f"{s:g}"))
+    return table_df("sfx", table_items("sfx", df) + [{"path": path, "start": s, "volume": volume}])
+
+
+def analyze_rhythm(music_file, mood):
+    """Tempo de la musique du projet (fichier importé ou musique générée), affiché sous le bouton."""
+    from core.music import MOODS
+
+    if music_file:
+        try:
+            a = beats.analyze(persist(music_file))
+        except Exception as e:
+            raise fail(e)
+        if not a["beats"]:
+            return _("⚠ Aucun rythme net dans cette musique : les effets sur les temps ne seront pas ajoutés.")
+        return _("🥁 ≈ {bpm:.0f} BPM · {n} temps sur {dur:.0f} s · un temps toutes les {p:.2f} s",
+                 bpm=a["bpm"], n=len(a["beats"]), dur=a["duration"], p=60 / a["bpm"])
+    if mood in MOODS:
+        return _("🥁 Musique générée « {mood} » : {bpm} BPM exacts", mood=_(mood), bpm=MOODS[mood]["bpm"])
+    return _("Ajoute d'abord une musique (réglages Audio → Musique) ou choisis une musique générée.")
+
+
+# --------------------------------------------------------------------------- mode viral (un clic)
+
+VIRAL_OPTIONS = ["format vertical 9:16", "sous-titres karaoké", "couper les silences", "zoom alterné + whoosh",
+                 "musique énergique au rythme", "sticker S'abonner à la fin"]
+VIRAL_SUB_STYLE = {"size": 86, "uppercase": True, "highlight_color": "#FFD60A", "highlight_mode": "couleur",
+                   "stroke_width": 8, "position": 0.7}
+
+
+def apply_viral(df, hook, options, *values):
+    """Règle le projet façon Short viral : accroche animée, sous-titres karaoké, jump cuts zoomés avec whoosh,
+    musique rythmée, sticker d'abonnement à la fin. Renvoie les nouvelles valeurs de tous les réglages."""
+    options = set(options or [])
+    proj = collect(values)
+    done, notes = [], []
+    if "format vertical 9:16" in options:
+        proj["format"] = "9:16"
+        if proj.get("fit") == "bandes":
+            proj["fit"] = "flou"
+        done.append(_("format 9:16"))
+    hook = (hook or "").strip()
+    if hook:   # accroche : gros texte qui surgit pendant les 2,5 premières secondes
+        texts = [t for t in table_items("texts", proj.get("texts")) if t["text"] != hook]
+        proj["texts"] = texts + [{"text": hook, "start": 0, "end": 2.5, "x": 50, "y": 24, "size": 112,
+                                  "color": "#FFFFFF", "box": True, "animation": "zoom"}]
+        done.append(_("accroche animée"))
+    if "sous-titres karaoké" in options:
+        st = proj["subtitles"]
+        has_voice = bool(proj["voiceover"].get("path")) or any(ff.media_kind(c["path"]) == "video"
+                                                                for c in clips_from_df(df))
+        if st.get("source") in ("aucun", "", None):
+            if subs.whisper_available() and has_voice:
+                st["source"] = "whisper"
+            elif (st.get("script") or "").strip():
+                st["source"] = "script"
+        if st.get("source") in ("aucun", "", None):
+            notes.append(_("sous-titres : installe Whisper (pip install faster-whisper) ou écris le texte dans "
+                           "« Sous-titres → Texte »"))
+        else:
+            st.update({"karaoke": True, "max_words": 3})
+            st["style"] = {**(st.get("style") or {}), **VIRAL_SUB_STYLE}
+            done.append(_("sous-titres karaoké"))
+    if "couper les silences" in options:
+        proj["remove_silence"]["enabled"] = True
+        done.append(_("silences coupés"))
+    if "zoom alterné + whoosh" in options:
+        proj["on_cuts"] = {"effect": "zoom alterné", "sound": "whoosh", "intensity": 0.5, "volume": 0.7}
+        done.append(_("zoom alterné + whoosh à chaque coupe"))
+    if "musique énergique au rythme" in options:
+        if not proj["music"].get("path") and proj["music"].get("auto") in ("aucune", "", None):
+            proj["music"]["auto"] = "énergique"
+        proj["music"]["ducking"] = True
+        bs = proj["beat_sync"]
+        bs["images"] = True
+        if "zoom alterné + whoosh" not in options and bs.get("effect") in ("aucun", "", None):
+            bs.update({"effect": "zoom punch", "every": 4})
+        done.append(_("musique au rythme"))
+    if "sticker S'abonner à la fin" in options:
+        path = str(stickers.builtin_path("bouton S'abonner"))
+        ovs = [o for o in table_items("overlays", proj.get("overlays"))
+               if not stickers.is_builtin(o["path"], "bouton S'abonner")]
+        proj["overlays"] = ovs + [{"path": path, "start": -3, "end": None, "x": 50, "y": 82, "width": 48,
+                                   "opacity": 1, "animation": "pulsation"}]
+        done.append(_("sticker S'abonner (3 dernières secondes)"))
+    msg = _("⚡ Mode viral appliqué : {done}.", done=", ".join(done) or "—")
+    if notes:
+        msg += " ⚠ " + " · ".join(notes)
+    gr.Info(msg + " " + _("Lance l'aperçu rapide pour voir le résultat."), duration=12)
+    return project_values(proj)
 
 
 # --------------------------------------------------------------------------- actions : rendu
@@ -1512,6 +1679,69 @@ button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
 #apercu-rapide {min-height: 54px; font-size: 1rem; font-weight: 600;}
 .mono textarea {font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.82rem;}
 
+/* ---- Studio audio : toujours sur fond noir, accents cyan et violet (en thème clair comme en sombre).
+   Les composants Gradio lisent leurs couleurs dans des variables CSS : on les redéfinit pour cet onglet. */
+#studio-audio {
+  --sa-cyan: #22D3EE; --sa-violet: #A855F7;
+  background: #07070A !important; border: 1px solid #1F1F28; border-radius: 18px; padding: 16px !important;
+  color: #F4F4F5; color-scheme: dark;
+  --body-background-fill: #07070A; --background-fill-primary: #101015; --background-fill-secondary: #16161D;
+  --block-background-fill: #101015; --block-border-color: #23232D; --border-color-primary: #23232D;
+  --border-color-accent: #22D3EE; --block-label-background-fill: #16161D; --block-label-text-color: #A1A1AA;
+  --block-label-border-color: #23232D; --block-title-text-color: #E4E4E7; --block-info-text-color: #8B8B98;
+  --body-text-color: #F4F4F5; --body-text-color-subdued: #A1A1AA;
+  --input-background-fill: #16161D; --input-background-fill-focus: #1B1B24; --input-border-color: #2A2A35;
+  --input-border-color-focus: #22D3EE; --input-placeholder-color: #6B6B78;
+  --button-secondary-background-fill: #16161D; --button-secondary-background-fill-hover: #1F1F2A;
+  --button-secondary-text-color: #F4F4F5; --button-secondary-text-color-hover: #FFFFFF;
+  --button-secondary-border-color: #2A2A35;
+  --button-primary-background-fill: linear-gradient(135deg, #22D3EE, #A855F7);
+  --button-primary-background-fill-hover: linear-gradient(135deg, #67E8F9, #C084FC);
+  --button-primary-text-color: #07070A; --button-primary-text-color-hover: #07070A;
+  --button-primary-border-color: transparent;
+  --color-accent: #22D3EE; --color-accent-soft: rgba(34,211,238,.14); --slider-color: #22D3EE;
+  --checkbox-background-color: #16161D; --checkbox-border-color: #3A3A46;
+  --checkbox-background-color-selected: #22D3EE; --checkbox-border-color-selected: #22D3EE;
+  --checkbox-label-background-fill: #16161D; --checkbox-label-background-fill-hover: #1F1F2A;
+  --checkbox-label-background-fill-selected: rgba(34,211,238,.14); --checkbox-label-border-color: #2A2A35;
+  --checkbox-label-border-color-selected: #22D3EE; --checkbox-label-text-color: #E4E4E7;
+  --checkbox-label-text-color-selected: #FFFFFF;
+  --table-even-background-fill: #101015; --table-odd-background-fill: #13131A;
+}
+#studio-audio .gr-group {background: #101015 !important;}
+#studio-audio .gr-group > .styler {background: #101015 !important;}
+#studio-audio button[role="tab"] {color: #A1A1AA !important;}
+#studio-audio button[role="tab"][aria-selected="true"] {color: #22D3EE !important; border-color: #22D3EE !important;}
+#studio-audio .section-titre .num {background: linear-gradient(135deg, #22D3EE, #A855F7);}
+#studio-audio .section-titre em {color: #8B8B98;}
+#studio-audio .sr-note p {color: #8B8B98;}
+#studio-audio .sa-go {min-height: 52px; font-size: 1.02rem; font-weight: 800;
+                      box-shadow: 0 10px 28px -12px rgba(168,85,247,.85);}
+#studio-audio .sa-onde {background: #07070A !important;}
+#studio-audio .sa-presets label {border-radius: 999px !important;}
+#studio-audio .upload-container {border: 1.5px dashed #33333F !important; border-radius: 12px; background: #0D0D12;}
+#studio-audio .upload-container:hover {border-color: #22D3EE !important;}
+#studio-audio .audio-container {border-color: #23232D !important;}
+/* bloc d'un composant audio vide : Gradio lui donne une bordure épaisse couleur du texte (blanche ici) */
+#studio-audio .block {border-color: #23232D !important;}
+#studio-audio .block:has(> .audio-container) {border-width: 1px !important;}
+#studio-audio .label-wrap {color: #E4E4E7 !important;}
+#studio-audio code {background: #16161D !important; color: #67E8F9 !important; border: 1px solid #23232D;
+                    border-radius: 6px; padding: 1px 6px; white-space: normal; word-break: break-all;}
+#sa-entete {display: flex; align-items: center; gap: 18px; padding: 16px 18px; margin-bottom: 10px;
+            border-radius: 14px; border: 1px solid #23232D;
+            background: radial-gradient(120% 140% at 0% 0%, rgba(34,211,238,.18), transparent 55%),
+                        radial-gradient(120% 140% at 100% 100%, rgba(168,85,247,.20), transparent 55%), #0B0B10;}
+#sa-entete h2 {margin: 0; font-size: 1.55rem; font-weight: 800; letter-spacing: -0.02em;
+               background: linear-gradient(90deg, #22D3EE, #A855F7); -webkit-background-clip: text;
+               background-clip: text; color: transparent;}
+#sa-entete p {margin: 4px 0 0; color: #A1A1AA; font-size: 0.92rem;}
+#sa-entete .eq {display: flex; align-items: flex-end; gap: 4px; height: 44px; flex: none;}
+#sa-entete .eq span {width: 6px; height: 100%; border-radius: 3px; transform-origin: bottom;
+                     background: linear-gradient(180deg, #A855F7, #22D3EE); animation: sa-eq 1.1s ease-in-out infinite alternate;}
+@keyframes sa-eq {0% {transform: scaleY(.2);} 50% {transform: scaleY(1);} 100% {transform: scaleY(.45);}}
+@media (prefers-reduced-motion: reduce) {#sa-entete .eq span {animation: none; transform: scaleY(.6);}}
+
 /* ---- pied de page */
 #pied {text-align: center; font-size: 0.8rem; color: var(--body-text-color-subdued); padding: 10px 0 4px;}
 
@@ -1832,6 +2062,7 @@ _HELP_ICONS = [
     '<path d="M18.5 14.5l.7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7z"/>',                         # scènes
     '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',      # musique
     '<path d="M12 3 2 8l10 5 10-5z"/><path d="m2 12.5 10 5 10-5"/><path d="m2 17 10 5 10-5"/>',     # calques
+    '<path d="M5 4v16M12 4v16M19 4v16"/><path d="M3 15h4M10 8h4M17 13h4"/>',                          # studio audio
     '<path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4"/>'
     '<path d="M12 13v6M8.5 21h7"/>',                                                                  # classement
     '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',      # voix off
@@ -2027,13 +2258,301 @@ def sr_pick(path):
     return str(p), [str(p)] + ([str(twin)] if twin.exists() else [])
 
 
-def sr_open_folder():
-    screenrec.OUT_DIR.mkdir(parents=True, exist_ok=True)
+def open_folder(folder: Path) -> None:
+    """Ouvre un dossier de sorties dans l'explorateur de fichiers."""
+    folder.mkdir(parents=True, exist_ok=True)
     if sys.platform == "win32":
-        os.startfile(screenrec.OUT_DIR)                         # noqa: S606 (dossier de l'application)
+        os.startfile(folder)                                     # noqa: S606 (dossier de l'application)
     else:
         import subprocess
-        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(screenrec.OUT_DIR)])
+        subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(folder)])
+
+
+def sr_open_folder():
+    open_folder(screenrec.OUT_DIR)
+
+
+# --------------------------------------------------------------------------- Studio audio
+
+SA_WAVES = paths.CACHE_DIR / "ondes"          # images des formes d'onde (hors des dossiers de sorties)
+SA_KIND_LABELS = list(audiostudio.KINDS)      # « enchaînement », « superposition », « effets micro »
+
+
+def sa_wave(path: str) -> str | None:
+    if not path or not Path(path).exists():
+        return None
+    SA_WAVES.mkdir(parents=True, exist_ok=True)
+    png = SA_WAVES / f"{Path(path).stem}.png"
+    if not png.exists():
+        try:
+            audiostudio.waveform(path, png)
+        except Exception:
+            return None
+    return str(png)
+
+
+def sa_folder_md(kind: str) -> str:
+    return "📁 " + _("Sorties rangées dans") + f" `{audiostudio.out_dir(kind)}`"
+
+
+def sa_result(res: dict):
+    """Résultat d'un outil -> (lecteur, forme d'onde, journal, chemin gardé)."""
+    msg = "✅ " + _("Fichier créé") + f" : {Path(res['path']).name}\n📁 {res['path']}\n" + res["log"]
+    return res["path"], sa_wave(res["path"]), msg, res["path"]
+
+
+def sa_concat(*args, progress=gr.Progress()):
+    """args : 4 × (fichier, début, fin, volume), puis fondu, courbe, sur le rythme, fondus, normaliser, format."""
+    slots, (xf, curve, on_beat, fi, fo, norm, fmt) = args[:16], args[16:]
+    tracks = [{"path": persist(slots[k]), "start": slots[k + 1], "end": slots[k + 2], "volume": slots[k + 3]}
+              for k in range(0, 16, 4) if slots[k]]
+    try:
+        res = audiostudio.concat(tracks, xf, curve, bool(on_beat), num(fi, 0), num(fo, 0), bool(norm), fmt,
+                                 progress=lambda f: progress(f, desc=_("Enchaînement")))
+    except Exception as e:
+        raise fail(e)
+    return sa_result(res)
+
+
+def sa_mix(*args, progress=gr.Progress()):
+    """args : 4 × (fichier, rôle, volume, décalage, boucle), puis durée, ducking, fondus, normaliser, format."""
+    slots, (length, duck, fi, fo, norm, fmt) = args[:20], args[20:]
+    tracks = [{"path": persist(slots[k]), "role": slots[k + 1], "volume": slots[k + 2], "offset": slots[k + 3],
+               "loop": slots[k + 4]} for k in range(0, 20, 5) if slots[k]]
+    try:
+        res = audiostudio.mix(tracks, length, bool(duck), num(fi, 0), num(fo, 0), bool(norm), fmt,
+                              progress=lambda f: progress(f, desc=_("Superposition")))
+    except Exception as e:
+        raise fail(e)
+    return sa_result(res)
+
+
+def sa_mic(path, preset, low, mid, high, comp, noise, gain, speed, norm, fmt, progress=gr.Progress()):
+    try:
+        res = audiostudio.mic_effects(persist(path) if path else "", preset, low, mid, high, comp, noise, gain,
+                                      speed, bool(norm), fmt, progress=lambda f: progress(f, desc=_("Effets micro")))
+    except Exception as e:
+        raise fail(e)
+    return sa_result(res)
+
+
+def sa_reset_mixer():
+    """Console remise à plat : aucun effet, égaliseur à 0, pas de compression ni de gain, vitesse normale."""
+    return "aucun", 0, 0, 0, 0, "aucune", 0, 1.0
+
+
+def sa_list(kind: str, select: str | None = None):
+    files = audiostudio.recent(kind)
+    choices = [(f"{p.name}  ·  {time.strftime('%d/%m %H:%M', time.localtime(p.stat().st_mtime))}", str(p))
+               for p in files]
+    value = select if select in {c[1] for c in choices} else (choices[0][1] if choices else None)
+    return gr.Dropdown(choices=choices, value=value), sa_count_md(kind, len(files))
+
+
+def sa_count_md(kind: str, n: int) -> str:
+    return (_("{n} fichier(s) dans « {kind} »", n=n, kind=_(kind)) + "  \n" + sa_folder_md(kind)) if n else \
+        _("Aucune sortie « {kind} » pour l'instant.", kind=_(kind)) + "  \n" + sa_folder_md(kind)
+
+
+def sa_pick(path):
+    return path if path and Path(path).exists() else None
+
+
+def sa_use(path, what: str):
+    """Envoie la sortie dans le Montage : musique du projet ou voix off."""
+    if not path or not Path(path).exists():
+        raise gr.Error(_("Crée ou choisis d'abord un fichier audio."))
+    gr.Info(_("✅ Utilisé comme musique du projet (onglet Montage → Audio).") if what == "music"
+            else _("✅ Utilisé comme voix off du projet (onglet Montage → Audio)."))
+    return path
+
+
+def studio_header() -> str:
+    bars = "".join(f"<span style='animation-delay:-{k * 0.17:.2f}s'></span>" for k in range(9))
+    title = _("Studio audio")
+    sub = _("Enchaîne tes musiques, superpose voix et ambiances, transforme ta voix. Chaque outil range ses "
+            "fichiers dans son propre dossier.")
+    return (f"<div id='sa-entete'><div class='eq' aria-hidden='true'>{bars}</div>"
+            f"<div><h2>{title}</h2><p>{sub}</p></div></div>")
+
+
+def sa_slot_label(n: int) -> str:
+    return _("Morceau {n}", n=n)
+
+
+def build_studio_audio(L) -> None:
+    """Onglet « Studio audio » (fond noir, accents cyan et violet : CSS #studio-audio)."""
+    gr.HTML(studio_header())
+    with gr.Tabs():
+        # ---------------------------------------------------------------- enchaîner
+        with gr.Tab("🔗 " + _("Enchaîner"), id="sa-concat"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Morceaux", "2 à 4, joués dans l'ordre")
+                    cc_slots = []
+                    for n in range(1, audiostudio.MAX_TRACKS + 1):
+                        box = gr.Group() if n <= 2 else gr.Accordion(sa_slot_label(n) + " " + _("(facultatif)"),
+                                                                     open=False)
+                        with box:
+                            f = gr.Audio(label=sa_slot_label(n), type="filepath", sources=["upload"])
+                            with gr.Row():
+                                s = gr.Number(value=0, label=_("Début (s)"), precision=2, min_width=80)
+                                e = gr.Number(value=None, label=_("Fin (s)"), precision=2, min_width=80,
+                                              info=_("0 = jusqu'au bout"))
+                                v = gr.Slider(0, 2, value=1, step=0.05, label=_("Volume"))
+                        cc_slots += [f, s, e, v]
+                with gr.Column(scale=2):
+                    section("2", "Transition")
+                    cc_xf = gr.Slider(0, 12, value=3, step=0.5, label=_("Durée du fondu enchaîné (s)"),
+                                      info=_("0 = coupe sèche"))
+                    cc_curve = gr.Radio(opts(list(audiostudio.CURVES)), value="équilibré", label=_("Courbe du fondu"))
+                    cc_beat = gr.Checkbox(value=True, label="🥁 " + _("Transition sur le rythme"),
+                                          info=_("le fondu commence sur un temps, dure des mesures entières, et le "
+                                                 "morceau suivant démarre sur son temps"))
+                    section("3", "Finition")
+                    with gr.Row():
+                        cc_fi = gr.Number(value=0, label=_("Fondu d'entrée (s)"), precision=1, min_width=80)
+                        cc_fo = gr.Number(value=2, label=_("Fondu de sortie (s)"), precision=1, min_width=80)
+                    with gr.Row():
+                        cc_norm = gr.Checkbox(value=True, label=_("Volume normalisé (-14 LUFS)"))
+                        cc_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
+                    cc_go = gr.Button("🔗 " + _("Enchaîner les morceaux"), variant="primary", elem_classes="sa-go")
+                    cc_out = gr.Audio(label=_("Résultat"), type="filepath", interactive=False)
+                    cc_wave = gr.Image(label=_("Forme d'onde"), interactive=False, height=110, buttons=[],
+                                       elem_classes="sa-onde")
+                    cc_log = gr.Textbox(label=_("Journal"), lines=4, elem_classes="mono")
+                    cc_path = gr.State("")
+                    with gr.Row():
+                        cc_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
+                        cc_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
+                    gr.Markdown(sa_folder_md("enchaînement"), elem_classes="sr-note")
+
+        # ---------------------------------------------------------------- superposer
+        with gr.Tab("🎛 " + _("Superposer"), id="sa-mix"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Pistes", "jouées en même temps")
+                    mx_slots = []
+                    roles = ["musique", "voix", "ambiance", "musique"]
+                    for n in range(1, audiostudio.MAX_TRACKS + 1):
+                        box = gr.Group() if n <= 2 else gr.Accordion(_("Piste {n}", n=n) + " " + _("(facultatif)"),
+                                                                     open=False)
+                        with box:
+                            f = gr.Audio(label=_("Piste {n}", n=n), type="filepath", sources=["upload"])
+                            with gr.Row():
+                                r = gr.Dropdown(opts(audiostudio.ROLES), value=roles[n - 1], label=_("Rôle"),
+                                                min_width=110)
+                                v = gr.Slider(0, 2, value=1 if roles[n - 1] == "voix" else 0.6, step=0.05,
+                                              label=_("Volume"))
+                                o = gr.Number(value=0, label=_("Commence à (s)"), precision=2, min_width=80)
+                                lp = gr.Checkbox(value=roles[n - 1] == "musique", label=_("En boucle"),
+                                                 min_width=90)
+                        mx_slots += [f, r, v, o, lp]
+                with gr.Column(scale=2):
+                    section("2", "Mélange")
+                    mx_len = gr.Radio(opts(audiostudio.LENGTHS), value="la plus longue", label=_("Durée du résultat"),
+                                      info=_("« la voix » : le mélange s'arrête quand la voix finit"))
+                    mx_duck = gr.Checkbox(value=True, label="🎚 " + _("Ducking : la musique baisse quand la voix parle"))
+                    section("3", "Finition")
+                    with gr.Row():
+                        mx_fi = gr.Number(value=0, label=_("Fondu d'entrée (s)"), precision=1, min_width=80)
+                        mx_fo = gr.Number(value=2, label=_("Fondu de sortie (s)"), precision=1, min_width=80)
+                    with gr.Row():
+                        mx_norm = gr.Checkbox(value=True, label=_("Volume normalisé (-14 LUFS)"))
+                        mx_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
+                    mx_go = gr.Button("🎛 " + _("Superposer les pistes"), variant="primary", elem_classes="sa-go")
+                    mx_out = gr.Audio(label=_("Résultat"), type="filepath", interactive=False)
+                    mx_wave = gr.Image(label=_("Forme d'onde"), interactive=False, height=110, buttons=[],
+                                       elem_classes="sa-onde")
+                    mx_log = gr.Textbox(label=_("Journal"), lines=4, elem_classes="mono")
+                    mx_path = gr.State("")
+                    with gr.Row():
+                        mx_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
+                        mx_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
+                    gr.Markdown(sa_folder_md("superposition"), elem_classes="sr-note")
+
+        # ---------------------------------------------------------------- effets micro et mixage
+        with gr.Tab("🎙 " + _("Effets micro et mixage"), id="sa-mic"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Ta voix", "enregistre-la ici ou importe un fichier")
+                    mc_in = gr.Audio(label=_("Micro ou fichier"), type="filepath", sources=["microphone", "upload"])
+                    section("2", "Effet de voix")
+                    mc_preset = gr.Radio(opts(list(audiostudio.MIC_PRESETS)), value="voix studio",
+                                         label=_("Préréglage"), elem_classes="sa-presets")
+                    section("3", "Console de mixage")
+                    with gr.Row():
+                        mc_low = gr.Slider(-12, 12, value=0, step=1, label=_("Graves (dB)"))
+                        mc_mid = gr.Slider(-12, 12, value=0, step=1, label=_("Médiums (dB)"))
+                        mc_high = gr.Slider(-12, 12, value=0, step=1, label=_("Aigus (dB)"))
+                    with gr.Row():
+                        mc_comp = gr.Slider(0, 1, value=0, step=0.05, label=_("Compresseur"),
+                                            info=_("égalise le volume : les passages faibles remontent"))
+                        mc_gain = gr.Slider(-12, 12, value=0, step=0.5, label=_("Gain (dB)"))
+                    with gr.Row():
+                        mc_noise = gr.Dropdown(opts(denoise.LEVELS), value="aucune",
+                                               label="🔇 " + _("Réduction du bruit"))
+                        mc_speed = gr.Slider(0.5, 2, value=1, step=0.05, label=_("Vitesse"),
+                                             info=_("sans changer la hauteur de la voix"))
+                    mc_reset = gr.Button("↺ " + _("Remettre la console à zéro"), size="sm")
+                with gr.Column(scale=2):
+                    section("4", "Résultat")
+                    with gr.Row():
+                        mc_norm = gr.Checkbox(value=True, label=_("Volume normalisé (-14 LUFS)"))
+                        mc_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
+                    mc_go = gr.Button("🎙 " + _("Appliquer les effets"), variant="primary", elem_classes="sa-go")
+                    mc_out = gr.Audio(label=_("Résultat"), type="filepath", interactive=False)
+                    mc_wave = gr.Image(label=_("Forme d'onde"), interactive=False, height=110, buttons=[],
+                                       elem_classes="sa-onde")
+                    mc_log = gr.Textbox(label=_("Journal"), lines=3, elem_classes="mono")
+                    mc_path = gr.State("")
+                    with gr.Row():
+                        mc_voice = gr.Button("🗣 " + _("Utiliser comme voix off du projet"), size="sm")
+                        mc_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
+                    gr.Markdown(sa_folder_md("effets micro"), elem_classes="sr-note")
+
+        # ---------------------------------------------------------------- sorties
+        with gr.Tab("🗂 " + _("Sorties"), id="sa-out") as out_tab:
+            gr.Markdown(_("Chaque outil a son dossier : retrouve, écoute et réutilise tes fichiers."))
+            out_widgets = {}
+            with gr.Row(equal_height=False):
+                for kind, icon in zip(SA_KIND_LABELS, ("🔗", "🎛", "🎙")):
+                    with gr.Column(min_width=280):
+                        gr.Markdown(f"### {icon} {_(kind).capitalize()}")
+                        files = audiostudio.recent(kind)
+                        dd = gr.Dropdown(choices=[(p.name, str(p)) for p in files],
+                                         value=str(files[0]) if files else None, label=_("Fichiers"))
+                        info = gr.Markdown(sa_count_md(kind, len(files)), elem_classes="sr-note")
+                        player = gr.Audio(type="filepath", interactive=False, show_label=False)
+                        with gr.Row():
+                            refresh = gr.Button("🔄 " + _("Actualiser"), size="sm")
+                            folder = gr.Button("📂 " + _("Ouvrir"), size="sm")
+                        out_widgets[kind] = (dd, info, player, refresh, folder)
+
+    # ------------------------------------------------------------------ événements
+    music_field, voice_field = FIELDS.get("music.path"), FIELDS.get("voiceover.path")
+    for kind, go, fn, inputs, out, wave, log, path, folder_btn in (
+            ("enchaînement", cc_go, sa_concat, cc_slots + [cc_xf, cc_curve, cc_beat, cc_fi, cc_fo, cc_norm, cc_fmt],
+             cc_out, cc_wave, cc_log, cc_path, cc_dir),
+            ("superposition", mx_go, sa_mix, mx_slots + [mx_len, mx_duck, mx_fi, mx_fo, mx_norm, mx_fmt],
+             mx_out, mx_wave, mx_log, mx_path, mx_dir),
+            ("effets micro", mc_go, sa_mic, [mc_in, mc_preset, mc_low, mc_mid, mc_high, mc_comp, mc_noise, mc_gain,
+                                             mc_speed, mc_norm, mc_fmt], mc_out, mc_wave, mc_log, mc_path, mc_dir)):
+        dd, info, *_rest = out_widgets[kind]
+        go.click(L(fn), inputs, [out, wave, log, path]) \
+            .success(L(functools.partial(sa_list, kind)), path, [dd, info])
+        folder_btn.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS[kind]), None, None)
+    mc_reset.click(sa_reset_mixer, None, [mc_preset, mc_low, mc_mid, mc_high, mc_comp, mc_noise, mc_gain, mc_speed])
+    for kind, (dd, info, player, refresh, folder) in out_widgets.items():
+        dd.change(sa_pick, dd, [player])
+        refresh.click(L(functools.partial(sa_list, kind)), None, [dd, info])
+        out_tab.select(L(functools.partial(sa_list, kind)), None, [dd, info])    # liste à jour à chaque ouverture
+        folder.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS[kind]), None, None)
+    if music_field is not None:
+        for btn, path in ((cc_music, cc_path), (mx_music, mx_path)):
+            btn.click(L(functools.partial(sa_use, what="music")), path, music_field)
+    if voice_field is not None:
+        mc_voice.click(L(functools.partial(sa_use, what="voice")), mc_path, voice_field)
 
 
 def sr_share(path):
@@ -2162,6 +2681,43 @@ def _build_ui(lang: str) -> gr.Blocks:
                                 with gr.Row():
                                     ov_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
                                     ov_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                            with gr.Tab("😎 " + _("Sticker")):
+                                gr.Markdown(_("Clique sur un sticker (ou choisis un emoji), règle son animation puis "
+                                              "« Ajouter le sticker ». Il rejoint le tableau des incrustations, où tu "
+                                              "peux encore le modifier."))
+                                st_lib = [p for p, _l in stickers.library()]
+                                st_gallery = gr.Gallery(value=stickers.library(), columns=8, height=210,
+                                                        allow_preview=False, object_fit="contain", show_label=False,
+                                                        buttons=[], interactive=False)
+                                with gr.Row(equal_height=True):
+                                    st_emoji = gr.Dropdown(stickers.POPULAR_EMOJI, value="🔥", allow_custom_value=True,
+                                                           label=_("Emoji"), scale=2,
+                                                           info=_("ou colle le tien (Windows + point)"))
+                                    st_emoji_btn = gr.Button(_("Utiliser cet emoji"), size="sm", scale=1)
+                                    st_upload = gr.UploadButton("📂 " + _("Importer un sticker"), size="sm", scale=1,
+                                                                file_types=STICKER_EXT, type="filepath")
+                                st_path = gr.State("")
+                                with gr.Row(equal_height=True):
+                                    st_preview = gr.Image(label=_("Sticker choisi"), height=110, interactive=False,
+                                                          type="filepath", scale=1, buttons=[])
+                                    with gr.Column(scale=3):
+                                        st_info = gr.Markdown(_("PNG, GIF, WebP animé ou WebM transparent : ton "
+                                                                "propre sticker passe par « Importer un sticker »."))
+                                        st_anim = gr.Dropdown(opts(layers.ANIMATIONS), value="pulsation",
+                                                              label=_("Animation"),
+                                                              info=_("pulsation, rebond et balancement bougent "
+                                                                     "tant que le sticker est à l'écran"))
+                                with gr.Row():
+                                    st_start = gr.Number(value=0, label=_("Apparaît à (s)"), precision=2, min_width=90)
+                                    st_end = gr.Number(value=None, label=_("Disparaît à (s)"), precision=2,
+                                                       min_width=90)
+                                    st_width = gr.Slider(5, 100, value=25, step=1, label=_("Largeur (%)"))
+                                with gr.Row():
+                                    st_pos = gr.Dropdown(opts(layers.POSITIONS), value="haut droite",
+                                                         label=_("Position rapide"), scale=2)
+                                    st_x = gr.Slider(0, 100, value=78, step=1, label=_("Centre X (%)"))
+                                    st_y = gr.Slider(0, 100, value=12, step=1, label=_("Centre Y (%)"))
+                                st_add = gr.Button(_("Ajouter le sticker"), variant="primary", size="sm")
                             with gr.Tab("✏️ " + _("Texte animé")):
                                 with gr.Row():
                                     tx_text = gr.Textbox(label=_("Texte"), placeholder=_("Abonne-toi !"), scale=3)
@@ -2192,9 +2748,83 @@ def _build_ui(lang: str) -> gr.Blocks:
                                 with gr.Row():
                                     tx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
                                     tx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                    with gr.Group():
+                        section("5", "Effets spéciaux", "secousse, zoom, flash, filtres")
+                        gr.Markdown(_("Sur un passage de la vidéo finale, sous les calques : stickers, textes et "
+                                      "sous-titres restent nets par-dessus. « Fin » vide ou 0 = jusqu'à la fin."))
+                        with gr.Row():
+                            fx_type = gr.Dropdown(opts(effects.EFFECTS), value="zoom punch", label=_("Effet"),
+                                                  scale=2, info=_("secousse, zoom et flash : moments forts · "
+                                                                  "filtres : ambiance"))
+                            fx_start = gr.Number(value=0, label=_("Début (s)"), precision=2, min_width=90)
+                            fx_end = gr.Number(value=1, label=_("Fin (s)"), precision=2, min_width=90)
+                            fx_int = gr.Slider(0.1, 1, value=effects.DEFAULT_INTENSITY, step=0.05,
+                                               label=_("Intensité"))
+                        fx_add = gr.Button(_("Ajouter l'effet"), variant="primary", size="sm")
+                        fx_names = TABLES["effects"][0]
+                        fx_table = reg("effects", gr.Dataframe(
+                            value=table_df("effects", []), headers=[_(c) for c in fx_names], interactive=True,
+                            wrap=True, column_count=(len(fx_names), "fixed"),
+                            column_widths=["40%", "20%", "20%", "20%"],
+                            datatype=["str", "number", "number", "number"]))
+                        with gr.Row():
+                            fx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                            fx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                    with gr.Group():
+                        section("6", "Rythme et effets sonores", "le montage suit la musique")
+                        with gr.Row(equal_height=True):
+                            bt_analyze = gr.Button("🥁 " + _("Analyser le rythme de la musique"), size="sm", scale=1)
+                            bt_info = gr.Markdown(_("La musique est celle des réglages Audio (fichier ou générée)."))
+                        with gr.Row():
+                            reg("beat_sync.effect", gr.Dropdown(opts(rhythm.BEAT_EFFECTS), value="aucun",
+                                                                label=_("Effet sur les temps"), scale=2))
+                            reg("beat_sync.every", gr.Dropdown([(_(lb), v) for lb, v in EVERY_CHOICES], value=2,
+                                                               label=_("Fréquence"), scale=2))
+                            reg("beat_sync.intensity", gr.Slider(0.1, 1, value=0.5, step=0.05,
+                                                                 label=_("Intensité")))
+                        reg("beat_sync.images", gr.Checkbox(value=False, label=_(
+                            "Images fixes calées sur le rythme (chaque coupe tombe sur un temps)")))
+                        with gr.Row():
+                            reg("on_cuts.effect", gr.Dropdown(opts(rhythm.CUT_EFFECTS), value="aucun", scale=2,
+                                                              label=_("À chaque coupe : effet"),
+                                                              info=_("zoom alterné = un plan sur deux resserré "
+                                                                     "(jump cut)")))
+                            reg("on_cuts.sound", gr.Dropdown(opts(rhythm.SOUND_CHOICES), value="aucun", scale=2,
+                                                             label=_("À chaque coupe : son")))
+                        with gr.Row():
+                            reg("on_cuts.intensity", gr.Slider(0.1, 1, value=0.5, step=0.05,
+                                                               label=_("Intensité de l'effet")))
+                            reg("on_cuts.volume", gr.Slider(0, 2, value=0.8, step=0.05, label=_("Volume du son")))
+                        gr.Markdown("**" + _("Effet sonore à un moment précis") + "**")
+                        sx_path = gr.State(str(sfx.sound_path("whoosh")))
+                        with gr.Row(equal_height=True):
+                            sx_sound = gr.Dropdown(opts(list(sfx.SOUNDS)), value="whoosh", label=_("Son"), scale=2)
+                            sx_play = gr.Audio(value=str(sfx.sound_path("whoosh")), label=_("Écouter"),
+                                               type="filepath", interactive=False, scale=3)
+                            sx_upload = gr.UploadButton("📂 " + _("Importer un son"), size="sm", scale=1,
+                                                        file_types=sorted(ff.AUDIO_EXT), type="filepath")
+                        with gr.Row():
+                            sx_start = gr.Number(value=0, label=_("Au moment (s)"), precision=2, min_width=90)
+                            sx_vol = gr.Slider(0, 2, value=0.8, step=0.05, label=_("Volume"))
+                        sx_add = gr.Button(_("Ajouter le son"), variant="primary", size="sm")
+                        sx_names = TABLES["sfx"][0]
+                        sx_table = reg("sfx", gr.Dataframe(
+                            value=table_df("sfx", []), headers=[_(c) for c in sx_names], interactive=True,
+                            wrap=True, column_count=(len(sx_names), "fixed"), column_widths=["60%", "20%", "20%"],
+                            datatype=["str", "number", "number"]))
+                        with gr.Row():
+                            sx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                            sx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
 
                 # ---------------- colonne droite : réglages
                 with gr.Column(scale=2):
+                    with gr.Accordion("⚡ " + _("Mode viral (en un clic)"), open=True):
+                        gr.Markdown(_("Règle tout le projet façon Short viral. Ensuite, chaque réglage reste "
+                                      "modifiable à la main."))
+                        vr_hook = gr.Textbox(label=_("Accroche (2 premières secondes)"),
+                                             placeholder=_("Attends la fin… 😱"))
+                        vr_opts = gr.CheckboxGroup(opts(VIRAL_OPTIONS), value=list(VIRAL_OPTIONS), label=_("Inclure"))
+                        vr_btn = gr.Button("⚡ " + _("Appliquer le mode viral"), variant="primary")
                     reg("name", gr.Textbox(label=_("Nom du projet"), value=DEF["name"]))
                     intro_st = reg("intro", gr.State(DEF["intro"]))
                     outro_st = reg("outro", gr.State(DEF["outro"]))
@@ -2354,6 +2984,9 @@ def _build_ui(lang: str) -> gr.Blocks:
                     load_tpl_btn = gr.Button(_("Appliquer ce modèle aux réglages"))
 
         # ------------------------------------------------------------- scènes animées
+        with gr.Tab("🎚️ " + _("Studio audio"), elem_id="studio-audio"):
+            build_studio_audio(L)
+
         with gr.Tab(_("Scènes animées")):
             gr.Markdown(_("Des scènes animées prêtes à l'emploi : remplis les textes, regarde l'aperçu, crée la vidéo "
                           "puis ajoute-la à la timeline. Mets un mot entre *étoiles* pour le colorer.")
@@ -2982,6 +3615,32 @@ def _build_ui(lang: str) -> gr.Blocks:
         tx_drop.click(L(functools.partial(drop_last_layer, "texts")), tx_table, tx_table)
         ov_clear.click(L(lambda: table_df("overlays", [])), None, ov_table)
         tx_clear.click(L(lambda: table_df("texts", [])), None, tx_table)
+
+        def st_pick(evt: gr.SelectData):   # sans L() : Gradio doit voir l'annotation SelectData
+            token = LANG.set(lang)
+            try:
+                return sticker_choice(st_lib[evt.index])
+            finally:
+                LANG.reset(token)
+
+        st_choice = [st_path, st_preview, st_info]
+        st_gallery.select(st_pick, None, st_choice)
+        st_emoji_btn.click(L(pick_emoji), st_emoji, st_choice)
+        st_upload.upload(L(import_sticker), st_upload, st_choice)
+        st_pos.change(layer_position, st_pos, [st_x, st_y])
+        st_add.click(L(add_sticker), [ov_table, st_path, st_start, st_end, st_x, st_y, st_width, st_anim],
+                     ov_table).success(lambda s: num(s, 0), st_start, preview_t) \
+            .then(L(style_preview_at), [timeline, preview_t] + vals, style_img)
+        sx_sound.change(L(choose_sound), sx_sound, [sx_path, sx_play])
+        sx_upload.upload(L(import_sound), sx_upload, [sx_path, sx_play])
+        sx_add.click(L(add_sound), [sx_table, sx_path, sx_start, sx_vol], sx_table)
+        sx_drop.click(L(functools.partial(drop_last_layer, "sfx")), sx_table, sx_table)
+        sx_clear.click(L(lambda: table_df("sfx", [])), None, sx_table)
+        bt_analyze.click(L(analyze_rhythm), [FIELDS["music.path"], FIELDS["music.auto"]], bt_info)
+        vr_btn.click(L(apply_viral), [timeline, vr_hook, vr_opts] + vals, vals)
+        fx_add.click(L(add_effect), [fx_table, fx_type, fx_start, fx_end, fx_int], fx_table)
+        fx_drop.click(L(functools.partial(drop_last_layer, "effects")), fx_table, fx_table)
+        fx_clear.click(L(lambda: table_df("effects", [])), None, fx_table)
         prev_btn.click(L(render_preview), [timeline] + vals, [out_video, out_files, out_log])
         final_btn.click(L(render_final), [timeline] + vals, [out_video, out_files, out_log])
 

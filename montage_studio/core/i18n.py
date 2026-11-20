@@ -1255,6 +1255,398 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("animation", "animation", "animazione", "animación"),
     ("texte", "text", "testo", "texto"),
     ("taille", "size", "dimensione", "tamaño"),
+    ("effet", "effect", "effetto", "efecto"),
+    ("intensité", "intensity", "intensità", "intensidad"),
+
+    # ---- stickers
+    ("pulsation", "pulse", "pulsazione", "pulsación"),
+    ("rebond", "bounce", "rimbalzo", "rebote"),
+    ("balancement", "swing", "oscillazione", "balanceo"),
+    ("Sticker", "Sticker", "Sticker", "Sticker"),
+    ("Clique sur un sticker (ou choisis un emoji), règle son animation puis « Ajouter le sticker ». Il rejoint le "
+     "tableau des incrustations, où tu peux encore le modifier.",
+     "Click a sticker (or pick an emoji), set its animation, then “Add sticker”. It joins the overlay table, where "
+     "you can still edit it.",
+     "Clicca su uno sticker (o scegli un'emoji), regola l'animazione e poi « Aggiungi lo sticker ». Finisce nella "
+     "tabella delle sovrapposizioni, dove puoi ancora modificarlo.",
+     "Haz clic en un sticker (o elige un emoji), ajusta su animación y luego «Añadir el sticker». Pasa a la tabla "
+     "de superposiciones, donde aún puedes modificarlo."),
+    ("Emoji", "Emoji", "Emoji", "Emoji"),
+    ("ou colle le tien (Windows + point)", "or paste your own (Windows + period)", "o incolla la tua (Windows + punto)",
+     "o pega el tuyo (Windows + punto)"),
+    ("Utiliser cet emoji", "Use this emoji", "Usa questa emoji", "Usar este emoji"),
+    ("Importer un sticker", "Import a sticker", "Importa uno sticker", "Importar un sticker"),
+    ("Sticker choisi", "Chosen sticker", "Sticker scelto", "Sticker elegido"),
+    ("Sticker choisi : {name}", "Chosen sticker: {name}", "Sticker scelto: {name}", "Sticker elegido: {name}"),
+    ("PNG, GIF, WebP animé ou WebM transparent : ton propre sticker passe par « Importer un sticker ».",
+     "PNG, GIF, animated WebP or transparent WebM: add your own sticker with “Import a sticker”.",
+     "PNG, GIF, WebP animato o WebM trasparente: il tuo sticker passa da « Importa uno sticker ».",
+     "PNG, GIF, WebP animado o WebM transparente: tu propio sticker se añade con «Importar un sticker»."),
+    ("Animation", "Animation", "Animazione", "Animación"),
+    ("pulsation, rebond et balancement bougent tant que le sticker est à l'écran",
+     "pulse, bounce and swing keep moving while the sticker is on screen",
+     "pulsazione, rimbalzo e oscillazione si muovono finché lo sticker è sullo schermo",
+     "pulsación, rebote y balanceo se mueven mientras el sticker está en pantalla"),
+    ("Ajouter le sticker", "Add sticker", "Aggiungi lo sticker", "Añadir el sticker"),
+    ("Un sticker doit être une image (PNG, GIF, WebP) ou une vidéo transparente (WebM).",
+     "A sticker must be an image (PNG, GIF, WebP) or a transparent video (WebM).",
+     "Uno sticker deve essere un'immagine (PNG, GIF, WebP) o un video trasparente (WebM).",
+     "Un sticker debe ser una imagen (PNG, GIF, WebP) o un vídeo transparente (WebM)."),
+    ("⚠ cette vidéo n'est pas transparente : elle s'affichera comme une carte.",
+     "⚠ this video is not transparent: it will be shown as a card.",
+     "⚠ questo video non è trasparente: verrà mostrato come una scheda.",
+     "⚠ este vídeo no es transparente: se mostrará como una tarjeta."),
+    ("Choisis un fichier.", "Choose a file.", "Scegli un file.", "Elige un archivo."),
+    ("Clique d'abord sur un sticker (ou choisis un emoji).", "First click a sticker (or pick an emoji).",
+     "Prima clicca su uno sticker (o scegli un'emoji).", "Primero haz clic en un sticker (o elige un emoji)."),
+    ("Choisis ou colle un emoji (un seul).", "Pick or paste one emoji.", "Scegli o incolla un'emoji (una sola).",
+     "Elige o pega un emoji (solo uno)."),
+    ("Exemple : 🔥 😂 👀 — copie-le depuis le clavier emoji (Windows + point).",
+     "Example: 🔥 😂 👀 — copy it from the emoji keyboard (Windows + period).",
+     "Esempio: 🔥 😂 👀 — copiala dalla tastiera emoji (Windows + punto).",
+     "Ejemplo: 🔥 😂 👀 — cópialo desde el teclado de emojis (Windows + punto)."),
+    ("Aucune police d'emoji en couleur sur cet ordinateur.", "No color emoji font on this computer.",
+     "Nessun font di emoji a colori su questo computer.", "No hay ninguna fuente de emojis en color en este ordenador."),
+    ("Importe plutôt une image PNG transparente comme sticker.", "Import a transparent PNG image as a sticker instead.",
+     "Importa invece un'immagine PNG trasparente come sticker.",
+     "Importa en su lugar una imagen PNG transparente como sticker."),
+    ("Cet emoji n'existe pas dans la police du système.", "This emoji is not in the system font.",
+     "Questa emoji non esiste nel font di sistema.", "Este emoji no existe en la fuente del sistema."),
+    ("Essaie un autre emoji.", "Try another emoji.", "Prova un'altra emoji.", "Prueba otro emoji."),
+    # stickers intégrés (noms affichés et textes dessinés)
+    ("bouton S'abonner", "Subscribe button", "pulsante Iscriviti", "botón Suscribirse"),
+    ("cœur", "heart", "cuore", "corazón"),
+    ("étoile", "star", "stella", "estrella"),
+    ("flèche droite", "right arrow", "freccia a destra", "flecha derecha"),
+    ("flèche gauche", "left arrow", "freccia a sinistra", "flecha izquierda"),
+    ("flèche haut", "up arrow", "freccia in alto", "flecha arriba"),
+    ("flèche bas", "down arrow", "freccia in basso", "flecha abajo"),
+    ("cercle rouge", "red circle", "cerchio rosso", "círculo rojo"),
+    ("éclair", "lightning", "fulmine", "rayo"),
+    ("coche", "check mark", "spunta", "marca de verificación"),
+    ("croix", "cross", "croce", "cruz"),
+    ("badge Nouveau", "New badge", "badge Nuovo", "insignia Nuevo"),
+    ("Nouveau", "New", "Nuovo", "Nuevo"),
+    ("WOW !", "WOW!", "WOW!", "¡WOW!"),
+
+    # ---- effets spéciaux
+    ("Effets spéciaux", "Special effects", "Effetti speciali", "Efectos especiales"),
+    ("secousse, zoom, flash, filtres", "shake, zoom, flash, filters", "scossa, zoom, flash, filtri",
+     "sacudida, zoom, flash, filtros"),
+    ("Sur un passage de la vidéo finale, sous les calques : stickers, textes et sous-titres restent nets par-dessus. "
+     "« Fin » vide ou 0 = jusqu'à la fin.",
+     "On a part of the final video, below the layers: stickers, text and subtitles stay sharp on top. "
+     "Empty or 0 “End” = until the end.",
+     "Su un passaggio del video finale, sotto i livelli: sticker, testi e sottotitoli restano nitidi sopra. "
+     "« Fine » vuoto o 0 = fino alla fine.",
+     "En un tramo del vídeo final, debajo de las capas: stickers, textos y subtítulos quedan nítidos encima. "
+     "«Fin» vacío o 0 = hasta el final."),
+    ("Effet", "Effect", "Effetto", "Efecto"),
+    ("secousse, zoom et flash : moments forts · filtres : ambiance",
+     "shake, zoom and flash: key moments · filters: mood",
+     "scossa, zoom e flash: momenti forti · filtri: atmosfera",
+     "sacudida, zoom y flash: momentos clave · filtros: ambiente"),
+    ("Début (s)", "Start (s)", "Inizio (s)", "Inicio (s)"),
+    ("Fin (s)", "End (s)", "Fine (s)", "Fin (s)"),
+    ("Intensité", "Intensity", "Intensità", "Intensidad"),
+    ("Ajouter l'effet", "Add effect", "Aggiungi l'effetto", "Añadir el efecto"),
+    ("secousse", "shake", "scossa", "sacudida"),
+    ("zoom punch", "punch zoom", "zoom punch", "zoom punch"),
+    ("zoom progressif", "slow zoom", "zoom progressivo", "zoom progresivo"),
+    ("flash blanc", "white flash", "flash bianco", "destello blanco"),
+    ("flash noir", "black flash", "flash nero", "destello negro"),
+    ("noir et blanc", "black and white", "bianco e nero", "blanco y negro"),
+    ("vintage", "vintage", "vintage", "vintage"),
+    ("couleurs vives", "vivid colors", "colori vivaci", "colores vivos"),
+    ("cinéma", "cinematic", "cinema", "cine"),
+    ("chaud", "warm", "caldo", "cálido"),
+    ("froid", "cool", "freddo", "frío"),
+    ("vignette", "vignette", "vignettatura", "viñeta"),
+    ("glitch", "glitch", "glitch", "glitch"),
+    ("négatif", "negative", "negativo", "negativo"),
+    ("Le début ne peut pas être négatif.", "The start cannot be negative.", "L'inizio non può essere negativo.",
+     "El inicio no puede ser negativo."),
+    ("Écris 0 ou plus dans « Début ».", "Enter 0 or more in “Start”.", "Scrivi 0 o più in « Inizio ».",
+     "Escribe 0 o más en «Inicio»."),
+    ("L'effet finirait ({e:g} s) avant de commencer ({s:g} s).",
+     "The effect would end ({e:g} s) before it starts ({s:g} s).",
+     "L'effetto finirebbe ({e:g} s) prima di iniziare ({s:g} s).",
+     "El efecto terminaría ({e:g} s) antes de empezar ({s:g} s)."),
+    ("Mets dans « Fin » une heure plus grande que « Début », ou 0 pour aller jusqu'à la fin.",
+     "Put a time greater than “Start” in “End”, or 0 to go until the end.",
+     "Metti in « Fine » un tempo più grande di « Inizio », oppure 0 per arrivare fino alla fine.",
+     "Pon en «Fin» un tiempo mayor que «Inicio», o 0 para llegar hasta el final."),
+    ("Effet ajouté : {name}, de {s} s à {e} s.", "Effect added: {name}, from {s} s to {e} s.",
+     "Effetto aggiunto: {name}, da {s} s a {e} s.", "Efecto añadido: {name}, de {s} s a {e} s."),
+    ("Effet ajouté : {name}, de {s} s jusqu'à la fin.", "Effect added: {name}, from {s} s until the end.",
+     "Effetto aggiunto: {name}, da {s} s fino alla fine.", "Efecto añadido: {name}, desde {s} s hasta el final."),
+    ("⚠ Effet ignoré (hors de la vidéo ou durée nulle) : {name}",
+     "⚠ Effect skipped (outside the video or zero duration): {name}",
+     "⚠ Effetto ignorato (fuori dal video o durata nulla): {name}",
+     "⚠ Efecto ignorado (fuera del vídeo o duración nula): {name}"),
+    ("✨ Effets spéciaux : {names}", "✨ Special effects: {names}", "✨ Effetti speciali: {names}",
+     "✨ Efectos especiales: {names}"),
+    ("zoom fixe", "fixed zoom", "zoom fisso", "zoom fijo"),
+
+    # ---- rythme et effets sonores
+    ("Rythme et effets sonores", "Rhythm and sound effects", "Ritmo ed effetti sonori", "Ritmo y efectos de sonido"),
+    ("le montage suit la musique", "the edit follows the music", "il montaggio segue la musica",
+     "el montaje sigue la música"),
+    ("Analyser le rythme de la musique", "Analyze the music's rhythm", "Analizza il ritmo della musica",
+     "Analizar el ritmo de la música"),
+    ("La musique est celle des réglages Audio (fichier ou générée).",
+     "The music is the one in the Audio settings (file or generated).",
+     "La musica è quella delle impostazioni Audio (file o generata).",
+     "La música es la de los ajustes de Audio (archivo o generada)."),
+    ("Effet sur les temps", "Effect on the beats", "Effetto sui battiti", "Efecto en los tiempos"),
+    ("Fréquence", "Frequency", "Frequenza", "Frecuencia"),
+    ("tous les temps", "every beat", "ogni battito", "cada tiempo"),
+    ("tous les 2 temps", "every 2 beats", "ogni 2 battiti", "cada 2 tiempos"),
+    ("tous les 4 temps (1 mesure)", "every 4 beats (1 bar)", "ogni 4 battiti (1 battuta)",
+     "cada 4 tiempos (1 compás)"),
+    ("tous les 8 temps", "every 8 beats", "ogni 8 battiti", "cada 8 tiempos"),
+    ("Images fixes calées sur le rythme (chaque coupe tombe sur un temps)",
+     "Still images synced to the rhythm (every cut lands on a beat)",
+     "Immagini fisse a tempo (ogni taglio cade su un battito)",
+     "Imágenes fijas al ritmo (cada corte cae en un tiempo)"),
+    ("À chaque coupe : effet", "On every cut: effect", "A ogni taglio: effetto", "En cada corte: efecto"),
+    ("zoom alterné = un plan sur deux resserré (jump cut)", "alternating zoom = every other shot tighter (jump cut)",
+     "zoom alternato = un'inquadratura su due più stretta (jump cut)",
+     "zoom alterno = un plano de cada dos más cerrado (jump cut)"),
+    ("À chaque coupe : son", "On every cut: sound", "A ogni taglio: suono", "En cada corte: sonido"),
+    ("Intensité de l'effet", "Effect intensity", "Intensità dell'effetto", "Intensidad del efecto"),
+    ("Volume du son", "Sound volume", "Volume del suono", "Volumen del sonido"),
+    ("Effet sonore à un moment précis", "Sound effect at a given moment", "Effetto sonoro in un momento preciso",
+     "Efecto de sonido en un momento preciso"),
+    ("Écouter", "Listen", "Ascolta", "Escuchar"),
+    ("Importer un son", "Import a sound", "Importa un suono", "Importar un sonido"),
+    ("Au moment (s)", "At (s)", "Al momento (s)", "En el momento (s)"),
+    ("Volume", "Volume", "Volume", "Volumen"),
+    ("Ajouter le son", "Add sound", "Aggiungi il suono", "Añadir el sonido"),
+    ("zoom alterné", "alternating zoom", "zoom alternato", "zoom alterno"),
+    ("swipe", "swipe", "swipe", "swipe"),
+    ("succès", "success", "successo", "éxito"),
+    ("clic", "click", "clic", "clic"),
+    ("bip censure", "censor beep", "bip censura", "pitido de censura"),
+    ("déclic photo", "camera shutter", "scatto foto", "obturador de foto"),
+    ("Un effet sonore doit être un fichier audio (MP3, WAV…).", "A sound effect must be an audio file (MP3, WAV…).",
+     "Un effetto sonoro deve essere un file audio (MP3, WAV…).",
+     "Un efecto de sonido debe ser un archivo de audio (MP3, WAV…)."),
+    ("Choisis d'abord un son.", "First choose a sound.", "Prima scegli un suono.", "Primero elige un sonido."),
+    ("Écris 0 ou plus dans « Au moment (s) ».", "Enter 0 or more in “At (s)”.", "Scrivi 0 o più in « Al momento (s) ».",
+     "Escribe 0 o más en «En el momento (s)»."),
+    ("Son ajouté à {s} s.", "Sound added at {s} s.", "Suono aggiunto a {s} s.", "Sonido añadido en {s} s."),
+    ("⚠ Aucun rythme net dans cette musique : les effets sur les temps ne seront pas ajoutés.",
+     "⚠ No clear rhythm in this music: no effects will be added on the beats.",
+     "⚠ Nessun ritmo netto in questa musica: gli effetti sui battiti non verranno aggiunti.",
+     "⚠ No hay un ritmo claro en esta música: no se añadirán efectos en los tiempos."),
+    ("🥁 ≈ {bpm:.0f} BPM · {n} temps sur {dur:.0f} s · un temps toutes les {p:.2f} s",
+     "🥁 ≈ {bpm:.0f} BPM · {n} beats in {dur:.0f} s · one beat every {p:.2f} s",
+     "🥁 ≈ {bpm:.0f} BPM · {n} battiti in {dur:.0f} s · un battito ogni {p:.2f} s",
+     "🥁 ≈ {bpm:.0f} BPM · {n} tiempos en {dur:.0f} s · un tiempo cada {p:.2f} s"),
+    ("🥁 Musique générée « {mood} » : {bpm} BPM exacts", "🥁 Generated music “{mood}”: exactly {bpm} BPM",
+     "🥁 Musica generata « {mood} »: {bpm} BPM esatti", "🥁 Música generada «{mood}»: {bpm} BPM exactos"),
+    ("Ajoute d'abord une musique (réglages Audio → Musique) ou choisis une musique générée.",
+     "First add music (Audio settings → Music) or choose generated music.",
+     "Prima aggiungi una musica (impostazioni Audio → Musica) o scegli una musica generata.",
+     "Primero añade una música (ajustes de Audio → Música) o elige una música generada."),
+    ("⚠ Rythme de la musique introuvable : {err}", "⚠ Could not find the music's rhythm: {err}",
+     "⚠ Ritmo della musica non trovato: {err}", "⚠ No se encontró el ritmo de la música: {err}"),
+    ("⚠ Images sur le rythme : ajoute une musique (fichier ou générée).",
+     "⚠ Images on the rhythm: add music (file or generated).",
+     "⚠ Immagini a tempo: aggiungi una musica (file o generata).",
+     "⚠ Imágenes al ritmo: añade una música (archivo o generada)."),
+    ("🥁 {n} images calées sur le rythme ({bpm:.0f} BPM)", "🥁 {n} images synced to the rhythm ({bpm:.0f} BPM)",
+     "🥁 {n} immagini a tempo ({bpm:.0f} BPM)", "🥁 {n} imágenes al ritmo ({bpm:.0f} BPM)"),
+    ("⚠ Effets sur le rythme : ajoute une musique (fichier ou générée).",
+     "⚠ Effects on the rhythm: add music (file or generated).",
+     "⚠ Effetti a tempo: aggiungi una musica (file o generata).",
+     "⚠ Efectos al ritmo: añade una música (archivo o generada)."),
+    ("🥁 Rythme : {bpm:.0f} BPM, {n} effets « {fx} » sur les temps",
+     "🥁 Rhythm: {bpm:.0f} BPM, {n} “{fx}” effects on the beats",
+     "🥁 Ritmo: {bpm:.0f} BPM, {n} effetti « {fx} » sui battiti",
+     "🥁 Ritmo: {bpm:.0f} BPM, {n} efectos «{fx}» en los tiempos"),
+    ("✂ {n} coupes : {fx} · {snd}", "✂ {n} cuts: {fx} · {snd}", "✂ {n} tagli: {fx} · {snd}",
+     "✂ {n} cortes: {fx} · {snd}"),
+    ("🔊 Effets sonores : {n}", "🔊 Sound effects: {n}", "🔊 Effetti sonori: {n}", "🔊 Efectos de sonido: {n}"),
+
+    # ---- studio audio
+    ("Studio audio", "Audio studio", "Studio audio", "Estudio de audio"),
+    ("Enchaîne tes musiques, superpose voix et ambiances, transforme ta voix. Chaque outil range ses fichiers dans "
+     "son propre dossier.",
+     "Chain your music, layer voices and ambiences, transform your voice. Each tool stores its files in its own "
+     "folder.",
+     "Concatena le tue musiche, sovrapponi voci e ambienti, trasforma la tua voce. Ogni strumento salva i suoi file "
+     "nella propria cartella.",
+     "Encadena tus músicas, superpón voces y ambientes, transforma tu voz. Cada herramienta guarda sus archivos en "
+     "su propia carpeta."),
+    ("enchaînement", "chain", "concatenazione", "encadenado"),
+    ("superposition", "layering", "sovrapposizione", "superposición"),
+    ("effets micro", "mic effects", "effetti microfono", "efectos de micro"),
+    ("Enchaînement", "Chaining", "Concatenazione", "Encadenado"),
+    ("Superposition", "Layering", "Sovrapposizione", "Superposición"),
+    ("Effets micro", "Mic effects", "Effetti microfono", "Efectos de micro"),
+    ("Enchaîner", "Chain", "Concatena", "Encadenar"),
+    ("Superposer", "Layer", "Sovrapponi", "Superponer"),
+    ("Effets micro et mixage", "Mic effects and mixing", "Effetti microfono e mixaggio", "Efectos de micro y mezcla"),
+    ("Sorties", "Outputs", "File creati", "Salidas"),
+    ("Morceaux", "Tracks", "Brani", "Pistas"),
+    ("2 à 4, joués dans l'ordre", "2 to 4, played in order", "da 2 a 4, suonati in ordine", "de 2 a 4, en orden"),
+    ("Morceau {n}", "Track {n}", "Brano {n}", "Pista {n}"),
+    ("0 = jusqu'au bout", "0 = to the end", "0 = fino alla fine", "0 = hasta el final"),
+    ("Durée du fondu enchaîné (s)", "Crossfade length (s)", "Durata della dissolvenza incrociata (s)",
+     "Duración del fundido cruzado (s)"),
+    ("0 = coupe sèche", "0 = hard cut", "0 = taglio netto", "0 = corte seco"),
+    ("Courbe du fondu", "Fade curve", "Curva della dissolvenza", "Curva del fundido"),
+    ("équilibré", "balanced", "bilanciata", "equilibrada"),
+    ("linéaire", "linear", "lineare", "lineal"),
+    ("rapide", "fast", "rapida", "rápida"),
+    ("Transition sur le rythme", "Beat-matched transition", "Transizione a tempo", "Transición al ritmo"),
+    ("le fondu commence sur un temps, dure des mesures entières, et le morceau suivant démarre sur son temps",
+     "the fade starts on a beat, lasts whole bars, and the next track starts on its own beat",
+     "la dissolvenza inizia su un battito, dura battute intere e il brano successivo parte sul suo battito",
+     "el fundido empieza en un tiempo, dura compases enteros y la pista siguiente arranca en su tiempo"),
+    ("Finition", "Finishing", "Rifinitura", "Acabado"),
+    ("Fondu d'entrée (s)", "Fade in (s)", "Dissolvenza in entrata (s)", "Fundido de entrada (s)"),
+    ("Fondu de sortie (s)", "Fade out (s)", "Dissolvenza in uscita (s)", "Fundido de salida (s)"),
+    ("Volume normalisé (-14 LUFS)", "Normalized volume (-14 LUFS)", "Volume normalizzato (-14 LUFS)",
+     "Volumen normalizado (-14 LUFS)"),
+    ("Enchaîner les morceaux", "Chain the tracks", "Concatena i brani", "Encadenar las pistas"),
+    ("Forme d'onde", "Waveform", "Forma d'onda", "Forma de onda"),
+    ("Utiliser comme musique du projet", "Use as project music", "Usa come musica del progetto",
+     "Usar como música del proyecto"),
+    ("Pistes", "Tracks", "Tracce", "Pistas"),
+    ("jouées en même temps", "played at the same time", "suonate insieme", "sonando a la vez"),
+    ("Piste {n}", "Track {n}", "Traccia {n}", "Pista {n}"),
+    ("Rôle", "Role", "Ruolo", "Función"),
+    ("musique", "music", "musica", "música"),
+    ("voix", "voice", "voce", "voz"),
+    ("ambiance", "ambience", "ambiente", "ambiente"),
+    ("Commence à (s)", "Starts at (s)", "Inizia a (s)", "Empieza en (s)"),
+    ("En boucle", "Loop", "In loop", "En bucle"),
+    ("Mélange", "Mix", "Mix", "Mezcla"),
+    ("Durée du résultat", "Result length", "Durata del risultato", "Duración del resultado"),
+    ("la voix", "the voice", "la voce", "la voz"),
+    ("« la voix » : le mélange s'arrête quand la voix finit", "“the voice”: the mix stops when the voice ends",
+     "« la voce »: il mix si ferma quando finisce la voce", "«la voz»: la mezcla se detiene cuando termina la voz"),
+    ("Ducking : la musique baisse quand la voix parle", "Ducking: the music dips when the voice speaks",
+     "Ducking: la musica si abbassa quando parla la voce", "Ducking: la música baja cuando habla la voz"),
+    ("Superposer les pistes", "Layer the tracks", "Sovrapponi le tracce", "Superponer las pistas"),
+    ("Ta voix", "Your voice", "La tua voce", "Tu voz"),
+    ("enregistre-la ici ou importe un fichier", "record it here or import a file", "registrala qui o importa un file",
+     "grábala aquí o importa un archivo"),
+    ("Micro ou fichier", "Microphone or file", "Microfono o file", "Micrófono o archivo"),
+    ("Effet de voix", "Voice effect", "Effetto voce", "Efecto de voz"),
+    ("Console de mixage", "Mixing console", "Mixer", "Mesa de mezclas"),
+    ("Graves (dB)", "Bass (dB)", "Bassi (dB)", "Graves (dB)"),
+    ("Médiums (dB)", "Mids (dB)", "Medi (dB)", "Medios (dB)"),
+    ("Aigus (dB)", "Treble (dB)", "Acuti (dB)", "Agudos (dB)"),
+    ("Compresseur", "Compressor", "Compressore", "Compresor"),
+    ("égalise le volume : les passages faibles remontent", "evens out the volume: quiet parts come up",
+     "uniforma il volume: i passaggi deboli salgono", "iguala el volumen: los pasajes suaves suben"),
+    ("Gain (dB)", "Gain (dB)", "Guadagno (dB)", "Ganancia (dB)"),
+    ("sans changer la hauteur de la voix", "without changing the pitch", "senza cambiare l'altezza della voce",
+     "sin cambiar el tono de la voz"),
+    ("Remettre la console à zéro", "Reset the console", "Azzera il mixer", "Reiniciar la mesa"),
+    ("Appliquer les effets", "Apply effects", "Applica gli effetti", "Aplicar los efectos"),
+    ("Utiliser comme voix off du projet", "Use as project voice-over", "Usa come voce fuori campo del progetto",
+     "Usar como voz en off del proyecto"),
+    ("Chaque outil a son dossier : retrouve, écoute et réutilise tes fichiers.",
+     "Each tool has its own folder: find, play and reuse your files.",
+     "Ogni strumento ha la sua cartella: ritrova, ascolta e riusa i tuoi file.",
+     "Cada herramienta tiene su carpeta: encuentra, escucha y reutiliza tus archivos."),
+    ("Fichiers", "Files", "File", "Archivos"),
+    ("Actualiser", "Refresh", "Aggiorna", "Actualizar"),
+    ("Ouvrir", "Open", "Apri", "Abrir"),
+    ("Sorties rangées dans", "Outputs saved in", "File salvati in", "Salidas guardadas en"),
+    ("Fichier créé", "File created", "File creato", "Archivo creado"),
+    ("{n} fichier(s) dans « {kind} »", "{n} file(s) in “{kind}”", "{n} file in « {kind} »",
+     "{n} archivo(s) en «{kind}»"),
+    ("Aucune sortie « {kind} » pour l'instant.", "No “{kind}” output yet.", "Ancora nessun file « {kind} ».",
+     "Todavía no hay salidas «{kind}»."),
+    ("Crée ou choisis d'abord un fichier audio.", "First create or choose an audio file.",
+     "Prima crea o scegli un file audio.", "Primero crea o elige un archivo de audio."),
+    ("✅ Utilisé comme musique du projet (onglet Montage → Audio).",
+     "✅ Used as project music (Editor tab → Audio).",
+     "✅ Usato come musica del progetto (scheda Montaggio → Audio).",
+     "✅ Usado como música del proyecto (pestaña Edición → Audio)."),
+    ("✅ Utilisé comme voix off du projet (onglet Montage → Audio).",
+     "✅ Used as project voice-over (Editor tab → Audio).",
+     "✅ Usato come voce fuori campo del progetto (scheda Montaggio → Audio).",
+     "✅ Usado como voz en off del proyecto (pestaña Edición → Audio)."),
+    ("voix studio", "studio voice", "voce da studio", "voz de estudio"),
+    ("radio", "radio", "radio", "radio"),
+    ("mégaphone", "megaphone", "megafono", "megáfono"),
+    ("robot", "robot", "robot", "robot"),
+    ("écho", "echo", "eco", "eco"),
+    ("grande salle", "large hall", "grande sala", "sala grande"),
+    ("voix grave", "deep voice", "voce grave", "voz grave"),
+    ("voix aiguë", "high voice", "voce acuta", "voz aguda"),
+    ("monstre", "monster", "mostro", "monstruo"),
+    ("chorale", "choir", "coro", "coro"),
+    ("alien", "alien", "alieno", "alienígena"),
+    ("Morceau trop court après la coupe : {name}", "Track too short after trimming: {name}",
+     "Brano troppo corto dopo il taglio: {name}", "Pista demasiado corta tras el recorte: {name}"),
+    ("⚠ Rythme introuvable ({err}) : fondu normal", "⚠ Rhythm not found ({err}): normal fade",
+     "⚠ Ritmo non trovato ({err}): dissolvenza normale", "⚠ Ritmo no encontrado ({err}): fundido normal"),
+    ("🥁 Transition {k} → {k2} : sur le temps ({bpm:.0f} BPM), fondu de {d:.2f} s",
+     "🥁 Transition {k} → {k2}: on the beat ({bpm:.0f} BPM), {d:.2f} s fade",
+     "🥁 Transizione {k} → {k2}: a tempo ({bpm:.0f} BPM), dissolvenza di {d:.2f} s",
+     "🥁 Transición {k} → {k2}: al ritmo ({bpm:.0f} BPM), fundido de {d:.2f} s"),
+    ("⚠ Transition {k} → {k2} : pas de rythme net, fondu normal",
+     "⚠ Transition {k} → {k2}: no clear rhythm, normal fade",
+     "⚠ Transizione {k} → {k2}: ritmo poco chiaro, dissolvenza normale",
+     "⚠ Transición {k} → {k2}: sin ritmo claro, fundido normal"),
+    ("Ajoute au moins 2 fichiers audio à enchaîner.", "Add at least 2 audio files to chain.",
+     "Aggiungi almeno 2 file audio da concatenare.", "Añade al menos 2 archivos de audio para encadenar."),
+    ("🔗 {n} morceaux enchaînés : {dur:.1f} s", "🔗 {n} tracks chained: {dur:.1f} s",
+     "🔗 {n} brani concatenati: {dur:.1f} s", "🔗 {n} pistas encadenadas: {dur:.1f} s"),
+    ("Ajoute au moins 2 fichiers audio à superposer.", "Add at least 2 audio files to layer.",
+     "Aggiungi almeno 2 file audio da sovrapporre.", "Añade al menos 2 archivos de audio para superponer."),
+    ("🎚 Ducking : la musique baisse quand la voix parle", "🎚 Ducking: the music dips when the voice speaks",
+     "🎚 Ducking: la musica si abbassa quando parla la voce", "🎚 Ducking: la música baja cuando habla la voz"),
+    ("🎛 {n} pistes superposées : {dur:.1f} s", "🎛 {n} tracks layered: {dur:.1f} s",
+     "🎛 {n} tracce sovrapposte: {dur:.1f} s", "🎛 {n} pistas superpuestas: {dur:.1f} s"),
+    ("Enregistre ta voix ou importe un fichier audio.", "Record your voice or import an audio file.",
+     "Registra la tua voce o importa un file audio.", "Graba tu voz o importa un archivo de audio."),
+    ("🎙 Effet « {preset} » appliqué : {dur:.1f} s", "🎙 “{preset}” effect applied: {dur:.1f} s",
+     "🎙 Effetto « {preset} » applicato: {dur:.1f} s", "🎙 Efecto «{preset}» aplicado: {dur:.1f} s"),
+
+    # ---- mode viral
+    ("Mode viral (en un clic)", "Viral mode (one click)", "Modalità virale (in un clic)", "Modo viral (en un clic)"),
+    ("Règle tout le projet façon Short viral. Ensuite, chaque réglage reste modifiable à la main.",
+     "Sets up the whole project like a viral Short. Every setting stays editable by hand afterwards.",
+     "Imposta tutto il progetto in stile Short virale. Poi ogni impostazione resta modificabile a mano.",
+     "Ajusta todo el proyecto al estilo Short viral. Después, cada ajuste sigue siendo editable a mano."),
+    ("Accroche (2 premières secondes)", "Hook (first 2 seconds)", "Gancio (primi 2 secondi)",
+     "Gancho (primeros 2 segundos)"),
+    ("Attends la fin… 😱", "Wait for the end… 😱", "Aspetta la fine… 😱", "Espera al final… 😱"),
+    ("Inclure", "Include", "Includi", "Incluir"),
+    ("Appliquer le mode viral", "Apply viral mode", "Applica la modalità virale", "Aplicar el modo viral"),
+    ("format vertical 9:16", "vertical 9:16 format", "formato verticale 9:16", "formato vertical 9:16"),
+    ("sous-titres karaoké", "karaoke subtitles", "sottotitoli karaoke", "subtítulos karaoke"),
+    ("couper les silences", "cut silences", "taglia i silenzi", "cortar los silencios"),
+    ("zoom alterné + whoosh", "alternating zoom + whoosh", "zoom alternato + whoosh", "zoom alterno + whoosh"),
+    ("musique énergique au rythme", "energetic music on the beat", "musica energica a tempo",
+     "música enérgica al ritmo"),
+    ("sticker S'abonner à la fin", "Subscribe sticker at the end", "sticker Iscriviti alla fine",
+     "sticker Suscribirse al final"),
+    ("format 9:16", "9:16 format", "formato 9:16", "formato 9:16"),
+    ("accroche animée", "animated hook", "gancio animato", "gancho animado"),
+    ("sous-titres : installe Whisper (pip install faster-whisper) ou écris le texte dans « Sous-titres → Texte »",
+     "subtitles: install Whisper (pip install faster-whisper) or write the text in “Subtitles → Text”",
+     "sottotitoli: installa Whisper (pip install faster-whisper) o scrivi il testo in « Sottotitoli → Testo »",
+     "subtítulos: instala Whisper (pip install faster-whisper) o escribe el texto en «Subtítulos → Texto»"),
+    ("silences coupés", "silences cut", "silenzi tagliati", "silencios cortados"),
+    ("zoom alterné + whoosh à chaque coupe", "alternating zoom + whoosh on every cut",
+     "zoom alternato + whoosh a ogni taglio", "zoom alterno + whoosh en cada corte"),
+    ("musique au rythme", "music on the beat", "musica a tempo", "música al ritmo"),
+    ("sticker S'abonner (3 dernières secondes)", "Subscribe sticker (last 3 seconds)",
+     "sticker Iscriviti (ultimi 3 secondi)", "sticker Suscribirse (últimos 3 segundos)"),
+    ("⚡ Mode viral appliqué : {done}.", "⚡ Viral mode applied: {done}.", "⚡ Modalità virale applicata: {done}.",
+     "⚡ Modo viral aplicado: {done}."),
+    ("Lance l'aperçu rapide pour voir le résultat.", "Run the quick preview to see the result.",
+     "Avvia l'anteprima rapida per vedere il risultato.", "Lanza la vista previa rápida para ver el resultado."),
 
     # ---- Screen Record (enregistrement d'écran)
     ("Enregistrer l'écran", "Screen Record", "Registra schermo", "Grabar pantalla"),
@@ -1835,9 +2227,38 @@ PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. 
   vidéos ont des coins arrondis ; la vidéo incrustée est muette et bouclée si elle est trop courte.
 - **Texte animé** : autant de textes que tu veux, chacun avec ses heures, sa position, sa taille, sa couleur et son
   entrée. Les tableaux restent modifiables (animation en toutes lettres, « fin » vide = jusqu'à la fin).
+- **Sticker** : clique sur un sticker de la bibliothèque (bouton S'abonner, cœur, flèches, WOW, coche…), choisis un
+  emoji en couleur ou importe le tien (PNG, GIF ou WebP animé, WebM transparent). Animations **pulsation**,
+  **rebond** et **balancement** : le sticker bouge tant qu'il est à l'écran. Il s'ajoute au tableau des incrustations.
+- **Effets spéciaux** (section 5) : sur un passage de la vidéo, **secousse**, **zoom punch** (zoom rapide sur un
+  moment fort), **zoom progressif**, **flash** blanc ou noir, **glitch** et filtres (noir et blanc, vintage, couleurs
+  vives, cinéma, chaud, froid, vignette, flou, négatif), avec une intensité de 0,1 à 1. Les stickers et les textes
+  restent nets par-dessus.
+- **Rythme et effets sonores** (section 6) : MSV trouve le tempo de la musique (BPM) et place un effet tous les 1, 2,
+  4 ou 8 temps ; les images fixes peuvent finir pile sur un temps. **À chaque coupe** : « zoom alterné » (un plan sur
+  deux resserré, style jump cut) ou un effet bref, et un son (whoosh, pop, ding, boom, montée…). Les 11 sons sont
+  fabriqués par MSV, libres de droits ; tu peux aussi en placer un à un moment précis ou importer le tien.
+- **Mode viral** (en haut à droite) : un clic règle tout façon Short : 9:16, accroche animée, sous-titres karaoké,
+  silences coupés, zoom alterné + whoosh, musique énergique au rythme, sticker S'abonner les 3 dernières secondes.
+  Dans le tableau des incrustations, un début négatif (-3) compte depuis la fin de la vidéo.
 - **Mouvement des photos** (Réglages → Images fixes) : zoom avant ou arrière, panoramique, ou **Ken Burns** (zoom lent
   et déplacement, avec un trajet différent à chaque photo). La colonne « mouvement » de la timeline règle une photo
   précise.
+
+### Studio audio
+Onglet **🎚️ Studio audio** (fond noir). Chaque outil range ses fichiers dans son dossier : `sorties/audio/enchainements`,
+`sorties/audio/superpositions` et `sorties/audio/effets_micro` ; le sous-onglet **Sorties** les liste, les fait écouter
+et ouvre chaque dossier.
+- **Enchaîner** : 2 à 4 morceaux bout à bout (début, fin et volume de chacun), fondu enchaîné réglable.
+  **Transition sur le rythme** : le fondu commence sur un temps, dure des mesures entières, et le morceau suivant
+  démarre sur son propre temps.
+- **Superposer** : 2 à 4 pistes en même temps (musique, voix, ambiance), décalage, boucle ; **ducking** : la musique
+  baisse d'environ 13 dB quand la voix parle.
+- **Effets micro et mixage** : enregistre ta voix dans le navigateur ou importe un fichier, puis choisis un effet
+  (voix studio, radio, téléphone, mégaphone, robot, écho, grande salle, voix grave, voix aiguë, monstre, chorale,
+  alien) et règle la console : graves, médiums, aigus, compresseur, gain, réduction du bruit, vitesse.
+- Fondus d'entrée et de sortie, volume normalisé (-14 LUFS), MP3 ou WAV ; **Utiliser comme musique / voix off du
+  projet** envoie le résultat dans l'onglet Montage.
 
 ### Classement
 Onglet **Classement** : un Short 9:16 « Top N ». Importe 2 à 10 clips (le n° 1 est la première ligne), donne un titre à chaque rang et, si tu veux, le crédit de la source. Écris le titre et coche les mots à surligner, puis choisis un préréglage (Néon sombre, Clair, Brut rouge, Podium), une mise en page (liste à gauche, liste en haut, plein écran, bandeau) et l'ordre (décroissant : compte à rebours, le n° 1 passe en dernier). Entrée dans le titre passe à la ligne. « Police, tailles et couleurs » règle aussi une deuxième couleur de surlignage, la position du badge (coin du clip, à côté du titre, aucun), le panneau derrière la liste, les numéros colorés (or, argent, bronze) et les libellés (taille, majuscules, italique). Le curseur « Rang affiché » montre chaque étape ; « Aperçu rapide » fait une vidéo légère, « Exporter » la version finale dans `sorties/classements`. Enregistre le classement (`.json`) pour le reprendre plus tard, ou pour le rendre en ligne de commande : `python cli.py classement fichier.json`.
@@ -1921,8 +2342,35 @@ the exact length of the video, and lowered while someone speaks. “Listen 12 s�
   video is muted and looped if it is too short.
 - **Animated text**: as many texts as you like, each with its own times, position, size, color and entrance.
   The tables stay editable (animation written out in full, empty “end” = until the end).
+- **Sticker**: click a sticker from the library (Subscribe button, heart, arrows, WOW, check mark…), pick a color
+  emoji or import your own (PNG, animated GIF or WebP, transparent WebM). **Pulse**, **bounce** and **swing**
+  animations keep the sticker moving while it is on screen. It is added to the overlay table.
+- **Special effects** (section 5): on part of the video, **shake**, **punch zoom** (quick zoom on a key moment),
+  **slow zoom**, white or black **flash**, **glitch** and filters (black and white, vintage, vivid colors, cinematic,
+  warm, cool, vignette, blur, negative), with an intensity from 0.1 to 1. Stickers and text stay sharp on top.
+- **Rhythm and sound effects** (section 6): MSV finds the music's tempo (BPM) and places an effect every 1, 2, 4 or
+  8 beats; still images can end exactly on a beat. **On every cut**: “alternating zoom” (every other shot tighter,
+  jump-cut style) or a brief effect, plus a sound (whoosh, pop, ding, boom, riser…). The 11 sounds are made by MSV,
+  royalty-free; you can also place one at a given moment or import your own.
+- **Viral mode** (top right): one click sets everything up like a Short: 9:16, animated hook, karaoke subtitles,
+  silences cut, alternating zoom + whoosh, energetic music on the beat, Subscribe sticker for the last 3 seconds.
+  In the overlay table, a negative start (-3) counts from the end of the video.
 - **Photo motion** (Settings → Still images): zoom in or out, pan, or **Ken Burns** (slow zoom and drift, with a
   different path for each photo). The timeline's “motion” column sets the motion of a single photo.
+
+### Audio studio
+**🎚️ Audio studio** tab (black background). Each tool saves its files in its own folder: `sorties/audio/enchainements`,
+`sorties/audio/superpositions` and `sorties/audio/effets_micro`; the **Outputs** sub-tab lists them, plays them and
+opens each folder.
+- **Chain**: 2 to 4 tracks back to back (start, end and volume of each), adjustable crossfade.
+  **Beat-matched transition**: the fade starts on a beat, lasts whole bars, and the next track starts on its own beat.
+- **Layer**: 2 to 4 tracks at the same time (music, voice, ambience), offset, loop; **ducking**: the music dips by
+  about 13 dB when the voice speaks.
+- **Mic effects and mixing**: record your voice in the browser or import a file, then pick an effect (studio voice,
+  radio, telephone, megaphone, robot, echo, large hall, deep voice, high voice, monster, choir, alien) and adjust the
+  console: bass, mids, treble, compressor, gain, noise reduction, speed.
+- Fade in and out, normalized volume (-14 LUFS), MP3 or WAV; **Use as project music / voice-over** sends the result
+  to the Editor tab.
 
 ### Ranking
 **Ranking** tab: a 9:16 “Top N” Short. Import 2 to 10 clips (No. 1 is the first row), give each rank a title and, if you like, the source credit. Write the title and tick the words to highlight, then pick a preset (Dark neon, Light, Raw red, Podium), a layout (list on the left, list at the top, full screen, banner) and the order (descending: countdown, No. 1 comes last). Enter in the title starts a new line. “Font, sizes and colours” also sets a second highlight colour, the badge position (clip corner, next to the title, none), the panel behind the list, coloured numbers (gold, silver, bronze) and the labels (size, capitals, italics). The “Rank shown” slider previews each step; “Quick preview” makes a light video, “Export” the final version in `sorties/classements`. Save the ranking (`.json`) to resume it later, or to render it from the command line: `python cli.py classement file.json`.
@@ -2006,9 +2454,40 @@ alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s
   hanno gli angoli arrotondati; il video sovrapposto è muto e va in loop se è troppo corto.
 - **Testo animato**: tutti i testi che vuoi, ognuno con i suoi tempi, posizione, dimensione, colore ed entrata.
   Le tabelle restano modificabili (animazione scritta per esteso, « fine » vuota = fino alla fine).
+- **Sticker**: clicca su uno sticker della libreria (pulsante Iscriviti, cuore, frecce, WOW, spunta…), scegli
+  un'emoji a colori o importa il tuo (PNG, GIF o WebP animato, WebM trasparente). Le animazioni **pulsazione**,
+  **rimbalzo** e **oscillazione** fanno muovere lo sticker finché è sullo schermo. Finisce nella tabella delle
+  sovrapposizioni.
+- **Effetti speciali** (sezione 5): su un passaggio del video, **scossa**, **zoom punch** (zoom rapido su un momento
+  forte), **zoom progressivo**, **flash** bianco o nero, **glitch** e filtri (bianco e nero, vintage, colori vivaci,
+  cinema, caldo, freddo, vignettatura, sfocato, negativo), con un'intensità da 0,1 a 1. Sticker e testi restano
+  nitidi sopra.
+- **Ritmo ed effetti sonori** (sezione 6): MSV trova il tempo della musica (BPM) e mette un effetto ogni 1, 2, 4 o
+  8 battiti; le immagini fisse possono finire esattamente su un battito. **A ogni taglio**: « zoom alternato »
+  (un'inquadratura su due più stretta, stile jump cut) o un effetto breve, più un suono (whoosh, pop, ding, boom,
+  salita…). Gli 11 suoni sono creati da MSV, senza diritti; puoi anche metterne uno in un momento preciso o
+  importare il tuo.
+- **Modalità virale** (in alto a destra): un clic imposta tutto come uno Short: 9:16, gancio animato, sottotitoli
+  karaoke, silenzi tagliati, zoom alternato + whoosh, musica energica a tempo, sticker Iscriviti negli ultimi 3
+  secondi. Nella tabella delle sovrapposizioni, un inizio negativo (-3) conta dalla fine del video.
 - **Movimento delle foto** (Impostazioni → Immagini fisse): zoom avanti o indietro, panoramica, oppure **Ken Burns**
   (zoom lento e spostamento, con un percorso diverso per ogni foto). La colonna « movimento » della timeline regola
   una sola foto.
+
+### Studio audio
+Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file nella propria cartella:
+`sorties/audio/enchainements`, `sorties/audio/superpositions` e `sorties/audio/effets_micro`; la sotto-scheda
+**File creati** li elenca, li fa ascoltare e apre ogni cartella.
+- **Concatena**: da 2 a 4 brani uno dopo l'altro (inizio, fine e volume di ciascuno), dissolvenza incrociata
+  regolabile. **Transizione a tempo**: la dissolvenza inizia su un battito, dura battute intere e il brano
+  successivo parte sul suo battito.
+- **Sovrapponi**: da 2 a 4 tracce insieme (musica, voce, ambiente), ritardo, loop; **ducking**: la musica si abbassa
+  di circa 13 dB quando parla la voce.
+- **Effetti microfono e mixaggio**: registra la tua voce nel browser o importa un file, poi scegli un effetto (voce
+  da studio, radio, telefono, megafono, robot, eco, grande sala, voce grave, voce acuta, mostro, coro, alieno) e
+  regola il mixer: bassi, medi, acuti, compressore, guadagno, riduzione del rumore, velocità.
+- Dissolvenze in entrata e in uscita, volume normalizzato (-14 LUFS), MP3 o WAV; **Usa come musica / voce fuori
+  campo del progetto** invia il risultato alla scheda Montaggio.
 
 ### Classifica
 Scheda **Classifica**: uno Short 9:16 «Top N». Importa da 2 a 10 clip (il n. 1 è la prima riga), dai un titolo a ogni posizione e, se vuoi, i crediti della fonte. Scrivi il titolo e spunta le parole da evidenziare, poi scegli una preimpostazione (Neon scuro, Chiaro, Rosso crudo, Podio), un'impaginazione (lista a sinistra, lista in alto, schermo intero, banda) e l'ordine (decrescente: conto alla rovescia, il n. 1 arriva per ultimo). Invio nel titolo va a capo. «Carattere, dimensioni e colori» regola anche un secondo colore di evidenziazione, la posizione del badge (angolo della clip, accanto al titolo, nessuno), il pannello dietro la lista, i numeri colorati (oro, argento, bronzo) e le etichette (dimensione, maiuscolo, corsivo). Il cursore «Posizione mostrata» mostra ogni passaggio; «Anteprima rapida» crea un video leggero, «Esporta» la versione finale in `sorties/classements`. Salva la classifica (`.json`) per riprenderla più tardi o per crearla da riga di comando: `python cli.py classement file.json`.
@@ -2093,9 +2572,38 @@ PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12
   esquinas redondeadas; el vídeo superpuesto va sin sonido y en bucle si es demasiado corto.
 - **Texto animado**: todos los textos que quieras, cada uno con sus tiempos, posición, tamaño, color y entrada.
   Las tablas siguen siendo editables (animación escrita completa, «fin» vacío = hasta el final).
+- **Sticker**: haz clic en un sticker de la biblioteca (botón Suscribirse, corazón, flechas, WOW, marca…), elige
+  un emoji en color o importa el tuyo (PNG, GIF o WebP animado, WebM transparente). Las animaciones **pulsación**,
+  **rebote** y **balanceo** mueven el sticker mientras está en pantalla. Se añade a la tabla de superposiciones.
+- **Efectos especiales** (sección 5): en un tramo del vídeo, **sacudida**, **zoom punch** (zoom rápido en un
+  momento clave), **zoom progresivo**, **destello** blanco o negro, **glitch** y filtros (blanco y negro, vintage,
+  colores vivos, cine, cálido, frío, viñeta, desenfoque, negativo), con una intensidad de 0,1 a 1. Los stickers y
+  los textos quedan nítidos encima.
+- **Ritmo y efectos de sonido** (sección 6): MSV encuentra el tempo de la música (BPM) y coloca un efecto cada 1, 2,
+  4 u 8 tiempos; las imágenes fijas pueden terminar justo en un tiempo. **En cada corte**: «zoom alterno» (un plano
+  de cada dos más cerrado, estilo jump cut) o un efecto breve, y un sonido (whoosh, pop, ding, boom, subida…). Los
+  11 sonidos los crea MSV, libres de derechos; también puedes colocar uno en un momento preciso o importar el tuyo.
+- **Modo viral** (arriba a la derecha): un clic lo ajusta todo como un Short: 9:16, gancho animado, subtítulos
+  karaoke, silencios cortados, zoom alterno + whoosh, música enérgica al ritmo, sticker Suscribirse los últimos 3
+  segundos. En la tabla de superposiciones, un inicio negativo (-3) cuenta desde el final del vídeo.
 - **Movimiento de las fotos** (Ajustes → Imágenes fijas): acercar o alejar, paneo, o **Ken Burns** (zoom lento y
   desplazamiento, con un recorrido distinto para cada foto). La columna «movimiento» de la línea de tiempo ajusta
   una sola foto.
+
+### Estudio de audio
+Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus archivos en su carpeta:
+`sorties/audio/enchainements`, `sorties/audio/superpositions` y `sorties/audio/effets_micro`; la subpestaña
+**Salidas** los lista, los reproduce y abre cada carpeta.
+- **Encadenar**: de 2 a 4 pistas una tras otra (inicio, fin y volumen de cada una), fundido cruzado ajustable.
+  **Transición al ritmo**: el fundido empieza en un tiempo, dura compases enteros y la pista siguiente arranca en su
+  propio tiempo.
+- **Superponer**: de 2 a 4 pistas a la vez (música, voz, ambiente), desfase, bucle; **ducking**: la música baja
+  unos 13 dB cuando habla la voz.
+- **Efectos de micro y mezcla**: graba tu voz en el navegador o importa un archivo, elige un efecto (voz de estudio,
+  radio, teléfono, megáfono, robot, eco, sala grande, voz grave, voz aguda, monstruo, coro, alienígena) y ajusta la
+  mesa: graves, medios, agudos, compresor, ganancia, reducción de ruido, velocidad.
+- Fundidos de entrada y salida, volumen normalizado (-14 LUFS), MP3 o WAV; **Usar como música / voz en off del
+  proyecto** envía el resultado a la pestaña Edición.
 
 ### Clasificación
 Pestaña **Clasificación**: un Short 9:16 «Top N». Importa de 2 a 10 clips (el n.º 1 es la primera fila), da un título a cada puesto y, si quieres, el crédito de la fuente. Escribe el título y marca las palabras a resaltar; luego elige un preajuste (Neón oscuro, Claro, Rojo crudo, Podio), un diseño (lista a la izquierda, lista arriba, pantalla completa, banda superior) y el orden (descendente: cuenta atrás, el n.º 1 sale el último). Intro en el título hace un salto de línea. «Fuente, tamaños y colores» también ajusta un segundo color de resaltado, la posición de la insignia (esquina del clip, junto al título, ninguno), el panel detrás de la lista, los números de colores (oro, plata, bronce) y las etiquetas (tamaño, mayúsculas, cursiva). El cursor «Puesto mostrado» muestra cada paso; «Vista previa rápida» crea un vídeo ligero y «Exportar» la versión final en `sorties/classements`. Guarda la clasificación (`.json`) para retomarla más tarde o para crearla desde la línea de comandos: `python cli.py classement archivo.json`.

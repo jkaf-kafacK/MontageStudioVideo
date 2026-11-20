@@ -14,7 +14,7 @@ from .i18n import _
 
 IMAGE_EXT = {".png", ".jpg", ".jpeg", ".webp", ".bmp"}
 AUDIO_EXT = {".mp3", ".wav", ".m4a", ".aac", ".ogg", ".flac", ".opus"}
-VIDEO_EXT = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mts"}
+VIDEO_EXT = {".mp4", ".mov", ".mkv", ".webm", ".avi", ".m4v", ".mts", ".gif"}
 
 _FFMPEG: Optional[str] = None
 
@@ -63,6 +63,8 @@ class MediaInfo:
     fps: float = 0.0
     has_audio: bool = False
     has_video: bool = False
+    vcodec: str = ""            # codec vidéo (h264, vp9, gif…)
+    alpha: bool = False         # vidéo avec transparence (WebM VP9 alpha, ProRes 4444, GIF…) : sticker animé
     # pistes de sous-titres intégrées : {"index": n° parmi les sous-titres, "lang": "ita", "codec": "mov_text",
     # "text": True si c'est du texte (les sous-titres en image, DVD/Blu-ray, ne sont pas exploitables)}
     subtitles: list = field(default_factory=list)
@@ -106,6 +108,11 @@ def probe(path: str | Path) -> MediaInfo:
             fm = re.search(r"(\d+(?:\.\d+)?)\s*fps", line)
             if fm and not info.fps:
                 info.fps = float(fm.group(1))
+            cm = re.search(r"Video:\s*(\w+)", line)
+            if cm and not info.vcodec:
+                info.vcodec = cm.group(1).lower()
+            if re.search(r"\b(yuva\w*|rgba\w*|bgra|argb|abgr|gbrap\w*|ya8|ya16\w*)\b", line):
+                info.alpha = True
         elif "Stream #" in line and "Audio:" in line:
             info.has_audio = True
         elif "Stream #" in line and "Subtitle:" in line:
@@ -114,6 +121,10 @@ def probe(path: str | Path) -> MediaInfo:
             codec = cm.group(1).lower() if cm else "?"
             info.subtitles.append({"index": len(info.subtitles), "lang": (lm.group(1) if lm else "und").lower(),
                                    "codec": codec, "text": codec in TEXT_SUB_CODECS})
+
+    # WebM VP8/VP9 : la transparence est dans une piste annexe signalée par « alpha_mode : 1 »
+    if re.search(r"alpha_mode\s*:\s*1", err):
+        info.alpha = True
 
     # Vidéos de téléphone filmées en portrait : métadonnée de rotation
     if re.search(r"rotation of -?90", err) or re.search(r"rotate\s*:\s*(90|270)", err):

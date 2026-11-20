@@ -5,7 +5,7 @@ Pipeline en 3 étapes :
      fps, audio stéréo 48 kHz  -> fichiers intermédiaires identiques en format ;
   2. assemblage : concaténation ou transitions (xfade + acrossfade) ;
   0. intro et fin (scènes animées) fabriquées au format du projet et ajoutées à la timeline ;
-  3. finition : calques (incrustations, textes animés), titre, sous-titres, logo, fondus, voix off,
+  3. finition : effets spéciaux, calques (incrustations, stickers, textes animés), titre, sous-titres, logo, fondus, voix off,
      musique (fichier ou générée à la durée exacte) avec ducking,
      normalisation du volume (-14 LUFS, cible YouTube), encodage final.
 """
@@ -20,7 +20,7 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import denoise, ff, layers, subs
+from . import denoise, effects, ff, layers, rhythm, sfx, subs
 from .i18n import _
 from .textimg import DEFAULT_STYLE, blank, render_text
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
@@ -108,6 +108,11 @@ DEFAULT_PROJECT = {
     "logo": {"path": "", "position": "haut droite", "size": 0.14, "opacity": 0.9},
     "overlays": [],                    # incrustations image/vidéo, voir core/layers.py
     "texts": [],                       # textes animés, voir core/layers.py
+    "effects": [],                     # effets spéciaux sur un passage (secousse, zoom, flash…), voir core/effects.py
+    "sfx": [],                         # effets sonores {"path", "start", "volume"}, voir core/sfx.py
+    # montage au rythme et coupes animées, calculés au rendu (voir core/rhythm.py)
+    "beat_sync": {"effect": "aucun", "every": 2, "intensity": 0.5, "images": False},
+    "on_cuts": {"effect": "aucun", "sound": "aucun", "intensity": 0.5, "volume": 0.8},
     # Voix off générée automatiquement en production en série (voir core/voice.py)
     "tts": {"enabled": False, "provider": "piper", "voice": "Pierre — homme, français",
             "model": "eleven_multilingual_v2", "speed": 1.0, "pitch": 0.0},
@@ -620,6 +625,11 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
     vf, af = [], []
     cur_v, cur_a = "0:v", "0:a"
 
+    # Effets spéciaux sur la vidéo (sous les calques : stickers et textes restent nets et immobiles)
+    e_args, e_vf, cur_v, idx = effects.build(p, W, H, fps, T, assembled, idx, cur_v, log)
+    args += e_args
+    vf += e_vf
+
     # Calques : incrustations image/vidéo et textes animés (sous le titre et les sous-titres)
     l_args, l_vf, cur_v, idx = layers.build(p, W, H, fps, T, work, idx, cur_v, log)
     args += l_args
@@ -698,6 +708,11 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
         else:
             af.append(f"[{cur_a}][mus]amix=inputs=2:duration=first:normalize=0[mx]")
         cur_a, idx = "mx", idx + 1
+
+    # Effets sonores (après le ducking : la musique ne baisse pas pour un whoosh)
+    s_args, s_af, cur_a, idx = sfx.build(p.get("sfx"), T, idx, cur_a, log)
+    args += s_args
+    af += s_af
 
     achain = []
     if p.get("normalize_audio", True):
@@ -789,6 +804,7 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
         segs = _expand_clips(p, log)
         if not segs:
             raise ValueError(_("La timeline est vide : ajoute au moins une vidéo ou une image."))
+        rhythm.snap_images(p, segs, log)
 
         parts, durs = [], []
         for i, s in enumerate(segs):
@@ -809,10 +825,15 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
             from .music import generate
             seed = sum(map(ord, str(p.get("name") or ""))) % 1000   # notes différentes d'une vidéo à l'autre
             p["music"]["path"] = generate(work / "musique.wav", T + 0.5, mood, seed)
+            p["_music_generated"] = True
             log.append(_("🎵 Musique générée : {mood}, {dur:.0f} s", mood=_(mood), dur=T))
 
+        starts = _segment_starts(p, durs)
+        rhythm.cut_extras(p, segs, durs, starts, T, log)    # zoom alterné, whoosh… sur les coupes
+        rhythm.beat_effects(p, T, log)                       # effets sur les temps de la musique
+
         prog(0.61, _("Sous-titres"))
-        cues = _build_cues(p, assembled, T, work, log, segs, _segment_starts(p, durs))
+        cues = _build_cues(p, assembled, T, work, log, segs, starts)
         sub_track = _subtitle_track(cues, p, W, H, T, work) if cues else None
         srt_out = None
         if cues:

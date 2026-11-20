@@ -5,9 +5,16 @@ Format dans le projet :
   "overlays": [{"path", "start", "end", "x", "y", "width", "opacity", "animation"}]
   "texts":    [{"text", "start", "end", "x", "y", "size", "color", "box", "animation"}]
 x et y = centre du calque en % de l'image ; width = largeur en % ; end vide = jusqu'à la fin.
+start négatif = secondes avant la fin de la vidéo (-3 : les 3 dernières secondes), utile quand la durée finale
+n'est connue qu'au rendu (silences coupés).
 
-Les images et les textes sont dessinés une fois avec Pillow ; l'animation (fondu, montée, zoom) est
-calculée image par image par FFmpeg (fade, expressions de overlay et scale).
+Les images et les textes sont dessinés une fois avec Pillow ; l'animation (fondu, montée, zoom, et pour les
+stickers pulsation, rebond, balancement) est calculée image par image par FFmpeg (fade, expressions de overlay,
+scale et rotate).
+
+Stickers animés : un GIF, WebP ou APNG animé est découpé en images PNG avec Pillow (FFmpeg 7 ne lit pas les WebP
+animés), puis lu en boucle ; une vidéo transparente (WebM VP9 alpha, ProRes 4444) garde sa transparence au lieu
+d'être affichée comme une « carte » aux coins arrondis.
 """
 from __future__ import annotations
 
@@ -21,7 +28,9 @@ from . import ff
 from .i18n import _, translations
 from .textimg import DEFAULT_STYLE, render_text
 
-ANIMATIONS = ["aucune", "fondu", "montée", "zoom"]
+ANIMATIONS = ["aucune", "fondu", "montée", "zoom", "pulsation", "rebond", "balancement"]
+ANIM_EXT = {".gif", ".webp", ".png", ".apng"}   # formats d'image qui peuvent être animés
+MAX_FRAMES = 600                                 # images gardées au plus d'un sticker animé
 POSITIONS = {   # centre du calque (x %, y %)
     "haut gauche": (22, 12), "haut": (50, 12), "haut droite": (78, 12),
     "centre": (50, 50),
@@ -79,15 +88,18 @@ def norm_color(value) -> str:
 
 
 def active(layer: dict, at: Optional[float]) -> bool:
-    """Le calque est-il à l'écran au moment `at` ? (None = toujours, pour un aperçu de tous les calques)"""
-    return at is None or layer["start"] <= at < (layer["end"] or float("inf"))
+    """Le calque est-il à l'écran au moment `at` ? (None = toujours, pour un aperçu de tous les calques)
+    Un calque compté depuis la fin (start négatif) n'apparaît que dans l'aperçu de tous les calques."""
+    if at is None:
+        return True
+    return 0 <= layer["start"] <= at < (layer["end"] or float("inf"))
 
 
 def norm_overlay(o: dict) -> Optional[dict]:
     path = str(o.get("path") or "").strip()
     if not path or path == "nan":
         return None
-    return {"path": path, "start": max(0.0, _f(o.get("start"))), "end": _f(o.get("end")) or None,
+    return {"path": path, "start": max(-3600.0, _f(o.get("start"))), "end": _f(o.get("end")) or None,
             "x": min(100.0, max(0.0, _f(o.get("x"), 50))), "y": min(100.0, max(0.0, _f(o.get("y"), 50))),
             "width": min(100.0, max(2.0, _f(o.get("width"), 30))),
             "opacity": min(1.0, max(0.05, _f(o.get("opacity"), 1.0))),
@@ -99,7 +111,7 @@ def norm_text(t: dict) -> Optional[dict]:
     if not text or text == "nan":
         return None
     color = norm_color(t.get("color"))
-    return {"text": text, "start": max(0.0, _f(t.get("start"))), "end": _f(t.get("end")) or None,
+    return {"text": text, "start": max(-3600.0, _f(t.get("start"))), "end": _f(t.get("end")) or None,
             "x": min(100.0, max(0.0, _f(t.get("x"), 50))), "y": min(100.0, max(0.0, _f(t.get("y"), 50))),
             "size": min(300.0, max(16.0, _f(t.get("size"), 80))), "color": color, "box": truthy(t.get("box")),
             "animation": norm_choice(t.get("animation"), ANIMATIONS, "montée")}
@@ -117,6 +129,44 @@ def _rounded(img: Image.Image, radius: int) -> Image.Image:
 
 def _has_transparency(img: Image.Image) -> bool:
     return img.mode in ("RGBA", "LA", "PA") and img.getchannel("A").getextrema()[0] < 250
+
+
+def is_animated(path: str | Path) -> bool:
+    """GIF, WebP ou APNG de plusieurs images."""
+    if Path(path).suffix.lower() not in ANIM_EXT:
+        return False
+    try:
+        with Image.open(path) as im:
+            return bool(getattr(im, "is_animated", False)) and getattr(im, "n_frames", 1) > 1
+    except Exception:
+        return False
+
+
+def layer_kind(path: str | Path) -> str:
+    """« image » (fixe), « animated » (GIF/WebP/APNG animé), « video » ou « audio » / « inconnu »."""
+    if is_animated(path):
+        return "animated"
+    if Path(path).suffix.lower() == ".gif":   # GIF d'une seule image : une image fixe comme une autre
+        return "image"
+    return ff.media_kind(path)
+
+
+def _animated_frames(L: dict, W: int, H: int, out_dir: Path) -> tuple[float, int, int]:
+    """Découpe un sticker animé en PNG (à la taille du calque). Renvoie (images par seconde, largeur, hauteur)."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    with Image.open(L["path"]) as im:
+        n = min(getattr(im, "n_frames", 1), MAX_FRAMES)
+        size = _box_size(im.width, im.height, L["width"], W, H)
+        total_ms = 0.0
+        for i in range(n):
+            im.seek(i)
+            total_ms += float(im.info.get("duration") or 100)
+            fr = im.convert("RGBA").resize(size, Image.LANCZOS)
+            if L["opacity"] < 1:
+                fr.putalpha(fr.getchannel("A").point(lambda a: int(a * L["opacity"])))
+            fr.save(out_dir / f"{i:04d}.png", compress_level=1)
+    fps = min(60.0, max(1.0, 1000.0 * n / max(1.0, total_ms)))
+    return fps, size[0], size[1]
 
 
 def _box_size(src_w: int, src_h: int, width_pct: float, W: int, H: int) -> tuple[int, int]:
@@ -170,12 +220,12 @@ def draw_layers(base: Image.Image, overlays: list[dict], texts: list[dict], at: 
         if not active(o, at):
             continue
         try:
-            kind = ff.media_kind(o["path"])
+            kind = layer_kind(o["path"])
             t = 0.0
             if kind == "video" and at is not None:   # image de la vidéo incrustée à ce moment (elle boucle)
                 t = (at - o["start"]) % max(0.1, ff.probe(o["path"]).duration or 0.1)
             frame = grab_frame(o["path"], t, height=0) if kind == "video" else None
-            if kind not in ("video", "image"):
+            if kind not in ("video", "image", "animated"):   # sticker animé : sa première image
                 continue
             lay = overlay_image(o, W, H, frame)
         except Exception:
@@ -191,24 +241,35 @@ def draw_layers(base: Image.Image, overlays: list[dict], texts: list[dict], at: 
 
 # --------------------------------------------------------------------------- filtres FFmpeg
 
+SWING = 0.14     # balancement : angle maximal (radians, environ 8°)
+BOUNCE = 0.04    # rebond : hauteur des sauts, fraction de la hauteur de l'image
+CENTERED = ("zoom", "pulsation", "balancement")   # animations où la taille du calque change à chaque image
+
+
 def _anim_filters(anim: str, s: float, e: float, w: int) -> tuple[str, float]:
-    """Fondus d'entrée/sortie et zoom du calque. Renvoie (filtres, durée de l'entrée)."""
+    """Fondus d'entrée/sortie, zoom, pulsation ou balancement du calque. Renvoie (filtres, durée de l'entrée)."""
     if anim == "aucune":
         return "", 0.0
     d_in = min(IN_DUR, (e - s) / 3)
     d_out = min(OUT_DUR, (e - s) / 4)
     fl = (f",fade=t=in:st={s:.3f}:d={d_in:.3f}:alpha=1"
           f",fade=t=out:st={e - d_out:.3f}:d={d_out:.3f}:alpha=1")
-    if anim == "zoom":   # de 50 % à 100 % avec un léger rebond (« ease out back »)
+    if anim in ("zoom", "pulsation"):   # de 50 % à 100 % avec un léger rebond (« ease out back »)
         p = f"clip((t-{s:.3f})/{d_in:.3f},0,1)"
         z = f"(0.5+0.5*(1+2.70158*pow({p}-1,3)+1.70158*pow({p}-1,2)))"
+        if anim == "pulsation":        # puis bat comme un cœur : ±7 %, 1,6 fois par seconde
+            z += f"*(1+0.07*sin(2*PI*1.6*(t-{s:.3f})))"
         fl += f",scale=w='max(2,trunc({w}*{z}/2)*2)':h=-2:eval=frame"
+    elif anim == "balancement":        # oscille de gauche à droite (image agrandie pour ne rien couper)
+        fl += f",rotate=a='{SWING}*sin(2*PI*1.1*(t-{s:.3f}))':c=none:ow='hypot(iw,ih)':oh=ow"
     return fl, d_in
 
 
 def _overlay_xy(anim: str, x: int, y: int, w: int, h: int, s: float, d_in: float, H: int) -> str:
-    if anim == "zoom":      # zoom depuis le centre du calque (sa taille change à chaque image)
+    if anim in CENTERED:    # posé par son centre (sa taille change à chaque image)
         return f"x='{x + w / 2:.1f}-w/2':y='{y + h / 2:.1f}-h/2'"
+    if anim == "rebond":    # sauts successifs, comme une balle
+        return f"x={x}:y='{y}-{int(H * BOUNCE)}*abs(sin(PI*1.6*(t-{s:.3f})))'"
     if anim == "montée":
         rise = int(H * RISE)
         return f"x={x}:y='{y}+{rise}*pow(1-clip((t-{s:.3f})/{d_in:.3f},0,1),3)'"
@@ -223,6 +284,8 @@ def build(p: dict, W: int, H: int, fps: int, T: float, work: Path, idx: int, cur
     layers = [("img", o) for o in filter(None, map(norm_overlay, p.get("overlays") or []))]
     layers += [("txt", t) for t in filter(None, map(norm_text, p.get("texts") or []))]
     for n, (kind, L) in enumerate(layers):
+        if L["start"] < 0:                    # compté depuis la fin de la vidéo
+            L = {**L, "start": max(0.0, T + L["start"])}
         s = L["start"]
         e = min(T, L["end"]) if L["end"] else T
         if e - s < 0.1:
@@ -232,11 +295,29 @@ def build(p: dict, W: int, H: int, fps: int, T: float, work: Path, idx: int, cur
         anim = L["animation"]
         media = "image"
         if kind == "img":
-            media = ff.media_kind(L["path"])
-            if media not in ("image", "video"):
+            media = layer_kind(L["path"])
+            if media not in ("image", "video", "animated"):
                 log.append(_("⚠ Calque ignoré (ni image ni vidéo) : {name}", name=Path(L["path"]).name))
                 continue
-        if media == "video":
+        if media == "animated":
+            # sticker animé : images PNG lues en boucle pendant toute la durée du calque
+            rate, w, h = _animated_frames(L, W, H, work / f"calque_{n}")
+            args += ["-loop", "1", "-framerate", f"{rate:.3f}", "-t", f"{e - s:.3f}",
+                     "-i", str(work / f"calque_{n}" / "%04d.png")]
+            vf.append(f"[{idx}:v]fps={fps},format=rgba,setpts=PTS-STARTPTS+{s:.3f}/TB[cb{n}]")
+            src, idx = f"cb{n}", idx + 1
+        elif media == "video" and ff.probe(L["path"]).alpha:
+            # vidéo transparente : gardée telle quelle (pas de coins arrondis) ; le décodeur libvpx lit
+            # la couche de transparence des WebM, que le décodeur VP8/VP9 intégré ignore
+            info = ff.probe(L["path"])
+            w, h = _box_size(info.width, info.height, L["width"], W, H)
+            dec = {"vp9": ["-c:v", "libvpx-vp9"], "vp8": ["-c:v", "libvpx"]}.get(info.vcodec, [])
+            args += ["-stream_loop", "-1", *dec, "-t", f"{e - s:.3f}", "-i", str(L["path"])]
+            op = f",colorchannelmixer=aa={L['opacity']:.2f}" if L["opacity"] < 1 else ""
+            vf.append(f"[{idx}:v]fps={fps},scale={w}:{h},setsar=1,format=rgba{op},"
+                      f"setpts=PTS-STARTPTS+{s:.3f}/TB[cb{n}]")
+            src, idx = f"cb{n}", idx + 1
+        elif media == "video":
             info = ff.probe(L["path"])
             w, h = _box_size(info.width, info.height, L["width"], W, H)
             mask = work / f"calque_{n}_masque.png"
