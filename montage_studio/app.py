@@ -18,8 +18,9 @@ import time
 import webbrowser
 import os
 import random
+from html import escape as html_escape
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 
 # Promesse « 100 % local » : pas de statistiques d'usage envoyées par Gradio ni par Hugging Face (Whisper).
 # À définir avant l'import de gradio.
@@ -32,8 +33,8 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import (audiostudio, barapi, batch, beats, denoise, effects, errors, ff, layers, paths, ranking, rhythm,
-                  scenecut, scenes, screenrec, sfx, share, splitscreen, stickers, subs, tools, voice)
+from core import (audiostudio, barapi, batch, beats, denoise, djdeck, effects, errors, ff, layers, paths, ranking,
+                  rhythm, scenecut, scenes, screenrec, sfx, share, splitscreen, stickers, subs, tools, voice)
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_sections, opts, pick_lang
 from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
@@ -1664,6 +1665,51 @@ CSS = """
 /* ---- onglets */
 button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
 
+/* ---- menu principal : toutes les entrées visibles, toujours à portée pendant le défilement.
+   Ordinateur : colonne verticale à gauche du contenu. Téléphone (≤ 900 px) : barre horizontale qu'on fait glisser.
+   La barre d'onglets de Gradio des onglets principaux reste dans la page (le menu l'actionne) mais est masquée. */
+/* Gradio met « overflow: hidden » sur le conteneur général, ce qui empêche le menu de rester en haut ;
+   « clip » coupe le débordement de la même façon sans bloquer position: sticky */
+.gradio-container {overflow: clip !important;}
+#menu-onglets {position: sticky; top: 0; z-index: 40; overflow: visible !important; padding: 0 !important;
+               background: transparent !important; border: 0 !important;}
+.menu-onglets {display: flex; gap: 3px; padding: 6px; border-radius: 14px;
+               background: var(--background-fill-primary); border: 1px solid var(--border-color-primary);
+               box-shadow: 0 8px 22px -14px rgba(24,24,27,.45);}
+.menu-onglets .menu-item {display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 8px 12px;
+                          border: 0; border-radius: 10px; background: transparent; cursor: pointer; white-space: nowrap;
+                          text-align: left; font: inherit; font-size: 0.9rem; font-weight: 650;
+                          color: var(--body-text-color-subdued); transition: background .15s, color .15s;}
+.menu-onglets .menu-item:hover {background: var(--background-fill-secondary); color: var(--body-text-color);}
+.menu-onglets .menu-item:focus-visible {outline: 2px solid #C47A12; outline-offset: 2px;}
+.menu-onglets .menu-item .ic {flex: none; width: 1.4em; text-align: center; font-size: 1.15rem; line-height: 1;}
+/* ordinateur : le conteneur de la page devient une grille, menu à gauche, onglets à droite,
+   en-tête et pied de page sur toute la largeur */
+@media (min-width: 901px) {
+  .column:has(> #menu-onglets) {display: grid !important; grid-template-columns: 236px minmax(0, 1fr);
+                                column-gap: 16px; align-items: start;}
+  .column:has(> #menu-onglets) > * {grid-column: 1 / -1;}
+  .column:has(> #menu-onglets) > #menu-onglets {grid-column: 1; top: 12px;}
+  .column:has(> #menu-onglets) > .tabs {grid-column: 2; min-width: 0;}
+  .menu-onglets {flex-direction: column; max-height: calc(100vh - 24px); overflow-y: auto;}
+  .menu-onglets .menu-item {white-space: normal; line-height: 1.25;}   /* libellé long : sur 2 lignes */
+}
+/* téléphone : barre horizontale, icône au-dessus du libellé */
+@media (max-width: 900px) {
+  .menu-onglets {flex-direction: row; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin;}
+  .menu-onglets .menu-item {flex: 0 0 auto; flex-direction: column; justify-content: center; gap: 3px;
+                            min-height: 52px; padding: 6px 8px; font-size: 0.78rem;}
+}
+.menu-onglets .menu-item.actif {color: #FFFFFF; background: linear-gradient(135deg, #C47A12, #A85F05);
+                                box-shadow: 0 6px 14px -8px rgba(138,75,3,.85);}
+.menu-onglets .menu-item.actif[data-key="Studio audio"] {color: #07070A;
+                                background: linear-gradient(135deg, #22D3EE, #A855F7);}
+@media (prefers-reduced-motion: reduce) {.menu-onglets .menu-item {transition: none;}}
+/* visibility : hidden empêche aussi d'atteindre ces boutons au clavier (le menu les remplace) */
+.onglets-principaux > .tab-wrapper {position: absolute !important; width: 1px !important; height: 1px !important;
+                                    overflow: hidden !important; clip-path: inset(50%) !important;
+                                    visibility: hidden !important; white-space: nowrap !important;}
+
 /* ---- titres de section numérotés */
 .section-titre {padding: 10px 12px 2px !important;}
 .section-titre p {margin: 0 !important; font-weight: 700; font-size: 0.98rem; display: flex; align-items: center; gap: 10px;}
@@ -1707,6 +1753,9 @@ button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
   --checkbox-label-border-color-selected: #22D3EE; --checkbox-label-text-color: #E4E4E7;
   --checkbox-label-text-color-selected: #FFFFFF;
   --table-even-background-fill: #101015; --table-odd-background-fill: #13131A;
+  --button-cancel-background-fill: #2A1215; --button-cancel-background-fill-hover: #3A161B;
+  --button-cancel-text-color: #FCA5A5; --button-cancel-text-color-hover: #FECACA;
+  --button-cancel-border-color: #5B1F25;
 }
 #studio-audio .gr-group {background: #101015 !important;}
 #studio-audio .gr-group > .styler {background: #101015 !important;}
@@ -1728,6 +1777,88 @@ button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
 #studio-audio .label-wrap {color: #E4E4E7 !important;}
 #studio-audio code {background: #16161D !important; color: #67E8F9 !important; border: 1px solid #23232D;
                     border-radius: 6px; padding: 1px 6px; white-space: normal; word-break: break-all;}
+/* tactile : grandes cibles (44 px au moins), curseurs plus faciles à attraper au doigt */
+#studio-audio .sa-add {min-height: 52px; font-size: 1rem; font-weight: 800;}
+#studio-audio input[type="range"] {touch-action: pan-y;}
+#studio-audio input[type="range"]::-webkit-slider-thumb {width: 22px; height: 22px;}
+#studio-audio input[type="range"]::-moz-range-thumb {width: 22px; height: 22px;}
+#studio-audio .sa-pads .wrap {display: grid !important; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                              gap: 8px !important;}
+#studio-audio .sa-pads label {min-height: 56px; justify-content: center; border-radius: 14px !important;
+                              font-weight: 700; font-size: 0.95rem; border: 1px solid #2A2A35 !important;
+                              background: linear-gradient(180deg, #1A1A22, #121218) !important;
+                              transition: transform .08s, box-shadow .15s;}
+#studio-audio .sa-pads label:active {transform: scale(.97);}
+#studio-audio .sa-pads label.selected {border-color: #22D3EE !important; color: #FFFFFF !important;
+                                       box-shadow: 0 0 0 1px #22D3EE, 0 0 18px -4px rgba(34,211,238,.7);}
+#studio-audio .sa-pads input[type="radio"] {display: none;}
+#studio-audio .sa-table {font-size: 0.86rem;}
+#studio-audio .sa-table th {font-size: 0.74rem; white-space: nowrap;}
+#studio-audio .sa-table th * {white-space: nowrap !important; word-break: keep-all !important;}
+/* isolateur 3 bandes : faders verticaux tactiles */
+.sa-iso .iso {padding: 14px; border: 1px solid #23232D; border-radius: 14px; background: #0D0D12;}
+.sa-iso .iso-chs {display: flex; justify-content: space-around; gap: 10px;}
+.sa-iso .iso-ch {display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1; max-width: 120px;}
+.sa-iso .iso-val {font: 700 0.9rem ui-monospace, Consolas, monospace; color: #67E8F9; min-height: 1.3em;}
+.sa-iso .iso-ch.kill .iso-val {color: #F87171;}
+.sa-iso .iso-track {position: relative; width: 56px; height: 210px; border-radius: 16px; cursor: ns-resize;
+                    background: #16161D; border: 1px solid #2A2A35; touch-action: none; outline: none;}
+.sa-iso .iso-track:focus-visible {box-shadow: 0 0 0 2px #22D3EE;}
+.sa-iso .iso-fill {position: absolute; left: 0; right: 0; bottom: 0; border-radius: 15px;
+                   background: linear-gradient(0deg, rgba(34,211,238,.35), rgba(168,85,247,.55));}
+.sa-iso .iso-ch.kill .iso-fill {background: rgba(248,113,113,.18); height: 0 !important;}
+.sa-iso .iso-zero {position: absolute; left: -6px; right: -6px; height: 2px; background: #3A3A46;}
+.sa-iso .iso-knob {position: absolute; left: 50%; width: 66px; height: 22px; margin-bottom: -11px;
+                   transform: translateX(-50%); border-radius: 8px; pointer-events: none;
+                   background: linear-gradient(180deg, #F4F4F5, #A1A1AA); box-shadow: 0 4px 12px rgba(0,0,0,.6);}
+.sa-iso .iso-knob::after {content: ""; position: absolute; left: 10px; right: 10px; top: 10px; height: 2px;
+                          background: #22D3EE;}
+.sa-iso .iso-ch.kill .iso-knob {opacity: .35;}
+.sa-iso .iso-name {font-weight: 700; color: #E4E4E7;}
+.sa-iso .iso-kill {min-width: 72px; min-height: 40px; border-radius: 10px; font-weight: 800; letter-spacing: .08em;
+                   color: #A1A1AA; background: #16161D; border: 1px solid #2A2A35; cursor: pointer;}
+.sa-iso .iso-kill[aria-pressed="true"] {color: #FFFFFF; background: #DC2626; border-color: #F87171;
+                                        box-shadow: 0 0 16px -2px rgba(248,113,113,.8);}
+.sa-iso .iso-pied {display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px;
+                   font-size: 0.8rem; color: #8B8B98;}
+.sa-iso .iso-reset {min-height: 40px; padding: 0 14px; border-radius: 10px; color: #E4E4E7; background: #16161D;
+                    border: 1px solid #2A2A35; cursor: pointer; white-space: nowrap;}
+/* platine DJ : pads colorés (on touche un instrument, on maintient un effet) */
+.sa-dj .dj {padding: 14px; border: 1px solid #23232D; border-radius: 14px; background: #0D0D12; outline: none;}
+.sa-dj .dj:focus-visible {box-shadow: 0 0 0 2px #22D3EE;}
+.sa-dj .dj-haut {display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-bottom: 12px;}
+.sa-dj .dj-audio {flex: 1 1 260px; min-width: 0; height: 44px; color-scheme: dark;}
+.sa-dj .dj-titre {flex-basis: 100%; order: 3; font-size: 0.8rem; color: #8B8B98; overflow-wrap: anywhere;}
+.sa-dj .dj-vide {flex: 1 1 260px; padding: 12px 14px; border: 1.5px dashed #33333F; border-radius: 12px;
+                 color: #8B8B98;}
+.sa-dj .dj-compteurs {display: flex; align-items: center; gap: 10px; font: 700 0.95rem ui-monospace, Consolas, monospace;
+                      color: #67E8F9;}
+.sa-dj .dj-bpm {color: #C084FC;}
+.sa-dj .dj-lampe {width: 14px; height: 14px; border-radius: 50%; background: #23232D; transition: background .05s;}
+.sa-dj .dj-lampe.on {background: #22D3EE; box-shadow: 0 0 14px 2px rgba(34,211,238,.8);}
+.sa-dj .dj-label {margin: 12px 0 8px; font-weight: 800; color: #E4E4E7;}
+.sa-dj .dj-label em {font-weight: 400; font-style: normal; color: #8B8B98; font-size: 0.82rem; margin-left: 6px;}
+.sa-dj .dj-pads {display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;}   /* 3 × 3 et 3 × 2 */
+.sa-dj .dj-pad {position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 4px; min-height: 78px; padding: 8px 6px; border-radius: 14px; cursor: pointer; color: #F4F4F5;
+                border: 1px solid color-mix(in srgb, var(--c) 55%, #2A2A35);
+                background: linear-gradient(180deg, color-mix(in srgb, var(--c) 26%, #16161D),
+                                            color-mix(in srgb, var(--c) 10%, #0D0D12));
+                touch-action: none; user-select: none; -webkit-user-select: none;
+                transition: transform .06s, box-shadow .12s, filter .12s;}
+.sa-dj .dj-pad:hover {filter: brightness(1.15);}
+.sa-dj .dj-pad:focus-visible {outline: 2px solid #FFFFFF; outline-offset: 2px;}
+.sa-dj .dj-pad.frappe, .sa-dj .dj-pad.actif {transform: scale(.95); filter: brightness(1.5);
+                                             box-shadow: 0 0 0 2px var(--c), 0 0 24px -2px var(--c);}
+.sa-dj .dj-ic {font-size: 1.6rem; line-height: 1;}
+.sa-dj .dj-nm {font-weight: 700; font-size: 0.84rem; text-align: center; line-height: 1.15;}
+.sa-dj .dj-nm::first-letter {text-transform: uppercase;}
+.sa-dj .dj-pad kbd {position: absolute; top: 5px; right: 7px; font: 700 0.68rem ui-monospace, Consolas, monospace;
+                    color: #A1A1AA; background: none; border: 0; padding: 0;}
+.sa-dj .dj-fx .dj-pad {border-style: dashed;}
+.sa-dj .dj-fx .dj-pad.actif {border-style: solid;}
+.sa-dj .dj-pied {margin-top: 12px; font-size: 0.8rem; color: #8B8B98;}
+@media (prefers-reduced-motion: reduce) {.sa-dj .dj-pad {transition: none;}}
 #sa-entete {display: flex; align-items: center; gap: 18px; padding: 16px 18px; margin-bottom: 10px;
             border-radius: 14px; border: 1px solid #23232D;
             background: radial-gradient(120% 140% at 0% 0%, rgba(34,211,238,.18), transparent 55%),
@@ -1992,6 +2123,93 @@ def entete(lang: str) -> str:
     </div>
   </div>
 </div>
+"""
+
+
+# --------------------------------------------------------------------------- menu principal (barre horizontale)
+
+# Onglets principaux, dans l'ordre : (texte français, préfixe du titre de l'onglet, icône du menu).
+# Le menu et les onglets lisent cette même liste : leurs libellés sont donc toujours identiques.
+MAIN_TABS = [
+    ("Montage", "", "🎬"),
+    ("Studio audio", "🎚️ ", "🎚️"),
+    ("Scènes animées", "", "✨"),
+    ("Classement", "", "🏆"),
+    ("Voix off", "", "🎙️"),
+    ("Shorts en série", "", "📦"),
+    ("Scènes et écran partagé", "✂️ ", "✂️"),
+    ("Outils rapides", "", "🧰"),
+    ("Enregistrer l'écran", "🎥 ", "🎥"),
+    ("Aide", "", "❓"),
+]
+
+
+def tab_label(key: str) -> str:
+    """Titre d'un onglet principal dans la langue active (celui que Gradio affiche)."""
+    prefix = next(p for k, p, _i in MAIN_TABS if k == key)
+    return prefix + _(key)
+
+
+def menu_html() -> str:
+    """Menu principal : tous les onglets, toujours visibles (Gradio cache ceux qui dépassent derrière « ⋯ »).
+    Colonne verticale à gauche sur ordinateur, barre horizontale sur téléphone (voir CSS .menu-onglets)."""
+    items = []
+    for n, (key, _p, icon) in enumerate(MAIN_TABS):
+        first = n == 0                       # « Montage » est l'onglet ouvert au démarrage
+        cls = "menu-item actif" if first else "menu-item"
+        current = ' aria-current="page"' if first else ""
+        items.append(f'<button type="button" class="{cls}" data-key="{html_escape(key)}" '
+                     f'data-label="{html_escape(tab_label(key))}"{current}>'
+                     f'<span class="ic" aria-hidden="true">{icon}</span><span>{html_escape(_(key))}</span></button>')
+    label = html_escape(_("Menu principal"))
+    return f'<nav class="menu-onglets" aria-label="{label}">{"".join(items)}</nav>'
+
+
+# Le menu actionne les vrais onglets de Gradio (barre gardée mais masquée) et suit l'onglet affiché.
+MENU_JS = r"""
+// Gradio ne crée le contenu d'un onglet qu'à sa première ouverture : l'onglet actif est donc suivi ici
+// (le menu est le seul moyen de changer d'onglet principal, la barre de Gradio étant masquée).
+const items = () => [...element.querySelectorAll('.menu-item')];
+let tabs = null;
+const tabButton = label => {
+  const wrap = tabs && tabs.querySelector(':scope > .tab-wrapper');
+  if (!wrap) return null;
+  // onglet visible dans la barre, ou rangé dans le menu « ⋯ » de Gradio
+  return [...wrap.querySelectorAll('[role=tab], .overflow-dropdown button')]
+    .find(b => b.textContent.trim() === label) || null;
+};
+const mark = i => items().forEach((it, k) => {
+  it.classList.toggle('actif', k === i);
+  if (k === i) it.setAttribute('aria-current', 'page'); else it.removeAttribute('aria-current');
+});
+const go = (item) => {
+  const b = tabButton(item.dataset.label);
+  if (!b) return;
+  b.click();
+  mark(items().indexOf(item));
+  // menu en colonne à côté du contenu (ordinateur) ou en barre au-dessus (téléphone)
+  const beside = element.getBoundingClientRect().right <= tabs.getBoundingClientRect().left + 1;
+  const top = tabs.getBoundingClientRect().top + scrollY - (beside ? 12 : element.offsetHeight + 8);
+  if (scrollY > top) scrollTo({top, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+};
+element.addEventListener('click', e => { const it = e.target.closest('.menu-item'); if (it) go(it); });
+element.addEventListener('keydown', e => {                       // flèches : passer d'une entrée à l'autre
+  const it = e.target.closest('.menu-item'); if (!it) return;
+  const all = items(), k = all.indexOf(it);
+  const to = {ArrowDown: k + 1, ArrowRight: k + 1, ArrowUp: k - 1, ArrowLeft: k - 1, Home: 0,
+              End: all.length - 1}[e.key];
+  if (to === undefined) return;
+  e.preventDefault(); all[(to + all.length) % all.length].focus();
+});
+let tries = 0;
+const init = () => {                                             // les onglets apparaissent après le menu
+  const first = items()[0] && items()[0].dataset.label;
+  const b = [...document.querySelectorAll('[role=tab]')].find(x => x.textContent.trim() === first);
+  if (!b) { if (tries++ < 100) setTimeout(init, 150); return; }
+  tabs = b.closest('.tabs');
+  tabs.classList.add('onglets-principaux');
+};
+init();
 """
 
 
@@ -2301,30 +2519,220 @@ def sa_result(res: dict):
     return res["path"], sa_wave(res["path"]), msg, res["path"]
 
 
-def sa_concat(*args, progress=gr.Progress()):
-    """args : 4 × (fichier, début, fin, volume), puis fondu, courbe, sur le rythme, fondus, normaliser, format."""
-    slots, (xf, curve, on_beat, fi, fo, norm, fmt) = args[:16], args[16:]
-    tracks = [{"path": persist(slots[k]), "start": slots[k + 1], "end": slots[k + 2], "volume": slots[k + 3]}
-              for k in range(0, 16, 4) if slots[k]]
+# Tables de pistes (autant de lignes que voulu) : colonnes affichées, types, clés du moteur
+SA_TABLES = {
+    "concat": (["ordre", "fichier", "début", "fin", "volume", "transition"],
+               ["number", "str", "number", "number", "number", "str"],
+               ["start", "end", "volume", "transition"]),
+    "mix": (["ordre", "fichier", "rôle", "volume", "commence à", "boucle"],
+            ["number", "str", "str", "number", "number", "bool"],
+            ["role", "volume", "offset", "loop"]),
+}
+SA_TRANSITION_ICONS = {"fondu": "〰", "coupe sèche": "✂", "isolateur (bass swap)": "🎚", "écho": "🔁",
+                       "back spin": "⏪", "freinage": "🛑"}
+
+
+def sa_df(kind: str, rows: list | None = None) -> pd.DataFrame:
+    return pd.DataFrame(rows or [], columns=[_(c) for c in SA_TABLES[kind][0]])
+
+
+def sa_rows(df) -> list[list]:
+    """Lignes valides (fichier rempli), dans l'ordre de la colonne « ordre »."""
+    rows = [list(r) for r in to_rows(df) if len(r) >= 2 and str(r[1] or "").strip() not in ("", "nan")]
+    return sorted(rows, key=lambda r: num(r[0], 9999))
+
+
+def sa_length(path: str) -> float | None:
+    """Durée du morceau (arrondie vers le bas au centième : la fin ne dépasse jamais le fichier)."""
     try:
-        res = audiostudio.concat(tracks, xf, curve, bool(on_beat), num(fi, 0), num(fo, 0), bool(norm), fmt,
+        d = ff.probe(path).duration
+    except Exception:
+        return None
+    return math.floor(d * 100) / 100 if d else None
+
+
+def sa_new_row(kind: str, n: int, path: str, default: str) -> list:
+    if kind == "concat":       # début et fin remplis : le morceau entier, modifiable dans le tableau
+        return [n, path, 0.0, sa_length(path), 1.0, _(default)]
+    return [n, path, _(default), 1.0 if default == "voix" else 0.7, 0.0, default == "musique"]
+
+
+def sa_add(kind: str, files, df, default: str):
+    """Ajoute un ou plusieurs fichiers à la fin de la table (import multiple)."""
+    rows = sa_rows(df)
+    added = 0
+    for f in files or []:
+        p = persist(f)
+        if ff.media_kind(p) not in ("audio", "video"):
+            gr.Warning(_("Ignoré (ni audio ni vidéo) : {name}", name=Path(p).name))
+            continue
+        rows.append(sa_new_row(kind, len(rows) + 1, p, default))
+        added += 1
+    if added:
+        gr.Info(_("{n} piste(s) ajoutée(s) : {total} au total.", n=added, total=len(rows)))
+    return sa_df(kind, rows)
+
+
+def sa_add_library(kind: str, lib, df, default: str):
+    """Ajoute les sons de la médiathèque du Montage (fichiers audio importés là-bas)."""
+    sons = [p for p in lib or [] if ff.media_kind(p) == "audio"]
+    if not sons:
+        raise gr.Error(_("Aucun fichier audio dans la médiathèque de l'onglet Montage."))
+    return sa_add(kind, sons, df, default)
+
+
+def sa_tidy(kind: str, df):
+    rows = sa_rows(df)
+    for i, r in enumerate(rows, 1):
+        r[0] = i
+        if kind == "concat":   # cases vidées : on remet le morceau entier
+            if num(r[2]) is None:
+                r[2] = 0.0
+            if num(r[3]) is None:
+                r[3] = sa_length(str(r[1]))
+    return sa_df(kind, rows)
+
+
+def sa_drop(kind: str, df):
+    return sa_df(kind, sa_rows(df)[:-1])
+
+
+def sa_all_transitions(df, transition: str):
+    rows = sa_rows(df)
+    for r in rows:
+        r[5] = _(transition)
+    gr.Info(_("Transition « {t} » appliquée à toutes les pistes.", t=_(transition)))
+    return sa_df("concat", rows)
+
+
+def sa_tracks(kind: str, df) -> list[dict]:
+    keys = SA_TABLES[kind][2]
+    return [{"path": r[1], **dict(zip(keys, r[2:]))} for r in sa_rows(df)]
+
+
+def sa_concat(df, transition, xf, curve, on_beat, iso, fi, fo, norm, fmt, progress=gr.Progress()):
+    try:
+        res = audiostudio.concat(sa_tracks("concat", df), xf, curve, bool(on_beat), num(fi, 0), num(fo, 0),
+                                 bool(norm), fmt, transition=transition, isolator=iso,
                                  progress=lambda f: progress(f, desc=_("Enchaînement")))
     except Exception as e:
         raise fail(e)
     return sa_result(res)
 
 
-def sa_mix(*args, progress=gr.Progress()):
-    """args : 4 × (fichier, rôle, volume, décalage, boucle), puis durée, ducking, fondus, normaliser, format."""
-    slots, (length, duck, fi, fo, norm, fmt) = args[:20], args[20:]
-    tracks = [{"path": persist(slots[k]), "role": slots[k + 1], "volume": slots[k + 2], "offset": slots[k + 3],
-               "loop": slots[k + 4]} for k in range(0, 20, 5) if slots[k]]
+def sa_mix(df, length, duck, iso, fi, fo, norm, fmt, progress=gr.Progress()):
     try:
-        res = audiostudio.mix(tracks, length, bool(duck), num(fi, 0), num(fo, 0), bool(norm), fmt,
-                              progress=lambda f: progress(f, desc=_("Superposition")))
+        res = audiostudio.mix(sa_tracks("mix", df), length, bool(duck), num(fi, 0), num(fo, 0), bool(norm), fmt,
+                              isolator=iso, progress=lambda f: progress(f, desc=_("Superposition")))
     except Exception as e:
         raise fail(e)
     return sa_result(res)
+
+
+# Isolateur 3 bandes tactile : trois faders verticaux (doigt, souris ou clavier) et un bouton KILL par bande.
+# Les réglages partent vers Python par l'événement « select » (index = bande, value = dB, "kill" ou "reset").
+ISO_JS = r"""
+const MIN = -26, MAX = 6, BANDS = ['low', 'mid', 'high'];
+const send = (band, value) => trigger('select', {index: BANDS.indexOf(band), value: value});
+const bandOf = el => el.closest('.iso-ch').dataset.band;
+const show = (track, v) => {
+  const p = (v - MIN) / (MAX - MIN) * 100, ch = track.closest('.iso-ch');
+  track.querySelector('.iso-fill').style.height = p + '%';
+  track.querySelector('.iso-knob').style.bottom = p + '%';
+  track.dataset.v = v;
+  const txt = (v > 0 ? '+' : '') + Math.round(v) + ' dB';
+  track.setAttribute('aria-valuenow', v); track.setAttribute('aria-valuetext', txt);
+  ch.classList.remove('kill'); ch.querySelector('.iso-val').textContent = txt;
+};
+const valueAt = (track, y) => {
+  const r = track.getBoundingClientRect();
+  let v = Math.round(MIN + Math.min(1, Math.max(0, 1 - (y - r.top) / r.height)) * (MAX - MIN));
+  return Math.abs(v) <= 1 ? 0 : v;                 // aimant sur 0 dB
+};
+let drag = null;
+element.addEventListener('pointerdown', e => {
+  const tr = e.target.closest('.iso-track'); if (!tr) return;
+  e.preventDefault(); tr.focus({preventScroll: true}); drag = tr;   // la page ne doit pas sauter sous le doigt
+  try { tr.setPointerCapture(e.pointerId); } catch (err) { /* le doigt peut sortir du fader : on suit quand même */ }
+  show(tr, valueAt(tr, e.clientY));
+});
+element.addEventListener('pointermove', e => { if (drag) show(drag, valueAt(drag, e.clientY)); });
+const release = () => {
+  if (!drag) return;
+  const tr = drag, now = Date.now(); drag = null;
+  if (now - (tr._tap || 0) < 320) show(tr, 0);   // double-tap : retour à 0 dB
+  tr._tap = now;
+  send(bandOf(tr), +tr.dataset.v);
+};
+element.addEventListener('pointerup', release);
+element.addEventListener('pointercancel', release);
+element.addEventListener('click', e => {
+  const k = e.target.closest('.iso-kill');
+  if (k) {                                         // réponse immédiate à l'écran, Python confirme ensuite
+    const ch = k.closest('.iso-ch'), on = k.getAttribute('aria-pressed') !== 'true';
+    k.setAttribute('aria-pressed', on); ch.classList.toggle('kill', on);
+    const tr = ch.querySelector('.iso-track'), v = +tr.dataset.v;
+    ch.querySelector('.iso-val').textContent = on ? 'KILL' : (v > 0 ? '+' : '') + Math.round(v) + ' dB';
+    send(bandOf(k), 'kill');
+  }
+  if (e.target.closest('.iso-reset')) {
+    element.querySelectorAll('.iso-track').forEach(tr => show(tr, 0));
+    element.querySelectorAll('.iso-kill').forEach(b => b.setAttribute('aria-pressed', 'false'));
+    trigger('select', {index: -1, value: 'reset'});
+  }
+});
+element.addEventListener('keydown', e => {
+  const tr = e.target.closest('.iso-track'); if (!tr) return;
+  const steps = {ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1, PageUp: 6, PageDown: -6};
+  let v = +tr.dataset.v;
+  if (e.key === 'Home') v = MIN; else if (e.key === 'End') v = MAX;
+  else if (e.key === '0' || e.key === 'Delete') v = 0;
+  else if (steps[e.key]) v = Math.min(MAX, Math.max(MIN, v + steps[e.key]));
+  else return;
+  e.preventDefault(); show(tr, v);
+  clearTimeout(tr._t); tr._t = setTimeout(() => send(bandOf(tr), v), 250);
+});
+"""
+
+
+def iso_html(iso: dict | None) -> str:
+    i = audiostudio.norm_iso(iso)
+    span = audiostudio.ISO_MAX - audiostudio.ISO_MIN
+    zero = -audiostudio.ISO_MIN / span * 100
+    chans = []
+    for b, name in zip(audiostudio.BANDS, (_("Graves"), _("Médiums"), _("Aigus"))):
+        v, kill = i[b], i[f"{b}_kill"]
+        pct = (v - audiostudio.ISO_MIN) / span * 100
+        label = "KILL" if kill else f"{v:+.0f} dB"
+        chans.append(
+            f"<div class='iso-ch{' kill' if kill else ''}' data-band='{b}'>"
+            f"<div class='iso-val'>{label}</div>"
+            f"<div class='iso-track' role='slider' tabindex='0' aria-label='{name}' aria-orientation='vertical' "
+            f"aria-valuemin='{audiostudio.ISO_MIN:g}' aria-valuemax='{audiostudio.ISO_MAX:g}' aria-valuenow='{v:g}' "
+            f"aria-valuetext='{label}' data-v='{v:g}'>"
+            f"<div class='iso-zero' style='bottom:{zero:.1f}%'></div><div class='iso-fill' style='height:{pct:.1f}%'>"
+            f"</div><div class='iso-knob' style='bottom:{pct:.1f}%'></div></div>"
+            f"<div class='iso-name'>{name}</div>"
+            f"<button type='button' class='iso-kill' aria-pressed='{str(kill).lower()}'>KILL</button></div>")
+    return (f"<div class='iso'><div class='iso-chs'>{''.join(chans)}</div>"
+            f"<div class='iso-pied'><span>{_('Glisse avec le doigt ou la souris · double-tap = 0 dB · KILL coupe la bande')}"
+            f"</span><button type='button' class='iso-reset'>↺ {_('Tout à 0')}</button></div></div>")
+
+
+def iso_update(state, index: int, value):
+    """Nouvel état de l'isolateur après un geste sur un fader, un KILL ou « Tout à 0 »."""
+    st = audiostudio.norm_iso(state)
+    if value == "reset" or not 0 <= index < len(audiostudio.BANDS):
+        st = audiostudio.norm_iso({})
+    else:
+        band = audiostudio.BANDS[index]
+        if value == "kill":
+            st[f"{band}_kill"] = not st[f"{band}_kill"]
+        else:
+            st[band] = num(value, 0.0)
+            st[f"{band}_kill"] = False
+    st = audiostudio.norm_iso(st)
+    return st, iso_html(st)
 
 
 def sa_mic(path, preset, low, mid, high, comp, noise, gain, speed, norm, fmt, progress=gr.Progress()):
@@ -2376,40 +2784,251 @@ def studio_header() -> str:
             f"<div><h2>{title}</h2><p>{sub}</p></div></div>")
 
 
-def sa_slot_label(n: int) -> str:
-    return _("Morceau {n}", n=n)
+def sa_track_table(kind: str) -> gr.Dataframe:
+    names, types, _keys = SA_TABLES[kind]
+    widths = ["9%", "39%", "10%", "10%", "11%", "21%"] if kind == "concat" else ["9%", "41%", "14%", "11%", "13%",
+                                                                                 "12%"]
+    return gr.Dataframe(value=sa_df(kind), headers=[_(c) for c in names], datatype=types, interactive=True,
+                        wrap=True, column_count=(len(names), "fixed"), column_widths=widths,
+                        elem_classes="sa-table")
 
 
-def build_studio_audio(L) -> None:
+# --------------------------------------------------------------------------- Platine DJ
+
+DJ_TABLES = {   # colonnes affichées, types
+    "hits": (["moment", "instrument", "volume"], ["number", "str", "number"]),
+    "fx": (["début", "fin", "effet", "intensité"], ["number", "number", "str", "number"]),
+}
+DJ_SHORT_FX = 4      # effet touché lecture arrêtée (début = fin) : il dure une mesure de 4 temps
+
+
+def dj_df(kind: str, rows: list | None = None) -> pd.DataFrame:
+    return pd.DataFrame(rows or [], columns=[_(c) for c in DJ_TABLES[kind][0]])
+
+
+def dj_rows(kind: str, df) -> list[list]:
+    """Lignes remplies (instrument ou effet choisi), dans l'ordre du temps."""
+    name_col = 1 if kind == "hits" else 2
+    rows = [list(r) for r in to_rows(df) if len(r) > name_col and str(r[name_col] or "").strip() not in ("", "nan")]
+    return sorted(rows, key=lambda r: num(r[0], 1e9))
+
+
+def file_url(path: str) -> str:
+    """Adresse d'un fichier pour le navigateur (relative : marche sous /fr/, /it/…)."""
+    return "gradio_api/file=" + quote(Path(path).resolve().as_posix(), safe="/:")
+
+
+def dj_bpm(path: str) -> float:
+    try:
+        return float(beats.analyze(path)["bpm"]) if path else 0.0
+    except Exception:
+        return 0.0
+
+
+def dj_pad(kind: str, name: str, color: str, icon: str, key: str, src: str = "") -> str:
+    data_src = f" data-src='{html_escape(src)}'" if src else ""
+    return (f"<button type='button' class='dj-pad' data-kind='{kind}' data-name='{html_escape(name)}' "
+            f"data-key='{key}'{data_src} style='--c:{color}' aria-keyshortcuts='{key}'>"
+            f"<span class='dj-ic' aria-hidden='true'>{icon}</span><span class='dj-nm'>{html_escape(_(name))}</span>"
+            f"<kbd aria-hidden='true'>{key}</kbd></button>")
+
+
+def deck_html(path: str = "", bpm: float = 0.0) -> str:
+    """Platine : lecteur de la musique, pads d'instruments (on touche) et d'effets (on maintient)."""
+    if path and Path(path).exists():
+        player = (f"<audio class='dj-audio' controls preload='auto' src='{html_escape(file_url(path))}'></audio>"
+                  f"<div class='dj-titre'>{html_escape(Path(path).name)}</div>")
+    else:
+        player = f"<div class='dj-vide'>{_('Choisis une musique ci-dessus : elle se jouera ici.')}</div>"
+    hits = "".join(dj_pad("hit", n, c, ic, k, file_url(str(djdeck.sound_path(n))))
+                   for (n, (_fn, _ld, c, ic)), k in zip(djdeck.INSTRUMENTS.items(), djdeck.KEYS_HITS))
+    fx = "".join(dj_pad("fx", n, c, ic, k) for (n, (c, ic)), k in zip(djdeck.EFFECTS.items(), djdeck.KEYS_FX))
+    tempo = f"{bpm:.0f} BPM" if bpm > 0 else "— BPM"
+    return (f"<div class='dj' tabindex='0' data-bpm='{bpm:.2f}' aria-label='{_('Platine DJ')}'>"
+            f"<div class='dj-haut'>{player}<div class='dj-compteurs'><span class='dj-lampe' aria-hidden='true'></span>"
+            f"<span class='dj-bpm'>{tempo}</span><span class='dj-temps'>0:00.0</span></div></div>"
+            f"<div class='dj-label'>🎺 {_('Instruments')} <em>{_('touche pendant l’écoute (ou touches 1 à 9)')}</em></div>"
+            f"<div class='dj-pads'>{hits}</div>"
+            f"<div class='dj-label'>🎛 {_('Effets de platine')} <em>{_('maintiens appuyé (ou touches Q W E R T Y)')}</em>"
+            f"</div><div class='dj-pads dj-fx'>{fx}</div>"
+            f"<div class='dj-pied'>{_('Chaque coup s’inscrit dans les tableaux au moment de la lecture. Espace = lecture/pause.')}"
+            f"</div></div>")
+
+
+# Pads de la platine : un instrument se joue au toucher (le son part tout de suite dans le navigateur) ; un effet
+# dure tant que le pad est appuyé. Les coups sont envoyés à Python par paquets (« select », value = "hit|nom|t;fx|nom|a|b")
+# 300 ms après le dernier : des coups très rapprochés ne se perdent pas.
+DJ_JS = r"""
+const pending = [], held = {}, samples = {};
+let timer = null;
+const audio = () => element.querySelector('.dj-audio');
+const now = () => { const a = audio(); return a ? a.currentTime : 0; };
+const flush = () => { timer = null; if (pending.length) trigger('select', {index: 0, value: pending.splice(0).join(';')}); };
+const queue = item => { pending.push(item); clearTimeout(timer); timer = setTimeout(flush, 300); };
+const flash = pad => { pad.classList.add('frappe'); setTimeout(() => pad.classList.remove('frappe'), 140); };
+const play = pad => {
+  const src = pad.dataset.src; if (!src) return;
+  try {
+    const s = samples[src] || (samples[src] = new Audio(src));
+    const c = s.cloneNode(); c.volume = 0.9; c.play().catch(() => {});
+  } catch (err) { /* pas de son d'aperçu : le coup est quand même noté */ }
+};
+const down = pad => {
+  if (pad.dataset.kind === 'hit') { play(pad); flash(pad); queue(`hit|${pad.dataset.name}|${now().toFixed(3)}`); }
+  else if (!(pad.dataset.name in held)) { held[pad.dataset.name] = now(); pad.classList.add('actif'); }
+};
+const up = pad => {
+  if (pad.dataset.kind !== 'fx' || !(pad.dataset.name in held)) return;
+  const t0 = held[pad.dataset.name]; delete held[pad.dataset.name]; pad.classList.remove('actif');
+  queue(`fx|${pad.dataset.name}|${t0.toFixed(3)}|${now().toFixed(3)}`);
+};
+element.addEventListener('pointerdown', e => {
+  const pad = e.target.closest('.dj-pad'); if (!pad) return;
+  e.preventDefault();                                   // pas de focus qui fait sauter la page sous le doigt
+  try { pad.setPointerCapture(e.pointerId); } catch (err) { /* doigt sorti du pad : on suit quand même */ }
+  pad._ptr = true; down(pad);
+});
+const release = e => { const pad = e.target.closest('.dj-pad'); if (pad && pad._ptr) { pad._ptr = false; up(pad); } };
+element.addEventListener('pointerup', release);
+element.addEventListener('pointercancel', release);
+const padFor = key => [...element.querySelectorAll('.dj-pad')].find(p => p.dataset.key === key.toUpperCase());
+element.addEventListener('keydown', e => {
+  if (e.target.closest('audio')) return;               // le lecteur garde ses propres touches
+  if (e.key === ' ') { const a = audio(); if (a) { e.preventDefault(); a.paused ? a.play() : a.pause(); } return; }
+  const pad = e.key.length === 1 && padFor(e.key); if (!pad) return;
+  e.preventDefault(); if (!e.repeat) down(pad);
+});
+element.addEventListener('keyup', e => { const pad = e.key.length === 1 && padFor(e.key); if (pad) up(pad); });
+const fmt = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+const tick = () => {
+  const a = audio(), deck = element.querySelector('.dj');
+  if (a && deck) {
+    deck.querySelector('.dj-temps').textContent = fmt(a.currentTime);
+    const bpm = +deck.dataset.bpm, lamp = deck.querySelector('.dj-lampe');
+    lamp.classList.toggle('on', bpm > 0 && !a.paused && (a.currentTime * bpm / 60) % 1 < 0.18);   // lampe du temps
+  }
+  requestAnimationFrame(tick);
+};
+requestAnimationFrame(tick);
+"""
+
+
+def dj_key(kind: str, row: list) -> tuple:
+    """Identité d'une ligne (temps arrondis, nom en français), quelle que soit la langue du tableau."""
+    if kind == "hits":
+        return round(num(row[0], -1), 2), layers.norm_choice(row[1], list(djdeck.INSTRUMENTS), "")
+    return (round(num(row[0], -1), 2), round(num(row[1], -1), 2),
+            layers.norm_choice(row[2], list(djdeck.EFFECTS), ""))
+
+
+def dj_apply(events: str, hits_df, fx_df, bpm: float = 0.0, live: list | None = None):
+    """Ajoute aux tableaux les coups joués sur la platine (texte "hit|nom|t;fx|nom|a|b").
+
+    `live` (gardé côté serveur) retient tous les coups joués depuis la dernière modification à la main : si deux
+    paquets partent avant la réponse au premier, le second arrive avec un tableau périmé, et rien ne se perd.
+    Renvoie (instruments, effets, live)."""
+    hits, fx = dj_rows("hits", hits_df), dj_rows("fx", fx_df)
+    live = [list(x) for x in live or []]
+    bar = DJ_SHORT_FX * (60 / bpm if bpm > 0 else audiostudio.DEFAULT_BEAT)
+    for ev in str(events or "").split(";"):
+        p = ev.split("|")
+        if len(p) == 3 and p[0] == "hit" and p[1] in djdeck.INSTRUMENTS and num(p[2]) is not None:
+            live.append(["hits", round(max(0.0, num(p[2])), 2), p[1], 1.0])
+        elif len(p) == 4 and p[0] == "fx" and p[1] in djdeck.EFFECTS and None not in (num(p[2]), num(p[3])):
+            a, b = sorted((max(0.0, num(p[2])), max(0.0, num(p[3]))))
+            if b - a < 0.1:                         # touché lecture arrêtée : une mesure à partir de là
+                b = a + bar
+            live.append(["fx", round(a, 2), round(b, 2), p[1], 0.7])
+    for kind, rows in (("hits", hits), ("fx", fx)):
+        have = {dj_key(kind, r) for r in rows}
+        for x in live:
+            if x[0] != kind:
+                continue
+            row = [x[1], _(x[2]), x[3]] if kind == "hits" else [x[1], x[2], _(x[3]), x[4]]
+            if dj_key(kind, row) not in have:
+                rows.append(row)
+                have.add(dj_key(kind, row))
+    key = lambda r: num(r[0], 1e9)                  # noqa: E731
+    return dj_df("hits", sorted(hits, key=key)), dj_df("fx", sorted(fx, key=key)), live
+
+
+def dj_load(path):
+    """Nouvelle musique sur la platine : (chemin, platine, tempo)."""
+    p = persist(path) if path else ""
+    if not p or ff.media_kind(p) not in ("audio", "video"):
+        raise gr.Error(_("Choisis un fichier audio (ou une vidéo avec du son)."))
+    bpm = dj_bpm(p)
+    return p, deck_html(p, bpm), bpm
+
+
+def dj_from(path):
+    if not path or not Path(path).exists():
+        raise gr.Error(_("Crée ou choisis d'abord un fichier audio."))
+    return dj_load(path)
+
+
+def dj_render(src, hits_df, fx_df, snap, vol, norm, fmt, progress=gr.Progress()):
+    hits = [{"time": r[0], "instrument": r[1], "volume": r[2]} for r in dj_rows("hits", hits_df)]
+    fx = [{"start": r[0], "end": r[1], "effect": r[2], "intensity": r[3]} for r in dj_rows("fx", fx_df)]
+    try:
+        res = djdeck.render(src, hits, fx, bool(snap), num(vol, 1.0), bool(norm), fmt,
+                            progress=lambda f: progress(f, desc=_("Platine DJ")))
+    except Exception as e:
+        raise fail(e)
+    return sa_result(res)
+
+
+def dj_table(kind: str) -> gr.Dataframe:
+    names, types = DJ_TABLES[kind]
+    widths = ["24%", "52%", "24%"] if kind == "hits" else ["20%", "20%", "38%", "22%"]
+    return gr.Dataframe(value=dj_df(kind), headers=[_(c) for c in names], datatype=types, interactive=True,
+                        wrap=True, column_count=(len(names), "fixed"), column_widths=widths, elem_classes="sa-table")
+
+
+def build_studio_audio(L, lib=None) -> None:
     """Onglet « Studio audio » (fond noir, accents cyan et violet : CSS #studio-audio)."""
+    lang = getattr(L, "keywords", {}).get("lang", DEFAULT_LANG)
     gr.HTML(studio_header())
     with gr.Tabs():
         # ---------------------------------------------------------------- enchaîner
         with gr.Tab("🔗 " + _("Enchaîner"), id="sa-concat"):
             with gr.Row(equal_height=False):
                 with gr.Column(scale=3):
-                    section("1", "Morceaux", "2 à 4, joués dans l'ordre")
-                    cc_slots = []
-                    for n in range(1, audiostudio.MAX_TRACKS + 1):
-                        box = gr.Group() if n <= 2 else gr.Accordion(sa_slot_label(n) + " " + _("(facultatif)"),
-                                                                     open=False)
-                        with box:
-                            f = gr.Audio(label=sa_slot_label(n), type="filepath", sources=["upload"])
-                            with gr.Row():
-                                s = gr.Number(value=0, label=_("Début (s)"), precision=2, min_width=80)
-                                e = gr.Number(value=None, label=_("Fin (s)"), precision=2, min_width=80,
-                                              info=_("0 = jusqu'au bout"))
-                                v = gr.Slider(0, 2, value=1, step=0.05, label=_("Volume"))
-                        cc_slots += [f, s, e, v]
-                with gr.Column(scale=2):
-                    section("2", "Transition")
-                    cc_xf = gr.Slider(0, 12, value=3, step=0.5, label=_("Durée du fondu enchaîné (s)"),
-                                      info=_("0 = coupe sèche"))
-                    cc_curve = gr.Radio(opts(list(audiostudio.CURVES)), value="équilibré", label=_("Courbe du fondu"))
-                    cc_beat = gr.Checkbox(value=True, label="🥁 " + _("Transition sur le rythme"),
-                                          info=_("le fondu commence sur un temps, dure des mesures entières, et le "
+                    section("1", "Morceaux", "autant que tu veux, joués dans l'ordre")
+                    with gr.Row(equal_height=True):
+                        cc_up = gr.UploadButton("➕ " + _("Ajouter des morceaux"), file_count="multiple",
+                                                file_types=sorted(ff.AUDIO_EXT | ff.VIDEO_EXT), type="filepath",
+                                                variant="primary", elem_classes="sa-add", scale=2)
+                        cc_lib = gr.Button("📚 " + _("Sons de la médiathèque"), elem_classes="sa-add", scale=1)
+                    gr.Markdown(_("Choisis plusieurs fichiers d'un coup (Ctrl ou Maj). Début et fin se remplissent "
+                                  "tout seuls avec le morceau entier : modifie-les pour couper. Volume et transition "
+                                  "vers le morceau suivant se règlent aussi. Clique sur une ligne pour l'écouter."),
+                                elem_classes="sr-note")
+                    cc_table = sa_track_table("concat")
+                    with gr.Row():
+                        cc_tidy = gr.Button(_("Trier et renuméroter"), size="sm")
+                        cc_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                        cc_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                    cc_preview = gr.Audio(label=_("Écoute de la piste choisie"), type="filepath", interactive=False)
+                    section("2", "Transitions", "touche un pad")
+                    cc_trans = gr.Radio([(f"{SA_TRANSITION_ICONS[t]} {_(t)}", t) for t in audiostudio.TRANSITIONS],
+                                        value="fondu", show_label=False, elem_classes="sa-pads",
+                                        info=_("transition donnée aux nouveaux morceaux · écho, back spin et freinage "
+                                               "= effets de relâchement du morceau qui se termine"))
+                    cc_apply = gr.Button(_("Appliquer ce pad à toutes les pistes"), size="sm")
+                    with gr.Row():
+                        cc_xf = gr.Slider(0, 12, value=3, step=0.5, label=_("Durée du fondu enchaîné (s)"),
+                                          info=_("fondu et isolateur ; 0 = coupe sèche"))
+                        cc_curve = gr.Radio(opts(list(audiostudio.CURVES)), value="équilibré",
+                                            label=_("Courbe du fondu"))
+                    cc_beat = gr.Checkbox(value=True, label="🥁 " + _("Transitions sur le rythme"),
+                                          info=_("fondus en mesures entières, échos et spins pile sur un temps, et le "
                                                  "morceau suivant démarre sur son temps"))
-                    section("3", "Finition")
+                with gr.Column(scale=2):
+                    section("3", "Isolateur 3 bandes", "tout le résultat")
+                    cc_iso = gr.State(audiostudio.norm_iso({}))
+                    cc_iso_ui = gr.HTML(iso_html({}), js_on_load=ISO_JS, elem_classes="sa-iso")
+                    section("4", "Finition")
                     with gr.Row():
                         cc_fi = gr.Number(value=0, label=_("Fondu d'entrée (s)"), precision=1, min_width=80)
                         cc_fo = gr.Number(value=2, label=_("Fondu de sortie (s)"), precision=1, min_width=80)
@@ -2431,29 +3050,31 @@ def build_studio_audio(L) -> None:
         with gr.Tab("🎛 " + _("Superposer"), id="sa-mix"):
             with gr.Row(equal_height=False):
                 with gr.Column(scale=3):
-                    section("1", "Pistes", "jouées en même temps")
-                    mx_slots = []
-                    roles = ["musique", "voix", "ambiance", "musique"]
-                    for n in range(1, audiostudio.MAX_TRACKS + 1):
-                        box = gr.Group() if n <= 2 else gr.Accordion(_("Piste {n}", n=n) + " " + _("(facultatif)"),
-                                                                     open=False)
-                        with box:
-                            f = gr.Audio(label=_("Piste {n}", n=n), type="filepath", sources=["upload"])
-                            with gr.Row():
-                                r = gr.Dropdown(opts(audiostudio.ROLES), value=roles[n - 1], label=_("Rôle"),
-                                                min_width=110)
-                                v = gr.Slider(0, 2, value=1 if roles[n - 1] == "voix" else 0.6, step=0.05,
-                                              label=_("Volume"))
-                                o = gr.Number(value=0, label=_("Commence à (s)"), precision=2, min_width=80)
-                                lp = gr.Checkbox(value=roles[n - 1] == "musique", label=_("En boucle"),
-                                                 min_width=90)
-                        mx_slots += [f, r, v, o, lp]
-                with gr.Column(scale=2):
+                    section("1", "Pistes", "autant que tu veux, jouées en même temps")
+                    with gr.Row(equal_height=True):
+                        mx_up = gr.UploadButton("➕ " + _("Ajouter des pistes"), file_count="multiple",
+                                                file_types=sorted(ff.AUDIO_EXT | ff.VIDEO_EXT), type="filepath",
+                                                variant="primary", elem_classes="sa-add", scale=2)
+                        mx_lib = gr.Button("📚 " + _("Sons de la médiathèque"), elem_classes="sa-add", scale=1)
+                    mx_role = gr.Radio(opts(audiostudio.ROLES), value="musique", label=_("Rôle des pistes ajoutées"),
+                                       elem_classes="sa-pads")
+                    gr.Markdown(_("Chaque ligne se modifie : rôle, volume, moment où la piste commence, boucle. "
+                                  "Clique sur une ligne pour l'écouter."), elem_classes="sr-note")
+                    mx_table = sa_track_table("mix")
+                    with gr.Row():
+                        mx_tidy = gr.Button(_("Trier et renuméroter"), size="sm")
+                        mx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                        mx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                    mx_preview = gr.Audio(label=_("Écoute de la piste choisie"), type="filepath", interactive=False)
                     section("2", "Mélange")
                     mx_len = gr.Radio(opts(audiostudio.LENGTHS), value="la plus longue", label=_("Durée du résultat"),
                                       info=_("« la voix » : le mélange s'arrête quand la voix finit"))
                     mx_duck = gr.Checkbox(value=True, label="🎚 " + _("Ducking : la musique baisse quand la voix parle"))
-                    section("3", "Finition")
+                with gr.Column(scale=2):
+                    section("3", "Isolateur 3 bandes", "tout le résultat")
+                    mx_iso = gr.State(audiostudio.norm_iso({}))
+                    mx_iso_ui = gr.HTML(iso_html({}), js_on_load=ISO_JS, elem_classes="sa-iso")
+                    section("4", "Finition")
                     with gr.Row():
                         mx_fi = gr.Number(value=0, label=_("Fondu d'entrée (s)"), precision=1, min_width=80)
                         mx_fo = gr.Number(value=2, label=_("Fondu de sortie (s)"), precision=1, min_width=80)
@@ -2470,6 +3091,53 @@ def build_studio_audio(L) -> None:
                         mx_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
                         mx_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
                     gr.Markdown(sa_folder_md("superposition"), elem_classes="sr-note")
+
+        # ---------------------------------------------------------------- platine DJ
+        with gr.Tab("🎧 " + _("Platine DJ"), id="sa-dj"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Ta musique", "celle sur laquelle tu joues")
+                    with gr.Row(equal_height=True):
+                        dj_up = gr.UploadButton("🎵 " + _("Choisir une musique"), file_count="single",
+                                                file_types=sorted(ff.AUDIO_EXT | ff.VIDEO_EXT), type="filepath",
+                                                variant="primary", elem_classes="sa-add", scale=2)
+                        dj_from_cc = gr.Button("🔗 " + _("Résultat d'Enchaîner"), elem_classes="sa-add", scale=1)
+                        dj_from_mx = gr.Button("🎛 " + _("Résultat de Superposer"), elem_classes="sa-add", scale=1)
+                    dj_src = gr.State("")
+                    dj_bpm_st = gr.State(0.0)
+                    dj_live = gr.State([])          # coups joués depuis la dernière modification à la main
+                    section("2", "Joue en direct", "comme un DJ")
+                    dj_deck = gr.HTML(deck_html(), js_on_load=DJ_JS, elem_classes="sa-dj")
+                    section("3", "Tes coups", "modifiables : moment, volume, durée, intensité")
+                    gr.Markdown(_("Instruments : le moment est la seconde de la musique où tombe le coup. Effets : "
+                                  "début, fin et intensité (0 à 1). Tu peux tout corriger à la main."),
+                                elem_classes="sr-note")
+                    dj_hits = dj_table("hits")
+                    with gr.Row():
+                        dj_hits_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                        dj_hits_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                    dj_fx = dj_table("fx")
+                    with gr.Row():
+                        dj_fx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
+                        dj_fx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                with gr.Column(scale=2):
+                    section("4", "Mixage")
+                    dj_snap = gr.Checkbox(value=True, label="🎯 " + _("Caler sur le temps"),
+                                          info=_("chaque coup et chaque effet tombent pile sur le temps le plus proche"))
+                    dj_vol = gr.Slider(0, 2, value=1, step=0.05, label=_("Volume des instruments"))
+                    with gr.Row():
+                        dj_norm = gr.Checkbox(value=True, label=_("Volume normalisé (-14 LUFS)"))
+                        dj_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
+                    dj_go = gr.Button("🎧 " + _("Mixer la platine"), variant="primary", elem_classes="sa-go")
+                    dj_out = gr.Audio(label=_("Résultat"), type="filepath", interactive=False)
+                    dj_wave = gr.Image(label=_("Forme d'onde"), interactive=False, height=110, buttons=[],
+                                       elem_classes="sa-onde")
+                    dj_log = gr.Textbox(label=_("Journal"), lines=4, elem_classes="mono")
+                    dj_path = gr.State("")
+                    with gr.Row():
+                        dj_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
+                        dj_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
+                    gr.Markdown(sa_folder_md("platine dj"), elem_classes="sr-note")
 
         # ---------------------------------------------------------------- effets micro et mixage
         with gr.Tab("🎙 " + _("Effets micro et mixage"), id="sa-mic"):
@@ -2516,7 +3184,7 @@ def build_studio_audio(L) -> None:
             gr.Markdown(_("Chaque outil a son dossier : retrouve, écoute et réutilise tes fichiers."))
             out_widgets = {}
             with gr.Row(equal_height=False):
-                for kind, icon in zip(SA_KIND_LABELS, ("🔗", "🎛", "🎙")):
+                for kind, icon in zip(SA_KIND_LABELS, ("🔗", "🎛", "🎙", "🎧")):
                     with gr.Column(min_width=280):
                         gr.Markdown(f"### {icon} {_(kind).capitalize()}")
                         files = audiostudio.recent(kind)
@@ -2532,24 +3200,78 @@ def build_studio_audio(L) -> None:
     # ------------------------------------------------------------------ événements
     music_field, voice_field = FIELDS.get("music.path"), FIELDS.get("voiceover.path")
     for kind, go, fn, inputs, out, wave, log, path, folder_btn in (
-            ("enchaînement", cc_go, sa_concat, cc_slots + [cc_xf, cc_curve, cc_beat, cc_fi, cc_fo, cc_norm, cc_fmt],
-             cc_out, cc_wave, cc_log, cc_path, cc_dir),
-            ("superposition", mx_go, sa_mix, mx_slots + [mx_len, mx_duck, mx_fi, mx_fo, mx_norm, mx_fmt],
+            ("enchaînement", cc_go, sa_concat, [cc_table, cc_trans, cc_xf, cc_curve, cc_beat, cc_iso, cc_fi, cc_fo,
+                                                cc_norm, cc_fmt], cc_out, cc_wave, cc_log, cc_path, cc_dir),
+            ("superposition", mx_go, sa_mix, [mx_table, mx_len, mx_duck, mx_iso, mx_fi, mx_fo, mx_norm, mx_fmt],
              mx_out, mx_wave, mx_log, mx_path, mx_dir),
             ("effets micro", mc_go, sa_mic, [mc_in, mc_preset, mc_low, mc_mid, mc_high, mc_comp, mc_noise, mc_gain,
-                                             mc_speed, mc_norm, mc_fmt], mc_out, mc_wave, mc_log, mc_path, mc_dir)):
+                                             mc_speed, mc_norm, mc_fmt], mc_out, mc_wave, mc_log, mc_path, mc_dir),
+            ("platine dj", dj_go, dj_render, [dj_src, dj_hits, dj_fx, dj_snap, dj_vol, dj_norm, dj_fmt],
+             dj_out, dj_wave, dj_log, dj_path, dj_dir)):
         dd, info, *_rest = out_widgets[kind]
         go.click(L(fn), inputs, [out, wave, log, path]) \
             .success(L(functools.partial(sa_list, kind)), path, [dd, info])
         folder_btn.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS[kind]), None, None)
     mc_reset.click(sa_reset_mixer, None, [mc_preset, mc_low, mc_mid, mc_high, mc_comp, mc_noise, mc_gain, mc_speed])
+
+    # tables de pistes : import multiple, médiathèque, tri, écoute de la ligne cliquée
+    def preview_row(df, evt: gr.SelectData):     # sans L() : Gradio doit voir l'annotation SelectData
+        rows = to_rows(df)
+        row = evt.index[0] if isinstance(evt.index, (list, tuple)) else evt.index
+        path = str(rows[row][1]) if 0 <= row < len(rows) and len(rows[row]) > 1 else ""
+        return path if path and Path(path).exists() else None
+
+    for kind, up, lib_btn, table, default, tidy, drop, clear, preview in (
+            ("concat", cc_up, cc_lib, cc_table, cc_trans, cc_tidy, cc_drop, cc_clear, cc_preview),
+            ("mix", mx_up, mx_lib, mx_table, mx_role, mx_tidy, mx_drop, mx_clear, mx_preview)):
+        up.upload(L(functools.partial(sa_add, kind)), [up, table, default], table)
+        if lib is not None:
+            lib_btn.click(L(functools.partial(sa_add_library, kind)), [lib, table, default], table)
+        tidy.click(L(functools.partial(sa_tidy, kind)), table, table)
+        drop.click(L(functools.partial(sa_drop, kind)), table, table)
+        clear.click(L(functools.partial(sa_df, kind)), None, table)
+        table.select(preview_row, table, preview)
+    cc_apply.click(L(sa_all_transitions), [cc_table, cc_trans], cc_table)
+
+    # isolateurs tactiles
+    def iso_event(state, evt: gr.SelectData):
+        token = LANG.set(lang)
+        try:
+            return iso_update(state, int(evt.index if not isinstance(evt.index, list) else evt.index[0]), evt.value)
+        finally:
+            LANG.reset(token)
+
+    cc_iso_ui.select(iso_event, cc_iso, [cc_iso, cc_iso_ui])
+    mx_iso_ui.select(iso_event, mx_iso, [mx_iso, mx_iso_ui])
+
+    # platine DJ : choix de la musique, coups joués sur les pads, tableaux
+    def dj_event(hits, fx, bpm, live, evt: gr.SelectData):   # sans L() : Gradio doit voir l'annotation SelectData
+        token = LANG.set(lang)
+        try:
+            return dj_apply(evt.value, hits, fx, num(bpm, 0.0), live)
+        finally:
+            LANG.reset(token)
+
+    dj_up.upload(L(dj_load), dj_up, [dj_src, dj_deck, dj_bpm_st])
+    dj_from_cc.click(L(dj_from), cc_path, [dj_src, dj_deck, dj_bpm_st])
+    dj_from_mx.click(L(dj_from), mx_path, [dj_src, dj_deck, dj_bpm_st])
+    # « multiple » : un paquet de coups envoyé pendant que le précédent est traité n'est pas ignoré
+    dj_deck.select(dj_event, [dj_hits, dj_fx, dj_bpm_st, dj_live], [dj_hits, dj_fx, dj_live],
+                   trigger_mode="multiple")
+    no_live = lambda: []                                                  # noqa: E731
+    for table in (dj_hits, dj_fx):          # modifié à la main : le tableau redevient la référence
+        table.input(no_live, None, dj_live)
+    dj_hits_drop.click(L(lambda df: (dj_df("hits", dj_rows("hits", df)[:-1]), [])), dj_hits, [dj_hits, dj_live])
+    dj_fx_drop.click(L(lambda df: (dj_df("fx", dj_rows("fx", df)[:-1]), [])), dj_fx, [dj_fx, dj_live])
+    dj_hits_clear.click(L(lambda: (dj_df("hits"), [])), None, [dj_hits, dj_live])
+    dj_fx_clear.click(L(lambda: (dj_df("fx"), [])), None, [dj_fx, dj_live])
     for kind, (dd, info, player, refresh, folder) in out_widgets.items():
         dd.change(sa_pick, dd, [player])
         refresh.click(L(functools.partial(sa_list, kind)), None, [dd, info])
         out_tab.select(L(functools.partial(sa_list, kind)), None, [dd, info])    # liste à jour à chaque ouverture
         folder.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS[kind]), None, None)
     if music_field is not None:
-        for btn, path in ((cc_music, cc_path), (mx_music, mx_path)):
+        for btn, path in ((cc_music, cc_path), (mx_music, mx_path), (dj_music, dj_path)):
             btn.click(L(functools.partial(sa_use, what="music")), path, music_field)
     if voice_field is not None:
         mc_voice.click(L(functools.partial(sa_use, what="voice")), mc_path, voice_field)
@@ -2579,9 +3301,10 @@ def _build_ui(lang: str) -> gr.Blocks:
     L = functools.partial(bind, lang=lang)
     with gr.Blocks(title="Montage Studio Video") as demo:
         gr.HTML(entete(lang))
+        gr.HTML(menu_html(), js_on_load=MENU_JS, elem_id="menu-onglets")
         lib = gr.State([])
 
-        with gr.Tab(_("Montage")):
+        with gr.Tab(tab_label("Montage")):
             with gr.Row(equal_height=False):
                 # ---------------- colonne gauche : médias, inspecteur, timeline
                 with gr.Column(scale=3):
@@ -2984,10 +3707,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                     load_tpl_btn = gr.Button(_("Appliquer ce modèle aux réglages"))
 
         # ------------------------------------------------------------- scènes animées
-        with gr.Tab("🎚️ " + _("Studio audio"), elem_id="studio-audio"):
-            build_studio_audio(L)
+        with gr.Tab(tab_label("Studio audio"), elem_id="studio-audio"):
+            build_studio_audio(L, lib)
 
-        with gr.Tab(_("Scènes animées")):
+        with gr.Tab(tab_label("Scènes animées")):
             gr.Markdown(_("Des scènes animées prêtes à l'emploi : remplis les textes, regarde l'aperçu, crée la vidéo "
                           "puis ajoute-la à la timeline. Mets un mot entre *étoiles* pour le colorer.")
                         .replace("*", "\\*"))   # étoiles affichées telles quelles, pas en italique
@@ -3058,7 +3781,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                 .then(lambda lb: gr.Dropdown(choices=[(media_label(x), x) for x in lb or []]), lib, ov_media)
 
         # ------------------------------------------------------------- classement (Top N)
-        with gr.Tab(_("Classement")):
+        with gr.Tab(tab_label("Classement")):
             gr.Markdown(_("Un Short « Top N » : un titre, une liste numérotée qui se remplit clip après clip, le clip "
                           "en cours dans un cadre avec son rang. N'utilise que des clips dont tu as les droits ou "
                           "l'autorisation, et crédite la source."))
@@ -3171,7 +3894,7 @@ def _build_ui(lang: str) -> gr.Blocks:
             rk_load.upload(L(rank_load), rk_load, rk_inputs).then(*rk_view)
 
         # ------------------------------------------------------------- voix off
-        with gr.Tab(_("Voix off")):
+        with gr.Tab(tab_label("Voix off")):
             gr.Markdown(_("Écris le texte, choisis une voix, génère. Sépare les scènes par une ligne `---` : "
                           "une piste par scène + une piste complète + les sous-titres `.srt`."))
             voice_res = gr.State(None)
@@ -3273,7 +3996,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                     rv_out = gr.File(label=_("Télécharger"))
 
         # ------------------------------------------------------------- série
-        with gr.Tab(_("Shorts en série")):
+        with gr.Tab(tab_label("Shorts en série")):
             gr.Markdown(_("Une ligne du tableau = une vidéo terminée. Le modèle fixe le style, le tableau fixe le contenu."))
             with gr.Row():
                 with gr.Column():
@@ -3301,7 +4024,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                     series_log = gr.Textbox(label=_("Rapport"), lines=18, elem_classes="mono")
 
         # ------------------------------------------------------------- scènes et écran partagé
-        with gr.Tab("✂️ " + _("Scènes et écran partagé")):
+        with gr.Tab(tab_label("Scènes et écran partagé")):
             with gr.Tabs():
                 with gr.Tab(_("Découper en scènes")):
                     cut_state = gr.State(cut_empty_state())
@@ -3384,7 +4107,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                             ss_out = gr.File(label=_("Télécharger"), height=80)
 
         # ------------------------------------------------------------- outils
-        with gr.Tab(_("Outils rapides")):
+        with gr.Tab(tab_label("Outils rapides")):
             with gr.Row(equal_height=False):
                 with gr.Column():
                     section("A", "Miniature YouTube")
@@ -3488,7 +4211,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                     pass
 
         # ------------------------------------------------------------- Screen Record
-        with gr.Tab("🎥 " + _("Enregistrer l'écran")):
+        with gr.Tab(tab_label("Enregistrer l'écran")):
             gr.HTML(sr_hero())
             with gr.Row(equal_height=False):
                 with gr.Column(scale=2):
@@ -3573,7 +4296,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                                     elem_classes="sr-note")
             sr_timer = gr.Timer(1.0, active=False)
 
-        with gr.Tab(_("Aide")):
+        with gr.Tab(tab_label("Aide")):
             gr.HTML(help_html(
                 f"{_('FFmpeg utilisé')} : `{ff.ffmpeg_exe()}`  \nWhisper : "
                 f"{_('installé ✅') if subs.whisper_available() else _('non installé (optionnel)')}"))

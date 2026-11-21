@@ -1491,21 +1491,12 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Effets micro et mixage", "Mic effects and mixing", "Effetti microfono e mixaggio", "Efectos de micro y mezcla"),
     ("Sorties", "Outputs", "File creati", "Salidas"),
     ("Morceaux", "Tracks", "Brani", "Pistas"),
-    ("2 à 4, joués dans l'ordre", "2 to 4, played in order", "da 2 a 4, suonati in ordine", "de 2 a 4, en orden"),
-    ("Morceau {n}", "Track {n}", "Brano {n}", "Pista {n}"),
-    ("0 = jusqu'au bout", "0 = to the end", "0 = fino alla fine", "0 = hasta el final"),
     ("Durée du fondu enchaîné (s)", "Crossfade length (s)", "Durata della dissolvenza incrociata (s)",
      "Duración del fundido cruzado (s)"),
-    ("0 = coupe sèche", "0 = hard cut", "0 = taglio netto", "0 = corte seco"),
     ("Courbe du fondu", "Fade curve", "Curva della dissolvenza", "Curva del fundido"),
     ("équilibré", "balanced", "bilanciata", "equilibrada"),
     ("linéaire", "linear", "lineare", "lineal"),
     ("rapide", "fast", "rapida", "rápida"),
-    ("Transition sur le rythme", "Beat-matched transition", "Transizione a tempo", "Transición al ritmo"),
-    ("le fondu commence sur un temps, dure des mesures entières, et le morceau suivant démarre sur son temps",
-     "the fade starts on a beat, lasts whole bars, and the next track starts on its own beat",
-     "la dissolvenza inizia su un battito, dura battute intere e il brano successivo parte sul suo battito",
-     "el fundido empieza en un tiempo, dura compases enteros y la pista siguiente arranca en su tiempo"),
     ("Finition", "Finishing", "Rifinitura", "Acabado"),
     ("Fondu d'entrée (s)", "Fade in (s)", "Dissolvenza in entrata (s)", "Fundido de entrada (s)"),
     ("Fondu de sortie (s)", "Fade out (s)", "Dissolvenza in uscita (s)", "Fundido de salida (s)"),
@@ -1516,14 +1507,10 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Utiliser comme musique du projet", "Use as project music", "Usa come musica del progetto",
      "Usar como música del proyecto"),
     ("Pistes", "Tracks", "Tracce", "Pistas"),
-    ("jouées en même temps", "played at the same time", "suonate insieme", "sonando a la vez"),
-    ("Piste {n}", "Track {n}", "Traccia {n}", "Pista {n}"),
     ("Rôle", "Role", "Ruolo", "Función"),
     ("musique", "music", "musica", "música"),
     ("voix", "voice", "voce", "voz"),
     ("ambiance", "ambience", "ambiente", "ambiente"),
-    ("Commence à (s)", "Starts at (s)", "Inizia a (s)", "Empieza en (s)"),
-    ("En boucle", "Loop", "In loop", "En bucle"),
     ("Mélange", "Mix", "Mix", "Mezcla"),
     ("Durée du résultat", "Result length", "Durata del risultato", "Duración del resultado"),
     ("la voix", "the voice", "la voce", "la voz"),
@@ -1611,6 +1598,168 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Registra la tua voce o importa un file audio.", "Graba tu voz o importa un archivo de audio."),
     ("🎙 Effet « {preset} » appliqué : {dur:.1f} s", "🎙 “{preset}” effect applied: {dur:.1f} s",
      "🎙 Effetto « {preset} » applicato: {dur:.1f} s", "🎙 Efecto «{preset}» aplicado: {dur:.1f} s"),
+
+    # ---- menu principal
+    ("Menu principal", "Main menu", "Menu principale", "Menú principal"),
+
+    # ---- studio audio : pistes illimitées, transitions de DJ, isolateur tactile
+    ("transition", "transition", "transizione", "transición"),
+    ("rôle", "role", "ruolo", "función"),
+    ("commence à", "starts at", "inizia a", "empieza en"),
+    ("boucle", "loop", "loop", "bucle"),
+    ("coupe sèche", "hard cut", "taglio netto", "corte seco"),
+    ("isolateur (bass swap)", "isolator (bass swap)", "isolatore (bass swap)", "aislador (bass swap)"),
+    ("back spin", "back spin", "back spin", "back spin"),
+    ("freinage", "vinyl brake", "frenata vinile", "frenado de vinilo"),
+    ("graves", "bass", "bassi", "graves"),
+    ("médiums", "mids", "medi", "medios"),
+    ("aigus", "treble", "acuti", "agudos"),
+    ("Graves", "Bass", "Bassi", "Graves"),
+    ("Médiums", "Mids", "Medi", "Medios"),
+    ("Aigus", "Treble", "Acuti", "Agudos"),
+    ("coupés", "cut", "tagliati", "cortados"),
+    ("Isolateur", "Isolator", "Isolatore", "Aislador"),
+    ("Isolateur 3 bandes", "3-band isolator", "Isolatore a 3 bande", "Aislador de 3 bandas"),
+    ("tout le résultat", "the whole result", "tutto il risultato", "todo el resultado"),
+    ("Glisse avec le doigt ou la souris · double-tap = 0 dB · KILL coupe la bande",
+     "Slide with your finger or mouse · double-tap = 0 dB · KILL cuts the band",
+     "Scorri con il dito o il mouse · doppio tocco = 0 dB · KILL taglia la banda",
+     "Desliza con el dedo o el ratón · doble toque = 0 dB · KILL corta la banda"),
+    ("Tout à 0", "All to 0", "Tutto a 0", "Todo a 0"),
+    ("🎚 Transitions : {list}", "🎚 Transitions: {list}", "🎚 Transizioni: {list}", "🎚 Transiciones: {list}"),
+    ("⚠ {n} morceaux : seuls les {max} premiers sont gardés.", "⚠ {n} tracks: only the first {max} are kept.",
+     "⚠ {n} brani: vengono tenuti solo i primi {max}.", "⚠ {n} pistas: solo se conservan las {max} primeras."),
+    ("🥁 Transition {k} → {k2} : {fx} sur le temps ({bpm:.0f} BPM)",
+     "🥁 Transition {k} → {k2}: {fx} on the beat ({bpm:.0f} BPM)",
+     "🥁 Transizione {k} → {k2}: {fx} a tempo ({bpm:.0f} BPM)",
+     "🥁 Transición {k} → {k2}: {fx} al ritmo ({bpm:.0f} BPM)"),
+    ("Ignoré (ni audio ni vidéo) : {name}", "Skipped (neither audio nor video): {name}",
+     "Ignorato (né audio né video): {name}", "Ignorado (ni audio ni vídeo): {name}"),
+    ("{n} piste(s) ajoutée(s) : {total} au total.", "{n} track(s) added: {total} in total.",
+     "{n} traccia/e aggiunta/e: {total} in totale.", "{n} pista(s) añadida(s): {total} en total."),
+    ("Aucun fichier audio dans la médiathèque de l'onglet Montage.", "No audio file in the Editor tab's media library.",
+     "Nessun file audio nella libreria della scheda Montaggio.",
+     "No hay ningún archivo de audio en la biblioteca de la pestaña Edición."),
+    ("Transition « {t} » appliquée à toutes les pistes.", "“{t}” transition applied to every track.",
+     "Transizione « {t} » applicata a tutte le tracce.", "Transición «{t}» aplicada a todas las pistas."),
+    ("autant que tu veux, joués dans l'ordre", "as many as you like, played in order",
+     "quanti vuoi, suonati in ordine", "tantas como quieras, en orden"),
+    ("autant que tu veux, jouées en même temps", "as many as you like, played at the same time",
+     "quante vuoi, suonate insieme", "tantas como quieras, sonando a la vez"),
+    ("Ajouter des morceaux", "Add tracks", "Aggiungi brani", "Añadir pistas"),
+    ("Ajouter des pistes", "Add tracks", "Aggiungi tracce", "Añadir pistas"),
+    ("Sons de la médiathèque", "Sounds from the media library", "Suoni della libreria", "Sonidos de la biblioteca"),
+    ("Rôle des pistes ajoutées", "Role of added tracks", "Ruolo delle tracce aggiunte", "Función de las pistas añadidas"),
+    ("Choisis plusieurs fichiers d'un coup (Ctrl ou Maj). Début et fin se remplissent tout seuls avec le morceau "
+     "entier : modifie-les pour couper. Volume et transition vers le morceau suivant se règlent aussi. Clique sur une "
+     "ligne pour l'écouter.",
+     "Pick several files at once (Ctrl or Shift). Start and end are filled in automatically with the whole track: "
+     "edit them to trim. Volume and transition to the next track can be set too. Click a row to listen to it.",
+     "Scegli più file insieme (Ctrl o Maiusc). Inizio e fine si compilano da soli con il brano intero: modificali "
+     "per tagliare. Si regolano anche il volume e la transizione verso il brano successivo. Clicca su una riga per "
+     "ascoltarla.",
+     "Elige varios archivos a la vez (Ctrl o Mayús). Inicio y fin se rellenan solos con la pista entera: cámbialos "
+     "para recortar. También se ajustan el volumen y la transición a la pista siguiente. Haz clic en una fila para "
+     "escucharla."),
+
+    # ---- platine DJ
+    ("Platine DJ", "DJ deck", "Console DJ", "Mesa de DJ"),
+    ("platine dj", "DJ deck", "console DJ", "mesa de DJ"),
+    ("corne de stade", "stadium horn", "tromba da stadio", "bocina de estadio"),
+    ("sirène", "siren", "sirena", "sirena"),
+    ("scratch", "scratch", "scratch", "scratch"),
+    ("laser", "laser", "laser", "láser"),
+    ("grosse caisse", "kick drum", "cassa", "bombo"),
+    ("clap", "clap", "clap", "palmada"),
+    ("roulement", "snare roll", "rullata", "redoble"),
+    ("impact", "impact", "impatto", "impacto"),
+    ("filtre grave", "low filter", "filtro bassi", "filtro de graves"),
+    ("filtre aigu", "high filter", "filtro acuti", "filtro de agudos"),
+    ("flanger", "flanger", "flanger", "flanger"),
+    ("roll", "roll", "roll", "roll"),
+    ("hachoir", "chopper", "trancia", "cortador"),
+    ("moment", "time", "momento", "momento"),
+    ("instrument", "instrument", "strumento", "instrumento"),
+    ("Instruments", "Instruments", "Strumenti", "Instrumentos"),
+    ("Effets de platine", "Deck effects", "Effetti della console", "Efectos de la mesa"),
+    ("touche pendant l’écoute (ou touches 1 à 9)", "tap while it plays (or keys 1 to 9)",
+     "tocca durante l'ascolto (o tasti da 1 a 9)", "toca mientras suena (o teclas 1 a 9)"),
+    ("maintiens appuyé (ou touches Q W E R T Y)", "hold down (or keys Q W E R T Y)",
+     "tieni premuto (o tasti Q W E R T Y)", "mantén pulsado (o teclas Q W E R T Y)"),
+    ("Chaque coup s’inscrit dans les tableaux au moment de la lecture. Espace = lecture/pause.",
+     "Every hit is written into the tables at the playback time. Space = play/pause.",
+     "Ogni colpo si scrive nelle tabelle al momento della riproduzione. Spazio = play/pausa.",
+     "Cada golpe se anota en las tablas en el momento de la reproducción. Espacio = reproducir/pausa."),
+    ("Choisis une musique ci-dessus : elle se jouera ici.", "Pick a song above: it will play here.",
+     "Scegli una musica qui sopra: suonerà qui.", "Elige una canción arriba: sonará aquí."),
+    ("Choisis un fichier audio (ou une vidéo avec du son).", "Pick an audio file (or a video with sound).",
+     "Scegli un file audio (o un video con audio).", "Elige un archivo de audio (o un vídeo con sonido)."),
+    ("Ta musique", "Your song", "La tua musica", "Tu canción"),
+    ("celle sur laquelle tu joues", "the one you play over", "quella su cui suoni", "sobre la que tocas"),
+    ("Choisir une musique", "Choose a song", "Scegli una musica", "Elegir una canción"),
+    ("Résultat d'Enchaîner", "Chain result", "Risultato di Concatena", "Resultado de Encadenar"),
+    ("Résultat de Superposer", "Layer result", "Risultato di Sovrapponi", "Resultado de Superponer"),
+    ("Joue en direct", "Play live", "Suona dal vivo", "Toca en directo"),
+    ("comme un DJ", "like a DJ", "come un DJ", "como un DJ"),
+    ("Tes coups", "Your hits", "I tuoi colpi", "Tus golpes"),
+    ("modifiables : moment, volume, durée, intensité", "editable: time, volume, length, intensity",
+     "modificabili: momento, volume, durata, intensità", "editables: momento, volumen, duración, intensidad"),
+    ("Instruments : le moment est la seconde de la musique où tombe le coup. Effets : début, fin et intensité (0 à 1). "
+     "Tu peux tout corriger à la main.",
+     "Instruments: the time is the second of the song where the hit lands. Effects: start, end and intensity (0 to 1). "
+     "You can fix everything by hand.",
+     "Strumenti: il momento è il secondo della musica in cui cade il colpo. Effetti: inizio, fine e intensità (da 0 a "
+     "1). Puoi correggere tutto a mano.",
+     "Instrumentos: el momento es el segundo de la canción en el que cae el golpe. Efectos: inicio, fin e intensidad "
+     "(0 a 1). Puedes corregirlo todo a mano."),
+    ("Mixage", "Mixing", "Mixaggio", "Mezcla"),
+    ("Caler sur le temps", "Snap to the beat", "Aggancia al battito", "Ajustar al tiempo"),
+    ("chaque coup et chaque effet tombent pile sur le temps le plus proche",
+     "every hit and every effect lands right on the nearest beat",
+     "ogni colpo e ogni effetto cadono esattamente sul battito più vicino",
+     "cada golpe y cada efecto caen justo en el tiempo más cercano"),
+    ("Volume des instruments", "Instrument volume", "Volume degli strumenti", "Volumen de los instrumentos"),
+    ("Mixer la platine", "Mix the deck", "Mixa la console", "Mezclar la mesa"),
+    ("Choisis d'abord une musique pour la platine.", "Pick a song for the deck first.",
+     "Scegli prima una musica per la console.", "Elige primero una canción para la mesa."),
+    ("Musique trop courte pour la platine (1 s au moins).", "Song too short for the deck (1 s minimum).",
+     "Musica troppo corta per la console (almeno 1 s).", "Canción demasiado corta para la mesa (1 s como mínimo)."),
+    ("Touche au moins un pad (instrument ou effet) pendant l'écoute.",
+     "Hit at least one pad (instrument or effect) while it plays.",
+     "Tocca almeno un pad (strumento o effetto) durante l'ascolto.",
+     "Toca al menos un pad (instrumento o efecto) mientras suena."),
+    ("🥁 Rythme : {bpm:.0f} BPM", "🥁 Tempo: {bpm:.0f} BPM", "🥁 Ritmo: {bpm:.0f} BPM", "🥁 Ritmo: {bpm:.0f} BPM"),
+    ("⚠ Rythme introuvable ({err}) : moments gardés tels quels", "⚠ No beat found ({err}): times kept as played",
+     "⚠ Ritmo non trovato ({err}): momenti lasciati come suonati",
+     "⚠ Ritmo no encontrado ({err}): momentos tal como se tocaron"),
+    ("🎯 Coups et effets calés sur le temps", "🎯 Hits and effects snapped to the beat",
+     "🎯 Colpi ed effetti agganciati al battito", "🎯 Golpes y efectos ajustados al tiempo"),
+    ("🎧 Platine DJ : {n} instrument(s), {m} effet(s), {dur:.1f} s", "🎧 DJ deck: {n} instrument(s), {m} effect(s), {dur:.1f} s",
+     "🎧 Console DJ: {n} strumento/i, {m} effetto/i, {dur:.1f} s",
+     "🎧 Mesa de DJ: {n} instrumento(s), {m} efecto(s), {dur:.1f} s"),
+    ("Chaque ligne se modifie : rôle, volume, moment où la piste commence, boucle. Clique sur une ligne pour l'écouter.",
+     "Every row is editable: role, volume, when the track starts, loop. Click a row to listen to it.",
+     "Ogni riga si modifica: ruolo, volume, momento in cui la traccia inizia, loop. Clicca su una riga per ascoltarla.",
+     "Cada fila se puede editar: función, volumen, momento en que empieza la pista, bucle. Haz clic en una fila para "
+     "escucharla."),
+    ("Écoute de la piste choisie", "Listen to the chosen track", "Ascolto della traccia scelta",
+     "Escucha de la pista elegida"),
+    ("Transitions", "Transitions", "Transizioni", "Transiciones"),
+    ("touche un pad", "tap a pad", "tocca un pad", "toca un pad"),
+    ("transition donnée aux nouveaux morceaux · écho, back spin et freinage = effets de relâchement du morceau qui se "
+     "termine",
+     "transition given to new tracks · echo, back spin and brake = release effects on the track that ends",
+     "transizione data ai nuovi brani · eco, back spin e frenata = effetti di rilascio del brano che finisce",
+     "transición para las pistas nuevas · eco, back spin y frenado = efectos de salida de la pista que termina"),
+    ("Appliquer ce pad à toutes les pistes", "Apply this pad to every track", "Applica questo pad a tutte le tracce",
+     "Aplicar este pad a todas las pistas"),
+    ("fondu et isolateur ; 0 = coupe sèche", "fade and isolator; 0 = hard cut", "dissolvenza e isolatore; 0 = taglio netto",
+     "fundido y aislador; 0 = corte seco"),
+    ("Transitions sur le rythme", "Beat-matched transitions", "Transizioni a tempo", "Transiciones al ritmo"),
+    ("fondus en mesures entières, échos et spins pile sur un temps, et le morceau suivant démarre sur son temps",
+     "fades in whole bars, echoes and spins right on a beat, and the next track starts on its own beat",
+     "dissolvenze in battute intere, eco e spin esattamente su un battito, e il brano successivo parte sul suo battito",
+     "fundidos en compases enteros, ecos y spins justo en un tiempo, y la pista siguiente arranca en su tiempo"),
 
     # ---- mode viral
     ("Mode viral (en un clic)", "Viral mode (one click)", "Modalità virale (in un clic)", "Modo viral (en un clic)"),
@@ -2247,13 +2396,24 @@ PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. 
 
 ### Studio audio
 Onglet **🎚️ Studio audio** (fond noir). Chaque outil range ses fichiers dans son dossier : `sorties/audio/enchainements`,
-`sorties/audio/superpositions` et `sorties/audio/effets_micro` ; le sous-onglet **Sorties** les liste, les fait écouter
-et ouvre chaque dossier.
-- **Enchaîner** : 2 à 4 morceaux bout à bout (début, fin et volume de chacun), fondu enchaîné réglable.
-  **Transition sur le rythme** : le fondu commence sur un temps, dure des mesures entières, et le morceau suivant
-  démarre sur son propre temps.
-- **Superposer** : 2 à 4 pistes en même temps (musique, voix, ambiance), décalage, boucle ; **ducking** : la musique
-  baisse d'environ 13 dB quand la voix parle.
+`sorties/audio/superpositions`, `sorties/audio/platine_dj` et `sorties/audio/effets_micro` ; le sous-onglet **Sorties**
+les liste, les fait écouter et ouvre chaque dossier.
+- **Enchaîner** : autant de morceaux que tu veux (« Ajouter des morceaux » en prend plusieurs d'un coup, ou les sons
+  de la médiathèque). Dans le tableau : début et fin (remplis tout seuls avec le morceau entier, à modifier pour
+  couper), volume et **transition** vers le morceau suivant. Pads :
+  **fondu**, **coupe sèche**, **isolateur (bass swap)** (les basses s'échangent d'un coup au milieu du fondu), et
+  effets de relâchement : **écho** (le dernier temps se répète en s'éteignant), **back spin** (rembobinage du
+  vinyle), **freinage** (le vinyle ralentit jusqu'à l'arrêt). **Transitions sur le rythme** : tout tombe sur les
+  temps. Clique sur une ligne pour l'écouter.
+- **Superposer** : autant de pistes que tu veux en même temps (musique, voix, ambiance), décalage, boucle ;
+  **ducking** : la musique baisse d'environ 13 dB quand la voix parle.
+- **Platine DJ** : choisis une musique (ou le résultat d'Enchaîner ou de Superposer), lance la lecture et joue des
+  pads. **Instruments** (on touche) : corne de stade, sirène, scratch, laser, grosse caisse, clap, roulement,
+  montée, impact. **Effets** (on maintient) : filtre grave, filtre aigu, flanger, écho, roll (répétition du temps),
+  hachoir. Chaque coup s'inscrit dans un tableau, modifiable à la main. **Caler sur le temps** : tout tombe pile sur
+  le temps. Clavier : 1 à 9 pour les instruments, Q W E R T Y pour les effets, Espace = lecture/pause.
+- **Isolateur 3 bandes** (enchaîner et superposer) : trois faders tactiles, graves, médiums, aigus, de -26 à +6 dB.
+  Glisse au doigt ou à la souris, double-tap = 0 dB, **KILL** coupe une bande ; au clavier : flèches, 0 = remise à zéro.
 - **Effets micro et mixage** : enregistre ta voix dans le navigateur ou importe un fichier, puis choisis un effet
   (voix studio, radio, téléphone, mégaphone, robot, écho, grande salle, voix grave, voix aiguë, monstre, chorale,
   alien) et règle la console : graves, médiums, aigus, compresseur, gain, réduction du bruit, vitesse.
@@ -2360,12 +2520,23 @@ the exact length of the video, and lowered while someone speaks. “Listen 12 s�
 
 ### Audio studio
 **🎚️ Audio studio** tab (black background). Each tool saves its files in its own folder: `sorties/audio/enchainements`,
-`sorties/audio/superpositions` and `sorties/audio/effets_micro`; the **Outputs** sub-tab lists them, plays them and
-opens each folder.
-- **Chain**: 2 to 4 tracks back to back (start, end and volume of each), adjustable crossfade.
-  **Beat-matched transition**: the fade starts on a beat, lasts whole bars, and the next track starts on its own beat.
-- **Layer**: 2 to 4 tracks at the same time (music, voice, ambience), offset, loop; **ducking**: the music dips by
-  about 13 dB when the voice speaks.
+`sorties/audio/superpositions`, `sorties/audio/platine_dj` and `sorties/audio/effets_micro`; the **Outputs** sub-tab
+lists them, plays them and opens each folder.
+- **Chain**: as many tracks as you like (“Add tracks” takes several at once, or use the media library sounds). In the
+  table: start and end (filled in automatically with the whole track, edit them to trim), volume and **transition** to
+  the next track. Pads: **fade**, **hard cut**, **isolator (bass
+  swap)** (the bass swaps at once in the middle of the fade), and release effects: **echo** (the last beat repeats as
+  it fades), **back spin** (vinyl rewind), **vinyl brake** (the record slows to a stop). **Beat-matched transitions**:
+  everything lands on the beats. Click a row to listen to it.
+- **Layer**: as many tracks as you like at the same time (music, voice, ambience), offset, loop; **ducking**: the
+  music dips by about 13 dB when the voice speaks.
+- **DJ deck**: pick a song (or the Chain or Layer result), press play and hit the pads. **Instruments** (tap): stadium
+  horn, siren, scratch, laser, kick drum, clap, snare roll, riser, impact. **Effects** (hold): low filter, high filter,
+  flanger, echo, roll (beat repeat), chopper. Every hit is written into a table you can edit by hand. **Snap to the
+  beat**: everything lands right on the beat. Keyboard: 1 to 9 for instruments, Q W E R T Y for effects, Space =
+  play/pause.
+- **3-band isolator** (chain and layer): three touch faders, bass, mids, treble, from -26 to +6 dB. Slide with your
+  finger or mouse, double-tap = 0 dB, **KILL** cuts a band; with the keyboard: arrows, 0 = reset.
 - **Mic effects and mixing**: record your voice in the browser or import a file, then pick an effect (studio voice,
   radio, telephone, megaphone, robot, echo, large hall, deep voice, high voice, monster, choir, alien) and adjust the
   console: bass, mids, treble, compressor, gain, noise reduction, speed.
@@ -2476,13 +2647,24 @@ alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s
 
 ### Studio audio
 Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file nella propria cartella:
-`sorties/audio/enchainements`, `sorties/audio/superpositions` e `sorties/audio/effets_micro`; la sotto-scheda
-**File creati** li elenca, li fa ascoltare e apre ogni cartella.
-- **Concatena**: da 2 a 4 brani uno dopo l'altro (inizio, fine e volume di ciascuno), dissolvenza incrociata
-  regolabile. **Transizione a tempo**: la dissolvenza inizia su un battito, dura battute intere e il brano
-  successivo parte sul suo battito.
-- **Sovrapponi**: da 2 a 4 tracce insieme (musica, voce, ambiente), ritardo, loop; **ducking**: la musica si abbassa
-  di circa 13 dB quando parla la voce.
+`sorties/audio/enchainements`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` e
+`sorties/audio/effets_micro`; la sotto-scheda **File creati** li elenca, li fa ascoltare e apre ogni cartella.
+- **Concatena**: quanti brani vuoi (« Aggiungi brani » ne prende diversi insieme, oppure i suoni della libreria).
+  Nella tabella: inizio e fine (compilati da soli con il brano intero, da modificare per tagliare), volume e
+  **transizione** verso il brano successivo. Pad: **dissolvenza**, **taglio
+  netto**, **isolatore (bass swap)** (i bassi si scambiano di colpo a metà dissolvenza) ed effetti di rilascio:
+  **eco** (l'ultimo battito si ripete spegnendosi), **back spin** (riavvolgimento del vinile), **frenata vinile**
+  (il disco rallenta fino a fermarsi). **Transizioni a tempo**: tutto cade sui battiti. Clicca su una riga per
+  ascoltarla.
+- **Sovrapponi**: quante tracce vuoi insieme (musica, voce, ambiente), ritardo, loop; **ducking**: la musica si
+  abbassa di circa 13 dB quando parla la voce.
+- **Console DJ**: scegli una musica (o il risultato di Concatena o Sovrapponi), avvia l'ascolto e suona i pad.
+  **Strumenti** (si toccano): tromba da stadio, sirena, scratch, laser, cassa, clap, rullata, salita, impatto.
+  **Effetti** (si tengono premuti): filtro bassi, filtro acuti, flanger, eco, roll (ripetizione del battito),
+  trancia. Ogni colpo si scrive in una tabella modificabile a mano. **Aggancia al battito**: tutto cade esattamente
+  sul battito. Tastiera: da 1 a 9 per gli strumenti, Q W E R T Y per gli effetti, Spazio = play/pausa.
+- **Isolatore a 3 bande** (concatena e sovrapponi): tre fader tattili, bassi, medi, acuti, da -26 a +6 dB. Scorri
+  con il dito o il mouse, doppio tocco = 0 dB, **KILL** taglia una banda; da tastiera: frecce, 0 = azzera.
 - **Effetti microfono e mixaggio**: registra la tua voce nel browser o importa un file, poi scegli un effetto (voce
   da studio, radio, telefono, megafono, robot, eco, grande sala, voce grave, voce acuta, mostro, coro, alieno) e
   regola il mixer: bassi, medi, acuti, compressore, guadagno, riduzione del rumore, velocità.
@@ -2592,13 +2774,24 @@ PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12
 
 ### Estudio de audio
 Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus archivos en su carpeta:
-`sorties/audio/enchainements`, `sorties/audio/superpositions` y `sorties/audio/effets_micro`; la subpestaña
-**Salidas** los lista, los reproduce y abre cada carpeta.
-- **Encadenar**: de 2 a 4 pistas una tras otra (inicio, fin y volumen de cada una), fundido cruzado ajustable.
-  **Transición al ritmo**: el fundido empieza en un tiempo, dura compases enteros y la pista siguiente arranca en su
-  propio tiempo.
-- **Superponer**: de 2 a 4 pistas a la vez (música, voz, ambiente), desfase, bucle; **ducking**: la música baja
-  unos 13 dB cuando habla la voz.
+`sorties/audio/enchainements`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` y
+`sorties/audio/effets_micro`; la subpestaña **Salidas** los lista, los reproduce y abre cada carpeta.
+- **Encadenar**: tantas pistas como quieras («Añadir pistas» acepta varias a la vez, o los sonidos de la
+  biblioteca). En la tabla: inicio y fin (se rellenan solos con la pista entera, cámbialos para recortar), volumen y
+  **transición** a la pista siguiente. Pads: **fundido**, **corte
+  seco**, **aislador (bass swap)** (los graves se intercambian de golpe a mitad del fundido) y efectos de salida:
+  **eco** (el último tiempo se repite apagándose), **back spin** (rebobinado del vinilo), **frenado de vinilo** (el
+  disco se frena hasta pararse). **Transiciones al ritmo**: todo cae en los tiempos. Haz clic en una fila para
+  escucharla.
+- **Superponer**: tantas pistas como quieras a la vez (música, voz, ambiente), desfase, bucle; **ducking**: la
+  música baja unos 13 dB cuando habla la voz.
+- **Mesa de DJ**: elige una canción (o el resultado de Encadenar o Superponer), pulsa reproducir y toca los pads.
+  **Instrumentos** (se tocan): bocina de estadio, sirena, scratch, láser, bombo, palmada, redoble, subida, impacto.
+  **Efectos** (se mantienen pulsados): filtro de graves, filtro de agudos, flanger, eco, roll (repetición del
+  tiempo), cortador. Cada golpe se anota en una tabla que puedes editar a mano. **Ajustar al tiempo**: todo cae
+  justo en el tiempo. Teclado: 1 a 9 para los instrumentos, Q W E R T Y para los efectos, Espacio = reproducir/pausa.
+- **Aislador de 3 bandas** (encadenar y superponer): tres faders táctiles, graves, medios, agudos, de -26 a +6 dB.
+  Desliza con el dedo o el ratón, doble toque = 0 dB, **KILL** corta una banda; con el teclado: flechas, 0 = reinicio.
 - **Efectos de micro y mezcla**: graba tu voz en el navegador o importa un archivo, elige un efecto (voz de estudio,
   radio, teléfono, megáfono, robot, eco, sala grande, voz grave, voz aguda, monstruo, coro, alienígena) y ajusta la
   mesa: graves, medios, agudos, compresor, ganancia, reducción de ruido, velocidad.
