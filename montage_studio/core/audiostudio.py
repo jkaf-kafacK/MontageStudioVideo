@@ -6,6 +6,8 @@ Trois outils, chacun avec son dossier de sortie (sorties/audio/…) :
     coup au milieu du fondu), et effets de relâchement : écho (le dernier temps se répète en s'éteignant), back spin
     (rembobinage du vinyle), freinage (le vinyle ralentit jusqu'à l'arrêt). Option « sur le rythme » : transitions
     calées sur les temps (voir core/beats.py) ;
+  * découper : garder un passage, couper aux repères (un fichier par morceau) ou enlever un passage (le reste est
+    recollé par un fondu de 50 ms) ;
   * superposer : autant de pistes que voulu en même temps (musique, voix, ambiance), décalage, boucle, et ducking :
     la musique baisse quand la voix parle ;
   * effets micro : préréglages (voix studio, radio, robot, écho, voix grave…) et outils de mixage (égaliseur
@@ -22,6 +24,8 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
+import numpy as np
+
 from . import beats, denoise, ff, paths
 from .i18n import _
 from .layers import _f, norm_choice, truthy
@@ -32,7 +36,12 @@ KINDS = {   # type de sortie -> dossier
     "superposition": "superpositions",
     "effets micro": "effets_micro",
     "platine dj": "platine_dj",          # voir core/djdeck.py
+    "découpe": "decoupes",
 }
+CUT_MODES = ["garder la sélection", "couper aux repères", "enlever la sélection"]
+CUT_MIN = 0.1                            # plus petit morceau gardé (s)
+CUT_JOIN = 0.05                          # « enlever » : fondu enchaîné très court au raccord (pas de clic)
+PEAKS = 1000                             # colonnes de la forme d'onde dessinée dans le navigateur
 FORMATS = {"mp3": ["-c:a", "libmp3lame", "-b:a", "192k"], "wav": ["-c:a", "pcm_s16le"]}
 CURVES = {"équilibré": "qsin", "linéaire": "tri", "rapide": "exp"}   # courbes des fondus (afade)
 ROLES = ["musique", "voix", "ambiance"]
@@ -428,6 +437,99 @@ def mix(tracks: list[dict], length: str = "la plus longue", ducking: bool = True
     _render(inputs, graph, out, fmt, total, log, progress)
     log.insert(0, _("🎛 {n} pistes superposées : {dur:.1f} s", n=len(items), dur=total))
     return {"path": str(out), "duration": total, "log": _clean(log)}
+
+
+# --------------------------------------------------------------------------- découper
+
+def peaks(path: str, n: int = PEAKS) -> list[int]:
+    """Forme d'onde légère pour le navigateur : n colonnes, de 0 à 100 (crête de chaque tranche)."""
+    y = np.abs(beats.load_mono(path, sr=4000))
+    if not len(y):
+        return []
+    n = max(1, min(n, len(y)))
+    edges = np.linspace(0, len(y), n + 1).astype(int)
+    cols = np.maximum.reduceat(y, edges[:-1])
+    top = float(cols.max()) or 1.0
+    return [int(round(100 * v / top)) for v in cols]
+
+
+def norm_cut(duration: float, start, end, markers=()) -> tuple[float, float, list[float]]:
+    """Sélection valide (début < fin, dans le fichier) et repères strictement à l'intérieur, triés."""
+    s = min(max(0.0, _f(start)), duration)
+    e = min(max(0.0, _f(end, duration) or duration), duration)
+    if e < s:
+        s, e = e, s
+    if e - s < CUT_MIN:
+        raise ValueError(_("Sélection trop courte : choisis un début et une fin plus écartés."))
+    marks = sorted({round(m, 3) for m in (_f(x, -1.0) for x in markers or []) if s + CUT_MIN < m < e - CUT_MIN})
+    return s, e, marks
+
+
+def _numbered(base: Path, k: int, n: int) -> Path:
+    return base if n == 1 else base.with_name(f"{base.stem}_partie{k:02d}{base.suffix}")
+
+
+def cut(path: str, start: float = 0.0, end: float | None = None, markers=(), mode: str = "garder la sélection",
+        fade_in: float = 0.0, fade_out: float = 0.0, normalize: bool = False, fmt: str = "mp3",
+        progress: Progress = None) -> dict:
+    """Découpe une musique. Modes : garder la sélection (1 fichier), couper aux repères (un fichier par morceau
+    entre début, repères et fin), enlever la sélection (le reste, recollé). Renvoie {"paths", "duration", "log"}."""
+    if not path or not Path(path).is_file():
+        raise ValueError(_("Choisis d'abord une musique à découper."))
+    info = ff.probe(path)
+    if not info.has_audio:
+        raise ValueError(_("Ce fichier n'a pas de son : {name}", name=Path(path).name))
+    dur = info.duration or 0.0
+    mode = norm_choice(mode, CUT_MODES, "garder la sélection")
+    s, e, marks = norm_cut(dur, start, end, markers)
+    fi, fo = max(0.0, _f(fade_in)), max(0.0, _f(fade_out))
+    log: list[str] = []
+    base = out_path("découpe", [path], fmt)
+    src = f"[0:a]aresample={SR},aformat=sample_fmts=fltp:channel_layouts=stereo"
+    trim = lambda a, b, lb: f"atrim=start={a:.3f}:end={b:.3f},asetpts=PTS-STARTPTS[{lb}]"   # noqa: E731
+    paths: list[str] = []
+
+    if mode == "enlever la sélection":
+        keep = [(a, b) for a, b in ((0.0, s), (e, dur)) if b - a >= CUT_MIN]
+        if not keep:
+            raise ValueError(_("La sélection couvre tout le morceau : il ne resterait rien."))
+        if len(keep) == 2:
+            d = min(CUT_JOIN, keep[0][1] - keep[0][0], keep[1][1] - keep[1][0]) / 2
+            graph = [f"{src},asplit=2[x0][x1]", f"[x0]{trim(*keep[0], 'a0')}", f"[x1]{trim(*keep[1], 'a1')}",
+                     f"[a0][a1]acrossfade=d={d:.3f}:c1=qsin:c2=qsin[j]"]
+            total = s + (dur - e) - d
+        else:
+            graph = [f"{src},{trim(*keep[0], 'j')}"]
+            total = keep[0][1] - keep[0][0]
+        graph.append(_finish("j", total, max(fi, 0.004), max(fo, 0.004), normalize))
+        _render(["-i", path], graph, base, fmt, total, log, progress)
+        paths.append(str(base))
+        log.insert(0, _("✂️ Passage enlevé ({a} → {b}) : il reste {dur:.1f} s",
+                        a=_clock(s), b=_clock(e), dur=total))
+        return {"paths": paths, "duration": total, "log": _clean(log)}
+
+    bounds = [s, *marks, e] if mode == "couper aux repères" else [s, e]
+    if mode == "couper aux repères" and not marks:
+        log.append(_("⚠ Aucun repère : la sélection est gardée en un seul morceau."))
+    pieces = list(zip(bounds, bounds[1:]))
+    for k, (a, b) in enumerate(pieces, 1):
+        out = _numbered(base, k, len(pieces))
+        graph = [f"{src},{trim(a, b, 'p')}", _finish("p", b - a, max(fi, 0.004), max(fo, 0.004), normalize)]
+        step = (lambda f, k=k: progress((k - 1 + f) / len(pieces))) if progress else None
+        _render(["-i", path], graph, out, fmt, b - a, log, step)
+        paths.append(str(out))
+    total = e - s
+    if len(pieces) == 1:
+        log.insert(0, _("✂️ Sélection gardée ({a} → {b}) : {dur:.1f} s", a=_clock(s), b=_clock(e), dur=total))
+    else:
+        log.insert(0, _("✂️ {n} morceaux coupés aux repères", n=len(pieces)))
+        for k, (a, b) in enumerate(pieces, 1):
+            log.insert(k, f"  {k:02d}. {_clock(a)} → {_clock(b)} ({b - a:.1f} s)")
+    return {"paths": paths, "duration": total, "log": _clean(log)}
+
+
+def _clock(t: float) -> str:
+    return f"{int(t // 60)}:{t % 60:05.2f}"
 
 
 # --------------------------------------------------------------------------- effets micro et mixage

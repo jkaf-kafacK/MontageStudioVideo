@@ -25,6 +25,7 @@ def dossiers_temporaires(tmp_path, monkeypatch):
     """Sorties et sons fabriqués dans un dossier de test, jamais dans les vrais dossiers."""
     monkeypatch.setattr(audiostudio, "OUT_ROOT", tmp_path / "audio")
     monkeypatch.setattr(sfx, "SFX_DIR", tmp_path / "sons")
+    monkeypatch.setattr(djdeck, "CACHE", tmp_path / "cache")
     monkeypatch.setattr(app, "persist", lambda p: str(p))       # pas de copie dans medias/
 
 
@@ -69,8 +70,8 @@ def _rms(y: np.ndarray, t0: float, t1: float) -> float:
     return float(np.sqrt(np.mean(seg ** 2))) if len(seg) else 0.0
 
 
-def _platine(src: str, hits=(), fx=(), snap=False) -> str:
-    return djdeck.render(src, list(hits), list(fx), snap_beats=snap, normalize=False, fmt="wav")["path"]
+def _platine(src: str, hits=(), fx=(), snap=False, **kw) -> str:
+    return djdeck.render(src, list(hits), list(fx), snap_beats=snap, normalize=False, fmt="wav", **kw)["path"]
 
 
 # --------------------------------------------------------------------------- instruments
@@ -153,6 +154,105 @@ def test_echo_resonne_apres_le_relachement(sons):
     assert _rms(echo, 0.5, 1.8) == pytest.approx(_rms(sec, 0.5, 1.8), rel=0.05)   # rien avant l'effet
 
 
+# --------------------------------------------------------------------------- textures et bus d'effets
+
+def _fx(effect: str, a: float, b: float, i: float = 0.7) -> dict:
+    return {"start": a, "end": b, "effect": effect, "intensity": i}
+
+
+def test_textures_ajoutees_fabriquees():
+    for nom in ("vinyle", "vent", "pluie"):
+        y = _y(str(djdeck.texture_path(nom)))
+        assert abs(len(y) / beats.SR - djdeck.TEX_LOOP) < 0.05
+        debut, fin = _rms(y, 0, 0.3), _rms(y, djdeck.TEX_LOOP - 0.3, djdeck.TEX_LOOP)
+        assert debut > 0.01 and 0.25 < fin / debut < 4             # boucle sans creux à la couture
+    y = _y(str(djdeck.riser_path(3.0)))
+    assert _rms(y, 2.3, 2.95) > 4 * _rms(y, 0.05, 0.6)            # le bruit monte jusqu'à la fin
+
+
+@pytest.mark.parametrize("nom", list(djdeck.LAYERS))
+def test_texture_ajoutee_pendant_l_intervalle(sons, nom):
+    y = _y(_platine(sons["silence"], fx=[_fx(nom, 2, 4)]))
+    assert _rms(y, 2.4, 3.9) > 2e-3
+    assert _rms(y, 0.3, 1.8) < 1e-4 and _rms(y, 4.3, 5.5) < 1e-4   # rien en dehors
+
+
+def test_bus_naturels_et_choisis():
+    assert djdeck.bus_of("espace", "auto") == "send/return" and djdeck.bus_of("filtre grave", "auto") == "master"
+    assert djdeck.bus_of("espace", "master") == "master" and djdeck.bus_of("crush", "Send/Return") == "send/return"
+    assert djdeck.bus_of("pluie", "master") == "layer"
+
+
+def test_send_return_garde_l_original(sons):
+    y = _y(_platine(sons["bruit"], fx=[_fx("filtre grave", 4, 8, 0.8)], routing="send/return"))
+    assert _bande(y, 5, 7, 2000, 12000) > 0.7 * _bande(y, 1, 3, 2000, 12000)   # les aigus d'origine restent
+
+
+def test_dry_wet_du_master(sons):
+    y = _y(_platine(sons["bruit"], fx=[_fx("filtre grave", 4, 8, 0.8)], routing="master", wet=0.5))
+    rapport = _bande(y, 5, 7, 2000, 12000) / _bande(y, 1, 3, 2000, 12000)
+    assert 0.12 < rapport < 0.45                                   # moitié d'origine : environ un quart de l'énergie
+
+
+def test_queue_qui_resonne_en_send_coupee_en_master(sons):
+    loin = [{"time": 7.5, "instrument": "clap", "volume": 1}]
+    send = _y(_platine(sons["note"], hits=loin, fx=[_fx("espace", 2, 3)], routing="send/return"))
+    master = _y(_platine(sons["note"], hits=loin, fx=[_fx("espace", 2, 3)], routing="master"))
+    assert _rms(send, 3.3, 4.3) > 0.01                             # la salle résonne après la note
+    assert _rms(master, 3.3, 4.3) < 0.15 * _rms(send, 3.3, 4.3)   # en insert, la queue s'arrête au relâchement
+
+
+def test_fondu_des_effets(sons):
+    net = _y(_platine(sons["bruit"], fx=[_fx("filtre grave", 4, 8, 0.8)], fade=0.01))
+    doux = _y(_platine(sons["bruit"], fx=[_fx("filtre grave", 4, 8, 0.8)], fade=1.0))
+    assert _bande(doux, 4.05, 4.4, 2000, 12000) > 5 * _bande(net, 4.05, 4.4, 2000, 12000)   # entrée progressive
+    assert _bande(doux, 5.5, 6.5, 2000, 12000) == pytest.approx(_bande(net, 5.5, 6.5, 2000, 12000), rel=0.3)
+
+
+@pytest.mark.parametrize("nom", ["dub", "écho"])
+def test_echos_qui_resonnent(sons, nom):
+    loin = [{"time": 7.5, "instrument": "clap", "volume": 1}]
+    y = _y(_platine(sons["note"], hits=loin, fx=[_fx(nom, 2, 3)]))
+    assert _rms(y, 3.3, 4.5) > 0.01
+
+
+def test_shimmer_une_octave_plus_haut(sons):
+    loin = [{"time": 7.5, "instrument": "clap", "volume": 1}]
+    y = _y(_platine(sons["note"], hits=loin, fx=[_fx("shimmer", 1, 3)]))
+    seg = y[int(3.2 * beats.SR):int(4.5 * beats.SR)]
+    spec = np.abs(np.fft.rfft(seg * np.hanning(len(seg)))) ** 2
+    f = np.fft.rfftfreq(len(seg), 1 / beats.SR)
+    octave, note = spec[(f > 860) & (f < 900)].sum(), spec[(f > 420) & (f < 460)].sum()
+    assert octave > 3 * note and octave > 0                       # la queue sonne à 880 Hz
+
+
+def test_crush_ajoute_du_grain(sons):
+    y = _y(_platine(sons["note"], fx=[_fx("crush", 1, 2.5, 1.0)]))
+
+    def bruit(t0, t1):                                              # énergie hors de la note, rapportée à la note
+        seg = y[int(t0 * beats.SR):int(t1 * beats.SR)]
+        spec = np.abs(np.fft.rfft(seg * np.hanning(len(seg)))) ** 2
+        f = np.fft.rfftfreq(len(seg), 1 / beats.SR)
+        return spec[(f < 400) | (f > 480)].sum() / spec[(f >= 400) & (f <= 480)].sum()
+
+    assert bruit(1.3, 2.2) > 10 * bruit(0.1, 0.8)
+
+
+def test_gel_tient_le_son(sons):
+    loin = [{"time": 7.5, "instrument": "clap", "volume": 1}]
+    sec = _y(_platine(sons["note"], hits=loin))
+    gel = _y(_platine(sons["note"], hits=loin, fx=[_fx("gel", 2.5, 4.5)]))
+    assert _rms(sec, 3.3, 4.2) < 1e-3
+    assert _rms(gel, 3.3, 4.2) > 0.02                              # la note figée continue après 3 s
+
+
+def test_toutes_les_textures_dans_les_trois_bus(sons):
+    fx = [_fx(n, 0.5 + k * 0.7, 1.1 + k * 0.7) for k, n in enumerate(list(djdeck.EFFECTS) + list(djdeck.TEXTURES))]
+    for route in djdeck.ROUTES:
+        r = djdeck.render(sons["musique"], [], fx, snap_beats=False, routing=route, fmt="wav", normalize=False)
+        assert abs(ff.probe(r["path"]).duration - 12) < 0.1 and "🔀" in r["log"]
+
+
 # --------------------------------------------------------------------------- calage, lignes, erreurs
 
 def test_calage_sur_le_temps():
@@ -224,7 +324,7 @@ def test_coups_rapproches_jamais_perdus():
     h1, f1, live = app.dj_apply("hit|corne de stade|2", vide_h, vide_f)
     h2, f2, live = app.dj_apply("hit|grosse caisse|3.5", vide_h, vide_f, live=live)    # tableau périmé
     assert [r[1] for r in app.dj_rows("hits", h2)] == ["corne de stade", "grosse caisse"]
-    h3, f3, live = app.dj_apply("fx|écho|5|6", h2, f2, live=live)                        # tableau à jour
+    h3, f3, live = app.dj_apply("fx|espace|5|6", h2, f2, live=live)                      # tableau à jour
     assert len(app.dj_rows("hits", h3)) == 2 and len(app.dj_rows("fx", f3)) == 1        # pas de doublon
     # retouché à la main (live remis à zéro) : une ligne effacée ne revient pas
     h4, _f, _l = app.dj_apply("hit|clap|9", app.dj_df("hits", app.dj_rows("hits", h3)[1:]), f3, live=[])
@@ -233,7 +333,8 @@ def test_coups_rapproches_jamais_perdus():
 
 def test_platine_html(sons):
     html = app.deck_html(sons["musique"], 120)
-    assert html.count("data-kind='hit'") == 9 and html.count("data-kind='fx'") == 6
+    assert html.count("data-kind='hit'") == 9 and html.count("data-kind='fx'") == 6 + 9   # effets + textures
+    assert "data-key='A'" in html and "data-key='L'" in html and "dj-tex" in html
     assert html.count("data-src='gradio_api/file=") == 9 and "<audio class='dj-audio'" in html
     assert "120 BPM" in html and "data-key='Q'" in html
     vide = app.deck_html()
@@ -247,7 +348,7 @@ def test_onglet_platine_et_sorties(lang):
     token = LANG.set(lang)
     try:
         titre = "🎧 " + _("Platine DJ")
-        noms = [_(n) for n in djdeck.INSTRUMENTS] + [_(n) for n in djdeck.EFFECTS]
+        noms = [_(n) for n in djdeck.INSTRUMENTS] + [_(n) for n in djdeck.ALL_FX]
         demo = app.build_ui(lang)
     finally:
         LANG.reset(token)

@@ -5,7 +5,7 @@
     "pillow": "2026-10-23",
     "certifi": "2026-10-23",
     "brotli": "2026-10-23",
-    "opentelemetry-api": "2026-10-23",
+    "opentelemetry-api": "2026-10-30",
     "filelock": "2026-10-18"
   }
 }

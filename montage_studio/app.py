@@ -1859,6 +1859,60 @@ button[role="tab"] {font-weight: 600 !important; font-size: 0.95rem !important;}
 .sa-dj .dj-fx .dj-pad.actif {border-style: solid;}
 .sa-dj .dj-pied {margin-top: 12px; font-size: 0.8rem; color: #8B8B98;}
 @media (prefers-reduced-motion: reduce) {.sa-dj .dj-pad {transition: none;}}
+/* découper : forme d'onde, sélection, poignées, repères */
+.sa-cut .cut {padding: 14px; border: 1px solid #23232D; border-radius: 14px; background: #0D0D12; outline: none;}
+.sa-cut .cut:focus-visible {box-shadow: 0 0 0 2px #22D3EE;}
+.sa-cut .cut-vide {padding: 28px 14px; border: 1.5px dashed #33333F; border-radius: 12px; color: #8B8B98;
+                   text-align: center;}
+.sa-cut .cut-haut {display: flex; align-items: center; gap: 12px;}
+.sa-cut .cut-audio {flex: 1; min-width: 0; height: 44px; color-scheme: dark;}
+.sa-cut .cut-tempo {font: 700 0.95rem ui-monospace, Consolas, monospace; color: #C084FC; white-space: nowrap;}
+.sa-cut .cut-titre {margin: 6px 0 22px; font-size: 0.8rem; color: #8B8B98; overflow-wrap: anywhere;}
+.sa-cut .cut-piste {position: relative; height: 150px; border-radius: 12px; background: #07070A;
+                    border: 1px solid #23232D; touch-action: none; cursor: crosshair; user-select: none;
+                    -webkit-user-select: none; overflow: visible;}
+.sa-cut .cut-onde {position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 12px;}
+.sa-cut .cut-zone {position: absolute; top: 0; bottom: 0; background: rgba(34,211,238,.10);
+                   border-top: 2px solid rgba(34,211,238,.7); border-bottom: 2px solid rgba(168,85,247,.7);
+                   pointer-events: none;}
+.sa-cut .cut-tete {position: absolute; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #FFFFFF;
+                   box-shadow: 0 0 8px rgba(255,255,255,.8); pointer-events: none;}
+/* poignées : bande de 28 px (facile au doigt), trait fin visible au centre */
+.sa-cut .cut-h {position: absolute; top: -6px; bottom: -6px; width: 28px; margin-left: -14px; cursor: ew-resize;
+                z-index: 3;}
+.sa-cut .cut-h::before {content: ""; position: absolute; left: 12px; top: 0; bottom: 0; width: 4px; border-radius: 2px;
+                        background: #22D3EE;}
+.sa-cut .cut-h::after {content: ""; position: absolute; left: 4px; top: 50%; width: 20px; height: 34px;
+                       margin-top: -17px; border-radius: 7px; background: #22D3EE;
+                       box-shadow: 0 4px 12px rgba(0,0,0,.6);}
+.sa-cut .cut-fin::before, .sa-cut .cut-fin::after {background: #A855F7;}
+.sa-cut .cut-h.sel::after {box-shadow: 0 0 0 2px #FFFFFF, 0 0 16px rgba(255,255,255,.5);}
+.sa-cut .cut-rep {position: absolute; top: 0; bottom: 0; width: 24px; margin-left: -12px; cursor: ew-resize;
+                  z-index: 2;}
+.sa-cut .cut-rep::before {content: ""; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px;
+                          background: repeating-linear-gradient(#F59E0B 0 6px, transparent 6px 10px);}
+.sa-cut .cut-rep span {position: absolute; left: 50%; top: -2px; transform: translate(-50%, -100%);
+                       min-width: 20px; padding: 1px 5px; border-radius: 6px; background: #F59E0B; color: #07070A;
+                       font: 800 0.72rem ui-monospace, Consolas, monospace; text-align: center;}
+.sa-cut .cut-rep.sel span {background: #FFFFFF;}
+.sa-cut .cut-regle {display: flex; justify-content: space-between; margin-top: 4px;
+                    font: 0.72rem ui-monospace, Consolas, monospace; color: #6B6B78;}
+.sa-cut .cut-champs {display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 12px 0 10px;
+                     color: #E4E4E7; font-weight: 700;}
+.sa-cut .cut-champs input {width: 96px; min-height: 40px; margin-left: 6px; padding: 0 8px; border-radius: 10px;
+                           border: 1px solid #2A2A35; background: #16161D; color: #F4F4F5;
+                           font: 0.95rem ui-monospace, Consolas, monospace;}
+.sa-cut .cut-champs input:focus {outline: none; border-color: #22D3EE;}
+.sa-cut .cut-duree {font: 700 0.95rem ui-monospace, Consolas, monospace; color: #67E8F9;}
+.sa-cut .cut-boutons {display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px;}
+.sa-cut .cut-b {min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid #2A2A35;
+                background: #16161D; color: #F4F4F5; font-weight: 700; cursor: pointer;}
+.sa-cut .cut-b:hover:not(:disabled) {border-color: #22D3EE;}
+.sa-cut .cut-b[data-act=play] {background: linear-gradient(135deg, #22D3EE, #A855F7); color: #07070A; border: 0;}
+.sa-cut .cut-b[aria-pressed=true] {border-color: #22D3EE; background: rgba(34,211,238,.16);}
+.sa-cut .cut-b:disabled {opacity: .4; cursor: not-allowed;}
+.sa-cut .cut-b:focus-visible {outline: 2px solid #FFFFFF; outline-offset: 2px;}
+.sa-cut .cut-pied {margin-top: 12px; font-size: 0.8rem; color: #8B8B98;}
 #sa-entete {display: flex; align-items: center; gap: 18px; padding: 16px 18px; margin-bottom: 10px;
             border-radius: 14px; border: 1px solid #23232D;
             background: radial-gradient(120% 140% at 0% 0%, rgba(34,211,238,.18), transparent 55%),
@@ -2493,7 +2547,9 @@ def sr_open_folder():
 # --------------------------------------------------------------------------- Studio audio
 
 SA_WAVES = paths.CACHE_DIR / "ondes"          # images des formes d'onde (hors des dossiers de sorties)
-SA_KIND_LABELS = list(audiostudio.KINDS)      # « enchaînement », « superposition », « effets micro »
+SA_KIND_LABELS = list(audiostudio.KINDS)      # « enchaînement », « superposition », « effets micro »…
+SA_KIND_ICONS = {"enchaînement": "🔗", "superposition": "🎛", "effets micro": "🎙", "platine dj": "🎧",
+                 "découpe": "✂️"}
 
 
 def sa_wave(path: str) -> str | None:
@@ -2843,6 +2899,7 @@ def deck_html(path: str = "", bpm: float = 0.0) -> str:
     hits = "".join(dj_pad("hit", n, c, ic, k, file_url(str(djdeck.sound_path(n))))
                    for (n, (_fn, _ld, c, ic)), k in zip(djdeck.INSTRUMENTS.items(), djdeck.KEYS_HITS))
     fx = "".join(dj_pad("fx", n, c, ic, k) for (n, (c, ic)), k in zip(djdeck.EFFECTS.items(), djdeck.KEYS_FX))
+    tex = "".join(dj_pad("fx", n, c, ic, k) for (n, (c, ic)), k in zip(djdeck.TEXTURES.items(), djdeck.KEYS_TEX))
     tempo = f"{bpm:.0f} BPM" if bpm > 0 else "— BPM"
     return (f"<div class='dj' tabindex='0' data-bpm='{bpm:.2f}' aria-label='{_('Platine DJ')}'>"
             f"<div class='dj-haut'>{player}<div class='dj-compteurs'><span class='dj-lampe' aria-hidden='true'></span>"
@@ -2851,6 +2908,8 @@ def deck_html(path: str = "", bpm: float = 0.0) -> str:
             f"<div class='dj-pads'>{hits}</div>"
             f"<div class='dj-label'>🎛 {_('Effets de platine')} <em>{_('maintiens appuyé (ou touches Q W E R T Y)')}</em>"
             f"</div><div class='dj-pads dj-fx'>{fx}</div>"
+            f"<div class='dj-label'>🌫 {_('Textures sonores')} <em>{_('maintiens appuyé (ou touches A à L)')}</em>"
+            f"</div><div class='dj-pads dj-fx dj-tex'>{tex}</div>"
             f"<div class='dj-pied'>{_('Chaque coup s’inscrit dans les tableaux au moment de la lecture. Espace = lecture/pause.')}"
             f"</div></div>")
 
@@ -2918,7 +2977,7 @@ def dj_key(kind: str, row: list) -> tuple:
     if kind == "hits":
         return round(num(row[0], -1), 2), layers.norm_choice(row[1], list(djdeck.INSTRUMENTS), "")
     return (round(num(row[0], -1), 2), round(num(row[1], -1), 2),
-            layers.norm_choice(row[2], list(djdeck.EFFECTS), ""))
+            layers.norm_choice(row[2], list(djdeck.ALL_FX), ""))
 
 
 def dj_apply(events: str, hits_df, fx_df, bpm: float = 0.0, live: list | None = None):
@@ -2934,7 +2993,7 @@ def dj_apply(events: str, hits_df, fx_df, bpm: float = 0.0, live: list | None = 
         p = ev.split("|")
         if len(p) == 3 and p[0] == "hit" and p[1] in djdeck.INSTRUMENTS and num(p[2]) is not None:
             live.append(["hits", round(max(0.0, num(p[2])), 2), p[1], 1.0])
-        elif len(p) == 4 and p[0] == "fx" and p[1] in djdeck.EFFECTS and None not in (num(p[2]), num(p[3])):
+        elif len(p) == 4 and p[0] == "fx" and p[1] in djdeck.ALL_FX and None not in (num(p[2]), num(p[3])):
             a, b = sorted((max(0.0, num(p[2])), max(0.0, num(p[3]))))
             if b - a < 0.1:                         # touché lecture arrêtée : une mesure à partir de là
                 b = a + bar
@@ -2967,11 +3026,13 @@ def dj_from(path):
     return dj_load(path)
 
 
-def dj_render(src, hits_df, fx_df, snap, vol, norm, fmt, progress=gr.Progress()):
+def dj_render(src, hits_df, fx_df, snap, vol, norm, fmt, route="auto", send=0.8, ret=1.0, wet=1.0, fade=0.08,
+              tex_vol=1.0, progress=gr.Progress()):
     hits = [{"time": r[0], "instrument": r[1], "volume": r[2]} for r in dj_rows("hits", hits_df)]
     fx = [{"start": r[0], "end": r[1], "effect": r[2], "intensity": r[3]} for r in dj_rows("fx", fx_df)]
     try:
-        res = djdeck.render(src, hits, fx, bool(snap), num(vol, 1.0), bool(norm), fmt,
+        res = djdeck.render(src, hits, fx, bool(snap), num(vol, 1.0), bool(norm), fmt, route, num(send, 0.8),
+                            num(ret, 1.0), num(wet, 1.0), num(fade, 0.08), num(tex_vol, 1.0),
                             progress=lambda f: progress(f, desc=_("Platine DJ")))
     except Exception as e:
         raise fail(e)
@@ -2985,11 +3046,288 @@ def dj_table(kind: str) -> gr.Dataframe:
                         wrap=True, column_count=(len(names), "fixed"), column_widths=widths, elem_classes="sa-table")
 
 
+# --------------------------------------------------------------------------- Découper
+
+def clock(t: float) -> str:
+    return f"{int(t // 60)}:{t % 60:05.2f}"
+
+
+def tr_html(path: str = "", dur: float = 0.0, pk: list | None = None, bt: list | None = None,
+             bpm: float = 0.0) -> str:
+    """Éditeur de découpe : forme d'onde, poignées début / fin, repères, tête de lecture."""
+    if not path or not Path(path).exists() or dur <= 0:
+        return f"<div class='cut'><div class='cut-vide'>{_('Choisis une musique ci-dessus : sa forme d’onde s’affichera ici.')}</div></div>"
+    btn = lambda act, txt, extra="": (f"<button type='button' class='cut-b' data-act='{act}'{extra}>"   # noqa: E731
+                                      f"{html_escape(txt)}</button>")
+    tempo = f"<span class='cut-tempo'>{bpm:.0f} BPM</span>" if bpm > 0 else ""
+    off = " aria-pressed='false'"
+    magnet = off + ("" if bt else " disabled")       # pas de rythme trouvé : pas d'aimant
+    return (f"<div class='cut' tabindex='0' data-dur='{dur:.3f}' data-peaks='{','.join(map(str, pk or []))}' "
+            f"data-beats='{','.join(f'{b:.3f}' for b in bt or [])}' aria-label='{_('Découper')}'>"
+            f"<div class='cut-haut'><audio class='cut-audio' controls preload='auto' "
+            f"src='{html_escape(file_url(path))}'></audio>{tempo}</div>"
+            f"<div class='cut-titre'>{html_escape(Path(path).name)} · {clock(dur)}</div>"
+            f"<div class='cut-piste'><canvas class='cut-onde'></canvas><div class='cut-zone'></div>"
+            f"<div class='cut-reps'></div><div class='cut-tete'></div>"
+            f"<div class='cut-h cut-debut' role='slider' aria-label='{_('Début')}'></div>"
+            f"<div class='cut-h cut-fin' role='slider' aria-label='{_('Fin')}'></div></div>"
+            f"<div class='cut-regle'><span>0:00</span><span>{clock(dur / 2)}</span><span>{clock(dur)}</span></div>"
+            f"<div class='cut-champs'><label>{_('Début')} <input type='number' class='cut-in' data-k='start' "
+            f"step='0.01' min='0' max='{dur:.3f}'></label><label>{_('Fin')} <input type='number' class='cut-in' "
+            f"data-k='end' step='0.01' min='0' max='{dur:.3f}'></label>"
+            f"<span class='cut-duree'></span></div>"
+            f"<div class='cut-boutons'>{btn('play', '▶ ' + _('Écouter la sélection'))}"
+            f"{btn('debut', '⟦ ' + _('Début ici'))}{btn('fin', _('Fin ici') + ' ⟧')}"
+            f"{btn('rep', '＋ ' + _('Repère ici'))}{btn('suppr', '🗑 ' + _('Retirer le repère'))}"
+            f"{btn('tout', '↔ ' + _('Tout sélectionner'))}"
+            f"{btn('aimant', '🧲 ' + _('Aimant sur le temps'), magnet)}"
+            f"{btn('boucle', '🔁 ' + _('Boucle'), off)}</div>"
+            f"<div class='cut-pied'>{_('Glisse sur la forme d’onde pour choisir un passage, touche-la pour y placer la lecture. Clavier : I = début, O = fin, M = repère, Suppr = retirer, flèches = ajuster (Maj = 1 s), Espace = lecture.')}"
+            f"</div></div>")
+
+
+# Éditeur de découpe : tout se règle dans le navigateur (glisser, boutons, clavier, cases) ; la sélection part vers
+# Python par l'événement « select » (value = "début|fin|repère1,repère2…") 100 ms après le dernier geste.
+TR_JS = r"""
+const MIN = 0.1, S = {start: 0, end: 0, marks: [], sel: 'fin', snap: false, loop: false, playSel: false};
+let cur = null, drag = null, timer = null, width = 0;
+const audio = () => cur && cur.querySelector('.cut-audio');
+const pct = t => (S.dur ? t / S.dur * 100 : 0) + '%';
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const clock = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
+const selText = () => `${S.start.toFixed(3)}|${S.end.toFixed(3)}|${S.marks.map(m => m.toFixed(3)).join(',')}`;
+const send = () => { clearTimeout(timer); timer = setTimeout(() => trigger('select', {index: 0, value: selText()}), 100); };
+const tidy = () => {                                    // repères gardés à l'intérieur de la sélection, triés
+  const keep = typeof S.sel === 'number' ? S.marks[S.sel] : null;
+  S.marks = S.marks.filter(m => m > S.start + MIN && m < S.end - MIN).sort((a, b) => a - b);
+  if (keep !== null) { const i = S.marks.indexOf(keep); S.sel = i >= 0 ? i : 'fin'; }
+};
+const draw = () => {
+  if (!cur) return;
+  const cv = cur.querySelector('.cut-onde'), w = cv.clientWidth, h = cv.clientHeight, dpr = devicePixelRatio || 1;
+  width = w; cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  const grad = g.createLinearGradient(0, 0, w, 0); grad.addColorStop(0, '#22D3EE'); grad.addColorStop(1, '#A855F7');
+  const n = S.peaks.length, bw = w / Math.max(1, n);
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n * S.dur, ph = Math.max(1.5, S.peaks[i] / 100 * (h - 10));
+    g.fillStyle = t >= S.start && t <= S.end ? grad : '#34343F';
+    g.fillRect(i * bw, (h - ph) / 2, Math.max(1, bw - 0.4), ph);
+  }
+  if (S.snap) { g.fillStyle = 'rgba(192,132,252,.55)'; for (const b of S.beats) g.fillRect(b / S.dur * w, 0, 1, 7); }
+  const z = cur.querySelector('.cut-zone'); z.style.left = pct(S.start); z.style.width = pct(S.end - S.start);
+  const hd = cur.querySelector('.cut-debut'), hf = cur.querySelector('.cut-fin');
+  hd.style.left = pct(S.start); hf.style.left = pct(S.end);
+  hd.classList.toggle('sel', S.sel === 'debut'); hf.classList.toggle('sel', S.sel === 'fin');
+  hd.setAttribute('aria-valuetext', clock(S.start)); hf.setAttribute('aria-valuetext', clock(S.end));
+  cur.querySelector('.cut-reps').innerHTML = S.marks.map((m, i) =>
+    `<div class="cut-rep${S.sel === i ? ' sel' : ''}" data-i="${i}" style="left:${pct(m)}"><span>${i + 1}</span></div>`).join('');
+  cur.querySelectorAll('.cut-in').forEach(inp => {
+    if (document.activeElement !== inp) inp.value = (inp.dataset.k === 'start' ? S.start : S.end).toFixed(2);
+  });
+  cur.querySelector('.cut-duree').textContent = `${clock(S.end - S.start)}` + (S.marks.length ? ` · ${S.marks.length + 1} ✂` : '');
+  cur.querySelector('[data-act=aimant]').setAttribute('aria-pressed', S.snap);
+  cur.querySelector('[data-act=boucle]').setAttribute('aria-pressed', S.loop);
+  cur.dataset.sel = selText();                          // lu par le bouton « Couper » (TR_GO_JS)
+};
+const init = () => {
+  const root = element.querySelector('.cut[data-dur]');
+  if (root === cur) return;
+  cur = root; if (!root) return;
+  S.dur = +root.dataset.dur; S.start = 0; S.end = S.dur; S.marks = []; S.sel = 'fin'; S.playSel = false;
+  S.peaks = root.dataset.peaks ? root.dataset.peaks.split(',').map(Number) : [];
+  S.beats = root.dataset.beats ? root.dataset.beats.split(',').map(Number) : [];
+  draw();
+};
+const timeAt = x => { const r = cur.querySelector('.cut-piste').getBoundingClientRect();
+                      return clamp((x - r.left) / r.width * S.dur, 0, S.dur); };
+const snapT = t => {
+  if (!S.snap || !S.beats.length) return t;
+  return S.beats.reduce((best, b) => Math.abs(b - t) < Math.abs(best - t) ? b : best, S.beats[0]);
+};
+const setStart = t => { S.start = clamp(t, 0, S.end - MIN); };
+const setEnd = t => { S.end = clamp(t, S.start + MIN, S.dur); };
+const now = () => { const a = audio(); return a ? a.currentTime : 0; };
+element.addEventListener('pointerdown', e => {
+  const piste = e.target.closest('.cut-piste'); if (!piste || !cur) return;
+  e.preventDefault(); cur.focus({preventScroll: true});
+  try { piste.setPointerCapture(e.pointerId); } catch (err) { /* on suit le doigt quand même */ }
+  const h = e.target.closest('.cut-h'), rep = e.target.closest('.cut-rep');
+  if (h) { drag = {kind: h.classList.contains('cut-debut') ? 'debut' : 'fin'}; S.sel = drag.kind; }
+  else if (rep) { drag = {kind: 'rep', i: +rep.dataset.i}; S.sel = drag.i; }
+  else drag = {kind: 'new', x0: e.clientX, t0: timeAt(e.clientX), moved: false};
+  draw();
+});
+element.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const t = snapT(timeAt(e.clientX));
+  if (drag.kind === 'debut') setStart(t);
+  else if (drag.kind === 'fin') setEnd(t);
+  else if (drag.kind === 'rep') S.marks[drag.i] = clamp(t, S.start + MIN, S.end - MIN);
+  else {
+    if (!drag.moved && Math.abs(e.clientX - drag.x0) < 6) return;     // petit tremblement : c'est un toucher
+    drag.moved = true;
+    const a = snapT(drag.t0);
+    S.start = Math.min(a, t); S.end = Math.max(a, t);
+    if (S.end - S.start < MIN) S.end = Math.min(S.dur, S.start + MIN);
+    S.sel = t >= a ? 'fin' : 'debut';
+  }
+  draw();
+});
+const release = () => {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.kind === 'new' && !d.moved) { const a = audio(); if (a) a.currentTime = d.t0; S.playSel = false; }
+  else { tidy(); send(); }
+  draw();
+};
+element.addEventListener('pointerup', release);
+element.addEventListener('pointercancel', release);
+const act = name => {
+  const a = audio(); if (!cur) return;
+  if (name === 'play') {
+    if (!a) return;
+    if (S.playSel && !a.paused) { a.pause(); S.playSel = false; return; }
+    a.currentTime = S.start; S.playSel = true; a.play().catch(() => {}); return;
+  }
+  if (name === 'debut') setStart(snapT(now()));
+  else if (name === 'fin') setEnd(snapT(now()));
+  else if (name === 'rep') {
+    const t = snapT(now());
+    if (t > S.start + MIN && t < S.end - MIN && !S.marks.some(m => Math.abs(m - t) < MIN)) {
+      S.marks.push(t); S.sel = t; S.marks.sort((x, y) => x - y); S.sel = S.marks.indexOf(t);
+    }
+  } else if (name === 'suppr') { if (typeof S.sel === 'number') { S.marks.splice(S.sel, 1); S.sel = 'fin'; } }
+  else if (name === 'tout') { S.start = 0; S.end = S.dur; }
+  else if (name === 'aimant') { S.snap = !S.snap; draw(); return; }
+  else if (name === 'boucle') { S.loop = !S.loop; draw(); return; }
+  tidy(); draw(); send();
+};
+element.addEventListener('click', e => { const b = e.target.closest('.cut-b'); if (b && !b.disabled) act(b.dataset.act); });
+element.addEventListener('change', e => {
+  const inp = e.target.closest('.cut-in'); if (!inp) return;
+  const v = parseFloat(inp.value); if (isNaN(v)) { draw(); return; }
+  if (inp.dataset.k === 'start') { setStart(v); S.sel = 'debut'; } else { setEnd(v); S.sel = 'fin'; }
+  tidy(); draw(); send();
+});
+element.addEventListener('keydown', e => {
+  if (!cur || e.target.closest('input, audio')) return;
+  const k = e.key.toLowerCase();
+  if (k === ' ') { const a = audio(); if (a) { e.preventDefault(); a.paused ? a.play().catch(() => {}) : a.pause(); } return; }
+  const keys = {i: 'debut', o: 'fin', m: 'rep', delete: 'suppr', backspace: 'suppr'};
+  if (keys[k]) { e.preventDefault(); act(keys[k]); return; }
+  if (k === 'arrowleft' || k === 'arrowright') {
+    e.preventDefault();
+    const step = (k === 'arrowright' ? 1 : -1) * (e.shiftKey ? 1 : 0.05);
+    if (S.sel === 'debut') setStart(S.start + step);
+    else if (S.sel === 'fin') setEnd(S.end + step);
+    else S.marks[S.sel] = clamp(S.marks[S.sel] + step, S.start + MIN, S.end - MIN);
+    tidy(); draw(); send();
+  }
+});
+const tick = () => {
+  init();
+  if (cur) {
+    const a = audio();
+    if (cur.querySelector('.cut-onde').clientWidth !== width) draw();          // fenêtre redimensionnée
+    if (a) {
+      cur.querySelector('.cut-tete').style.left = pct(a.currentTime);
+      if (S.playSel && !a.paused && a.currentTime >= S.end) {
+        if (S.loop) a.currentTime = S.start; else { a.pause(); S.playSel = false; }
+      }
+    }
+  }
+  requestAnimationFrame(tick);
+};
+requestAnimationFrame(tick);
+"""
+
+
+# « Couper » lit la sélection directement dans l'éditeur : juste après un geste, elle peut ne pas être encore
+# arrivée côté Python.
+TR_GO_JS = "() => { const c = document.querySelector('.sa-cut .cut[data-dur]'); return c ? (c.dataset.sel || '') : ''; }"
+
+
+def tr_state(dur: float = 0.0) -> dict:
+    return {"start": 0.0, "end": dur, "markers": [], "duration": dur}
+
+
+def tr_summary(st: dict | None) -> str:
+    st = st or {}
+    if not st.get("duration"):
+        return _("Aucune musique chargée.")
+    a, b, m = st["start"], st["end"], st.get("markers") or []
+    txt = _("Sélection : {a} → {b} ({d:.1f} s)", a=clock(a), b=clock(b), d=b - a)
+    if m:
+        txt += " · " + _("{n} repère(s) → {p} morceaux", n=len(m), p=len(m) + 1)
+    return txt
+
+
+def tr_load(path):
+    """Nouvelle musique dans l'éditeur : (chemin, éditeur, sélection, résumé)."""
+    p = persist(path) if path else ""
+    if not p or ff.media_kind(p) not in ("audio", "video"):
+        raise gr.Error(_("Choisis un fichier audio (ou une vidéo avec du son)."))
+    info = ff.probe(p)
+    if not info.has_audio or not info.duration:
+        raise gr.Error(_("Ce fichier n'a pas de son : {name}", name=Path(p).name))
+    try:
+        an = beats.analyze(p)
+        bpm, bt = float(an["bpm"]), [float(b) for b in an["beats"]]
+    except Exception:
+        bpm, bt = 0.0, []
+    st = tr_state(info.duration)
+    return p, tr_html(p, info.duration, audiostudio.peaks(p), bt if bpm > 0 else [], bpm), st, tr_summary(st)
+
+
+def tr_last():
+    """Dernier fichier créé par le Studio audio (enchaîner, superposer, platine…)."""
+    files = [f for k in audiostudio.KINDS if k != "découpe" for f in audiostudio.recent(k, 1)]
+    if not files:
+        raise gr.Error(_("Aucun fichier créé dans le Studio audio pour l'instant."))
+    return tr_load(str(max(files, key=lambda f: f.stat().st_mtime)))
+
+
+def tr_apply(st: dict | None, value) -> dict:
+    """Sélection reçue du navigateur ("début|fin|repères")."""
+    st = dict(st or tr_state())
+    p = str(value or "").split("|")
+    if len(p) == 3 and st.get("duration"):
+        try:
+            s, e, m = audiostudio.norm_cut(st["duration"], num(p[0], 0.0), num(p[1], st["duration"]),
+                                           [num(x) for x in p[2].split(",") if num(x) is not None])
+            st.update(start=s, end=e, markers=m)
+        except ValueError:
+            pass                                   # sélection impossible : on garde la précédente
+    return st
+
+
+def tr_run(src, st, mode, fi, fo, norm, fmt, sel_text="", progress=gr.Progress()):
+    st = tr_apply(st, sel_text) if sel_text else (st or {})
+    try:
+        res = audiostudio.cut(src, st.get("start", 0.0), st.get("end"), st.get("markers") or [], mode, num(fi, 0),
+                              num(fo, 0), bool(norm), fmt, progress=lambda f: progress(f, desc=_("Découpe")))
+    except Exception as e:
+        raise fail(e)
+    paths = res["paths"]
+    msg = "✅ " + _("{n} fichier(s) créé(s)", n=len(paths)) + f"\n📁 {Path(paths[0]).parent}\n" + res["log"]
+    choices = [(Path(p).name, p) for p in paths]
+    return paths[0], sa_wave(paths[0]), msg, gr.Dropdown(choices=choices, value=paths[0]), paths
+
+
+def tr_to_concat(paths, df):
+    """Envoie les morceaux coupés dans Enchaîner (début et fin remplis) et ouvre cet onglet."""
+    paths = [p for p in paths or [] if Path(p).exists()]
+    if not paths:
+        raise gr.Error(_("Coupe d'abord la musique."))
+    return sa_add("concat", paths, df, "fondu"), gr.Tabs(selected="sa-concat")
+
+
 def build_studio_audio(L, lib=None) -> None:
     """Onglet « Studio audio » (fond noir, accents cyan et violet : CSS #studio-audio)."""
     lang = getattr(L, "keywords", {}).get("lang", DEFAULT_LANG)
     gr.HTML(studio_header())
-    with gr.Tabs():
+    with gr.Tabs() as sa_tabs:
         # ---------------------------------------------------------------- enchaîner
         with gr.Tab("🔗 " + _("Enchaîner"), id="sa-concat"):
             with gr.Row(equal_height=False):
@@ -3045,6 +3383,48 @@ def build_studio_audio(L, lib=None) -> None:
                         cc_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
                         cc_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
                     gr.Markdown(sa_folder_md("enchaînement"), elem_classes="sr-note")
+
+        # ---------------------------------------------------------------- découper
+        with gr.Tab("✂️ " + _("Découper"), id="sa-cut"):
+            with gr.Row(equal_height=False):
+                with gr.Column(scale=3):
+                    section("1", "Ta musique", "celle que tu veux couper")
+                    with gr.Row(equal_height=True):
+                        ct_up = gr.UploadButton("🎵 " + _("Choisir une musique"), file_count="single",
+                                                file_types=sorted(ff.AUDIO_EXT | ff.VIDEO_EXT), type="filepath",
+                                                variant="primary", elem_classes="sa-add", scale=2)
+                        ct_last = gr.Button("↩ " + _("Dernier fichier du Studio"), elem_classes="sa-add", scale=1)
+                    ct_src = gr.State("")
+                    ct_sel = gr.State(tr_state())
+                    ct_sel_txt = gr.Textbox(visible=False)    # sélection lue dans l'éditeur au moment de couper
+                    section("2", "Choisis le passage", "au doigt, à la souris ou au clavier")
+                    ct_editor = gr.HTML(tr_html(), js_on_load=TR_JS, elem_classes="sa-cut")
+                    ct_info = gr.Markdown(tr_summary(None), elem_classes="sr-note")
+                    section("3", "Que faire ?")
+                    ct_mode = gr.Radio([(f"{ic} {_(m)}", m) for ic, m in zip(("✅", "✂️", "🗑"), audiostudio.CUT_MODES)],
+                                       value="garder la sélection", show_label=False, elem_classes="sa-pads",
+                                       info=_("couper aux repères = un fichier par morceau · enlever = le passage "
+                                              "choisi disparaît, le reste est recollé"))
+                with gr.Column(scale=2):
+                    section("4", "Finition")
+                    with gr.Row():
+                        ct_fi = gr.Number(value=0, label=_("Fondu d'entrée (s)"), precision=1, min_width=80)
+                        ct_fo = gr.Number(value=0, label=_("Fondu de sortie (s)"), precision=1, min_width=80)
+                    with gr.Row():
+                        ct_norm = gr.Checkbox(value=False, label=_("Volume normalisé (-14 LUFS)"))
+                        ct_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
+                    ct_go = gr.Button("✂️ " + _("Couper"), variant="primary", elem_classes="sa-go")
+                    ct_out = gr.Audio(label=_("Résultat"), type="filepath", interactive=False)
+                    ct_pieces_dd = gr.Dropdown(choices=[], label=_("Morceaux créés"))
+                    ct_wave = gr.Image(label=_("Forme d'onde"), interactive=False, height=110, buttons=[],
+                                       elem_classes="sa-onde")
+                    ct_log = gr.Textbox(label=_("Journal"), lines=4, elem_classes="mono")
+                    ct_pieces = gr.State([])
+                    ct_send = gr.Button("🔗 " + _("Envoyer dans Enchaîner"), size="sm")
+                    with gr.Row():
+                        ct_music = gr.Button("🎵 " + _("Utiliser comme musique du projet"), size="sm")
+                        ct_dir = gr.Button("📂 " + _("Ouvrir le dossier"), size="sm")
+                    gr.Markdown(sa_folder_md("découpe"), elem_classes="sr-note")
 
         # ---------------------------------------------------------------- superposer
         with gr.Tab("🎛 " + _("Superposer"), id="sa-mix"):
@@ -3125,6 +3505,25 @@ def build_studio_audio(L, lib=None) -> None:
                     dj_snap = gr.Checkbox(value=True, label="🎯 " + _("Caler sur le temps"),
                                           info=_("chaque coup et chaque effet tombent pile sur le temps le plus proche"))
                     dj_vol = gr.Slider(0, 2, value=1, step=0.05, label=_("Volume des instruments"))
+                    dj_tex_vol = gr.Slider(0, 2, value=1, step=0.05, label=_("Volume des textures"),
+                                           info=_("vinyle, vent, pluie, bruit montant"))
+                    section("5", "Bus d'effets", "Send/Return ou Master")
+                    route_names = {"auto": "🪄 " + _("auto"), "send/return": "↪ Send/Return", "master": "🎚 Master"}
+                    dj_route = gr.Radio([(route_names[r], r) for r in djdeck.ROUTES], value="auto",
+                                        label=_("Routage des effets"),
+                                        elem_classes="sa-pads",
+                                        info=_("Send/Return : le son d'origine reste intact, l'effet s'ajoute et sa "
+                                               "queue continue de résonner (idéal : écho, espace, shimmer, dub). "
+                                               "Master : l'effet traite tout le mix et s'arrête au relâchement "
+                                               "(idéal : filtres, hachoir, crush). Auto : chaque effet sur son bus."))
+                    dj_send = gr.Slider(0, 1, value=0.8, step=0.05, label="Send",
+                                        info=_("quantité envoyée dans l'effet"))
+                    dj_return = gr.Slider(0, 1.5, value=1.0, step=0.05, label="Return",
+                                          info=_("niveau de l'effet rendu au mix"))
+                    dj_wet = gr.Slider(0, 1, value=1.0, step=0.05, label="Dry/Wet (Master)",
+                                       info=_("0 = son d'origine, 1 = tout traité"))
+                    dj_fade = gr.Slider(0.01, 2, value=0.08, step=0.01, label=_("Fondu des effets (s)"),
+                                        info=_("intégration fluide : chaque effet entre et sort en douceur"))
                     with gr.Row():
                         dj_norm = gr.Checkbox(value=True, label=_("Volume normalisé (-14 LUFS)"))
                         dj_fmt = gr.Radio(list(audiostudio.FORMATS), value="mp3", label=_("Format"))
@@ -3184,7 +3583,8 @@ def build_studio_audio(L, lib=None) -> None:
             gr.Markdown(_("Chaque outil a son dossier : retrouve, écoute et réutilise tes fichiers."))
             out_widgets = {}
             with gr.Row(equal_height=False):
-                for kind, icon in zip(SA_KIND_LABELS, ("🔗", "🎛", "🎙", "🎧")):
+                for kind in SA_KIND_LABELS:
+                    icon = SA_KIND_ICONS[kind]
                     with gr.Column(min_width=280):
                         gr.Markdown(f"### {icon} {_(kind).capitalize()}")
                         files = audiostudio.recent(kind)
@@ -3206,7 +3606,8 @@ def build_studio_audio(L, lib=None) -> None:
              mx_out, mx_wave, mx_log, mx_path, mx_dir),
             ("effets micro", mc_go, sa_mic, [mc_in, mc_preset, mc_low, mc_mid, mc_high, mc_comp, mc_noise, mc_gain,
                                              mc_speed, mc_norm, mc_fmt], mc_out, mc_wave, mc_log, mc_path, mc_dir),
-            ("platine dj", dj_go, dj_render, [dj_src, dj_hits, dj_fx, dj_snap, dj_vol, dj_norm, dj_fmt],
+            ("platine dj", dj_go, dj_render, [dj_src, dj_hits, dj_fx, dj_snap, dj_vol, dj_norm, dj_fmt, dj_route,
+                                              dj_send, dj_return, dj_wet, dj_fade, dj_tex_vol],
              dj_out, dj_wave, dj_log, dj_path, dj_dir)):
         dd, info, *_rest = out_widgets[kind]
         go.click(L(fn), inputs, [out, wave, log, path]) \
@@ -3265,13 +3666,34 @@ def build_studio_audio(L, lib=None) -> None:
     dj_fx_drop.click(L(lambda df: (dj_df("fx", dj_rows("fx", df)[:-1]), [])), dj_fx, [dj_fx, dj_live])
     dj_hits_clear.click(L(lambda: (dj_df("hits"), [])), None, [dj_hits, dj_live])
     dj_fx_clear.click(L(lambda: (dj_df("fx"), [])), None, [dj_fx, dj_live])
+
+    # découper : musique, sélection venue du navigateur, coupe, envoi dans Enchaîner
+    def tr_event(st, evt: gr.SelectData):           # sans L() : Gradio doit voir l'annotation SelectData
+        token = LANG.set(lang)
+        try:
+            st = tr_apply(st, evt.value)
+            return st, tr_summary(st)
+        finally:
+            LANG.reset(token)
+
+    ct_up.upload(L(tr_load), ct_up, [ct_src, ct_editor, ct_sel, ct_info])
+    ct_last.click(L(tr_last), None, [ct_src, ct_editor, ct_sel, ct_info])
+    ct_editor.select(tr_event, ct_sel, [ct_sel, ct_info], trigger_mode="always_last")
+    dd_cut = out_widgets["découpe"][0]
+    ct_go.click(None, None, ct_sel_txt, js=TR_GO_JS) \
+        .then(L(tr_run), [ct_src, ct_sel, ct_mode, ct_fi, ct_fo, ct_norm, ct_fmt, ct_sel_txt],
+              [ct_out, ct_wave, ct_log, ct_pieces_dd, ct_pieces]) \
+        .success(L(functools.partial(sa_list, "découpe")), ct_out, [dd_cut, out_widgets["découpe"][1]])
+    ct_pieces_dd.input(sa_pick, ct_pieces_dd, ct_out)
+    ct_send.click(L(tr_to_concat), [ct_pieces, cc_table], [cc_table, sa_tabs])
+    ct_dir.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS["découpe"]), None, None)
     for kind, (dd, info, player, refresh, folder) in out_widgets.items():
         dd.change(sa_pick, dd, [player])
         refresh.click(L(functools.partial(sa_list, kind)), None, [dd, info])
         out_tab.select(L(functools.partial(sa_list, kind)), None, [dd, info])    # liste à jour à chaque ouverture
         folder.click(functools.partial(open_folder, audiostudio.OUT_ROOT / audiostudio.KINDS[kind]), None, None)
     if music_field is not None:
-        for btn, path in ((cc_music, cc_path), (mx_music, mx_path), (dj_music, dj_path)):
+        for btn, path in ((cc_music, cc_path), (mx_music, mx_path), (dj_music, dj_path), (ct_music, ct_out)):
             btn.click(L(functools.partial(sa_use, what="music")), path, music_field)
     if voice_field is not None:
         mc_voice.click(L(functools.partial(sa_use, what="voice")), mc_path, voice_field)

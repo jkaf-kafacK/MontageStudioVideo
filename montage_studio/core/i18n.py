@@ -1734,6 +1734,117 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "⚠ Ritmo no encontrado ({err}): momentos tal como se tocaron"),
     ("🎯 Coups et effets calés sur le temps", "🎯 Hits and effects snapped to the beat",
      "🎯 Colpi ed effetti agganciati al battito", "🎯 Golpes y efectos ajustados al tiempo"),
+    # ---- platine DJ : textures et bus d'effets
+    ("espace", "space", "spazio", "espacio"),
+    ("shimmer", "shimmer", "shimmer", "shimmer"),
+    ("dub", "dub", "dub", "dub"),
+    ("crush", "crush", "crush", "crush"),
+    ("gel", "freeze", "congela", "congelar"),
+    ("vinyle", "vinyl", "vinile", "vinilo"),
+    ("vent", "wind", "vento", "viento"),
+    ("pluie", "rain", "pioggia", "lluvia"),
+    ("bruit montant", "noise riser", "rumore in salita", "ruido ascendente"),
+    ("Textures sonores", "Sound textures", "Texture sonore", "Texturas sonoras"),
+    ("maintiens appuyé (ou touches A à L)", "hold down (or keys A to L)", "tieni premuto (o tasti da A a L)",
+     "mantén pulsado (o teclas A a L)"),
+    ("Volume des textures", "Texture volume", "Volume delle texture", "Volumen de las texturas"),
+    ("vinyle, vent, pluie, bruit montant", "vinyl, wind, rain, noise riser", "vinile, vento, pioggia, rumore in salita",
+     "vinilo, viento, lluvia, ruido ascendente"),
+    ("Bus d'effets", "Effects bus", "Bus degli effetti", "Bus de efectos"),
+    ("Send/Return ou Master", "Send/Return or Master", "Send/Return o Master", "Send/Return o Master"),
+    ("Routage des effets", "Effects routing", "Instradamento degli effetti", "Enrutamiento de efectos"),
+    ("auto", "auto", "auto", "auto"),
+    ("Send/Return : le son d'origine reste intact, l'effet s'ajoute et sa queue continue de résonner (idéal : écho, "
+     "espace, shimmer, dub). Master : l'effet traite tout le mix et s'arrête au relâchement (idéal : filtres, "
+     "hachoir, crush). Auto : chaque effet sur son bus.",
+     "Send/Return: the original sound stays intact, the effect is added and its tail keeps ringing (best for: echo, "
+     "space, shimmer, dub). Master: the effect processes the whole mix and stops on release (best for: filters, "
+     "chopper, crush). Auto: each effect on its own bus.",
+     "Send/Return: il suono originale resta intatto, l'effetto si aggiunge e la sua coda continua a risuonare "
+     "(ideale: eco, spazio, shimmer, dub). Master: l'effetto tratta tutto il mix e si ferma al rilascio (ideale: "
+     "filtri, trancia, crush). Auto: ogni effetto sul suo bus.",
+     "Send/Return: el sonido original queda intacto, el efecto se suma y su cola sigue sonando (ideal: eco, espacio, "
+     "shimmer, dub). Master: el efecto procesa toda la mezcla y se detiene al soltar (ideal: filtros, cortador, "
+     "crush). Auto: cada efecto en su bus."),
+    ("quantité envoyée dans l'effet", "amount sent into the effect", "quantità inviata all'effetto",
+     "cantidad enviada al efecto"),
+    ("niveau de l'effet rendu au mix", "level of the effect returned to the mix", "livello dell'effetto reso al mix",
+     "nivel del efecto devuelto a la mezcla"),
+    ("0 = son d'origine, 1 = tout traité", "0 = original sound, 1 = fully processed", "0 = suono originale, 1 = tutto trattato",
+     "0 = sonido original, 1 = todo procesado"),
+    ("Fondu des effets (s)", "Effect fade (s)", "Dissolvenza degli effetti (s)", "Fundido de los efectos (s)"),
+    ("intégration fluide : chaque effet entre et sort en douceur", "smooth blending: each effect fades in and out",
+     "integrazione fluida: ogni effetto entra ed esce dolcemente", "integración fluida: cada efecto entra y sale suavemente"),
+    ("🔀 Bus : {list} · fondu {fade:.2f} s", "🔀 Bus: {list} · fade {fade:.2f} s", "🔀 Bus: {list} · dissolvenza {fade:.2f} s",
+     "🔀 Bus: {list} · fundido {fade:.2f} s"),
+
+    # ---- découper
+    ("Découper", "Cut", "Taglia", "Cortar"),
+    ("découpe", "cuts", "tagli", "cortes"),
+    ("Découpe", "Cutting", "Taglio", "Corte"),
+    ("garder la sélection", "keep the selection", "tieni la selezione", "conservar la selección"),
+    ("couper aux repères", "split at markers", "taglia ai segnaposto", "cortar en las marcas"),
+    ("enlever la sélection", "remove the selection", "togli la selezione", "quitar la selección"),
+    ("celle que tu veux couper", "the one you want to cut", "quella che vuoi tagliare", "la que quieres cortar"),
+    ("Dernier fichier du Studio", "Latest Studio file", "Ultimo file dello Studio", "Último archivo del Estudio"),
+    ("Choisis le passage", "Choose the part", "Scegli il passaggio", "Elige el fragmento"),
+    ("au doigt, à la souris ou au clavier", "with your finger, mouse or keyboard", "con il dito, il mouse o la tastiera",
+     "con el dedo, el ratón o el teclado"),
+    ("Que faire ?", "What to do?", "Cosa fare?", "¿Qué hacer?"),
+    ("couper aux repères = un fichier par morceau · enlever = le passage choisi disparaît, le reste est recollé",
+     "split at markers = one file per piece · remove = the chosen part disappears, the rest is joined back",
+     "taglia ai segnaposto = un file per pezzo · togli = il passaggio scelto sparisce, il resto viene riunito",
+     "cortar en las marcas = un archivo por trozo · quitar = el fragmento elegido desaparece, el resto se vuelve a unir"),
+    ("Couper", "Cut", "Taglia", "Cortar"),
+    ("Morceaux créés", "Pieces created", "Pezzi creati", "Trozos creados"),
+    ("Envoyer dans Enchaîner", "Send to Chain", "Invia a Concatena", "Enviar a Encadenar"),
+    ("Choisis une musique ci-dessus : sa forme d’onde s’affichera ici.", "Pick a song above: its waveform will show here.",
+     "Scegli una musica qui sopra: la sua forma d'onda apparirà qui.",
+     "Elige una canción arriba: su forma de onda aparecerá aquí."),
+    ("Écouter la sélection", "Play the selection", "Ascolta la selezione", "Escuchar la selección"),
+    ("Début ici", "Start here", "Inizio qui", "Inicio aquí"),
+    ("Fin ici", "End here", "Fine qui", "Fin aquí"),
+    ("Repère ici", "Marker here", "Segnaposto qui", "Marca aquí"),
+    ("Retirer le repère", "Remove marker", "Togli il segnaposto", "Quitar la marca"),
+    ("Tout sélectionner", "Select all", "Seleziona tutto", "Seleccionar todo"),
+    ("Aimant sur le temps", "Snap to the beat", "Calamita sul battito", "Imán en el tiempo"),
+    ("Boucle", "Loop", "Loop", "Bucle"),
+    ("Glisse sur la forme d’onde pour choisir un passage, touche-la pour y placer la lecture. Clavier : I = début, "
+     "O = fin, M = repère, Suppr = retirer, flèches = ajuster (Maj = 1 s), Espace = lecture.",
+     "Drag across the waveform to choose a part, tap it to move playback there. Keyboard: I = start, O = end, "
+     "M = marker, Delete = remove, arrows = adjust (Shift = 1 s), Space = play.",
+     "Trascina sulla forma d'onda per scegliere un passaggio, toccala per spostare lì la riproduzione. Tastiera: "
+     "I = inizio, O = fine, M = segnaposto, Canc = togli, frecce = regola (Maiusc = 1 s), Spazio = play.",
+     "Arrastra sobre la forma de onda para elegir un fragmento, tócala para llevar ahí la reproducción. Teclado: "
+     "I = inicio, O = fin, M = marca, Supr = quitar, flechas = ajustar (Mayús = 1 s), Espacio = reproducir."),
+    ("Aucune musique chargée.", "No song loaded.", "Nessuna musica caricata.", "Ninguna canción cargada."),
+    ("Sélection : {a} → {b} ({d:.1f} s)", "Selection: {a} → {b} ({d:.1f} s)", "Selezione: {a} → {b} ({d:.1f} s)",
+     "Selección: {a} → {b} ({d:.1f} s)"),
+    ("{n} repère(s) → {p} morceaux", "{n} marker(s) → {p} pieces", "{n} segnaposto → {p} pezzi",
+     "{n} marca(s) → {p} trozos"),
+    ("Aucun fichier créé dans le Studio audio pour l'instant.", "No file created in the Audio studio yet.",
+     "Nessun file creato nello Studio audio per ora.", "Todavía no hay archivos creados en el Estudio de audio."),
+    ("{n} fichier(s) créé(s)", "{n} file(s) created", "{n} file creati", "{n} archivo(s) creado(s)"),
+    ("Coupe d'abord la musique.", "Cut the song first.", "Prima taglia la musica.", "Corta primero la canción."),
+    ("Choisis d'abord une musique à découper.", "Pick a song to cut first.", "Scegli prima una musica da tagliare.",
+     "Elige primero una canción para cortar."),
+    ("Sélection trop courte : choisis un début et une fin plus écartés.",
+     "Selection too short: pick a start and an end further apart.",
+     "Selezione troppo corta: scegli un inizio e una fine più distanti.",
+     "Selección demasiado corta: elige un inicio y un fin más separados."),
+    ("La sélection couvre tout le morceau : il ne resterait rien.",
+     "The selection covers the whole track: nothing would be left.",
+     "La selezione copre tutto il brano: non resterebbe niente.",
+     "La selección cubre toda la pista: no quedaría nada."),
+    ("✂️ Passage enlevé ({a} → {b}) : il reste {dur:.1f} s", "✂️ Part removed ({a} → {b}): {dur:.1f} s left",
+     "✂️ Passaggio tolto ({a} → {b}): restano {dur:.1f} s", "✂️ Fragmento quitado ({a} → {b}): quedan {dur:.1f} s"),
+    ("⚠ Aucun repère : la sélection est gardée en un seul morceau.", "⚠ No marker: the selection is kept as one piece.",
+     "⚠ Nessun segnaposto: la selezione resta un unico pezzo.",
+     "⚠ Ninguna marca: la selección se conserva en un solo trozo."),
+    ("✂️ Sélection gardée ({a} → {b}) : {dur:.1f} s", "✂️ Selection kept ({a} → {b}): {dur:.1f} s",
+     "✂️ Selezione tenuta ({a} → {b}): {dur:.1f} s", "✂️ Selección conservada ({a} → {b}): {dur:.1f} s"),
+    ("✂️ {n} morceaux coupés aux repères", "✂️ {n} pieces split at the markers", "✂️ {n} pezzi tagliati ai segnaposto",
+     "✂️ {n} trozos cortados en las marcas"),
     ("🎧 Platine DJ : {n} instrument(s), {m} effet(s), {dur:.1f} s", "🎧 DJ deck: {n} instrument(s), {m} effect(s), {dur:.1f} s",
      "🎧 Console DJ: {n} strumento/i, {m} effetto/i, {dur:.1f} s",
      "🎧 Mesa de DJ: {n} instrumento(s), {m} efecto(s), {dur:.1f} s"),
@@ -2396,8 +2507,8 @@ PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. 
 
 ### Studio audio
 Onglet **🎚️ Studio audio** (fond noir). Chaque outil range ses fichiers dans son dossier : `sorties/audio/enchainements`,
-`sorties/audio/superpositions`, `sorties/audio/platine_dj` et `sorties/audio/effets_micro` ; le sous-onglet **Sorties**
-les liste, les fait écouter et ouvre chaque dossier.
+`sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` et `sorties/audio/effets_micro` ;
+le sous-onglet **Sorties** les liste, les fait écouter et ouvre chaque dossier.
 - **Enchaîner** : autant de morceaux que tu veux (« Ajouter des morceaux » en prend plusieurs d'un coup, ou les sons
   de la médiathèque). Dans le tableau : début et fin (remplis tout seuls avec le morceau entier, à modifier pour
   couper), volume et **transition** vers le morceau suivant. Pads :
@@ -2405,6 +2516,12 @@ les liste, les fait écouter et ouvre chaque dossier.
   effets de relâchement : **écho** (le dernier temps se répète en s'éteignant), **back spin** (rembobinage du
   vinyle), **freinage** (le vinyle ralentit jusqu'à l'arrêt). **Transitions sur le rythme** : tout tombe sur les
   temps. Clique sur une ligne pour l'écouter.
+- **Découper** : charge une musique (ou le dernier fichier du Studio), sa forme d'onde s'affiche. Glisse dessus pour
+  choisir un passage, fais glisser les poignées de début et de fin, touche la forme d'onde pour y placer la lecture,
+  ou tape les temps exacts. **Repères** : coupe le morceau en plusieurs fichiers. Trois choix : **garder la
+  sélection**, **couper aux repères** (un fichier par morceau), **enlever la sélection** (le reste est recollé sans
+  clic). **Aimant sur le temps** : les poignées tombent sur les temps. Clavier : I = début, O = fin, M = repère,
+  flèches = ajuster. **Envoyer dans Enchaîner** ajoute les morceaux au tableau d'Enchaîner.
 - **Superposer** : autant de pistes que tu veux en même temps (musique, voix, ambiance), décalage, boucle ;
   **ducking** : la musique baisse d'environ 13 dB quand la voix parle.
 - **Platine DJ** : choisis une musique (ou le résultat d'Enchaîner ou de Superposer), lance la lecture et joue des
@@ -2412,6 +2529,10 @@ les liste, les fait écouter et ouvre chaque dossier.
   montée, impact. **Effets** (on maintient) : filtre grave, filtre aigu, flanger, écho, roll (répétition du temps),
   hachoir. Chaque coup s'inscrit dans un tableau, modifiable à la main. **Caler sur le temps** : tout tombe pile sur
   le temps. Clavier : 1 à 9 pour les instruments, Q W E R T Y pour les effets, Espace = lecture/pause.
+  **Textures sonores** (touches A à L) : espace, shimmer, dub, crush, gel (tirées de ta musique) ; vinyle, vent,
+  pluie, bruit montant (ajoutées). **Bus d'effets** : Send/Return (l'original reste intact, l'effet s'ajoute avec ses
+  niveaux Send et Return, sa queue résonne après le relâchement), Master (l'effet traite tout le mix, dosé par
+  Dry/Wet) ou Auto (chaque effet sur son bus). **Fondu des effets** : entrée et sortie en douceur (0,01 à 2 s).
 - **Isolateur 3 bandes** (enchaîner et superposer) : trois faders tactiles, graves, médiums, aigus, de -26 à +6 dB.
   Glisse au doigt ou à la souris, double-tap = 0 dB, **KILL** coupe une bande ; au clavier : flèches, 0 = remise à zéro.
 - **Effets micro et mixage** : enregistre ta voix dans le navigateur ou importe un fichier, puis choisis un effet
@@ -2520,21 +2641,30 @@ the exact length of the video, and lowered while someone speaks. “Listen 12 s�
 
 ### Audio studio
 **🎚️ Audio studio** tab (black background). Each tool saves its files in its own folder: `sorties/audio/enchainements`,
-`sorties/audio/superpositions`, `sorties/audio/platine_dj` and `sorties/audio/effets_micro`; the **Outputs** sub-tab
-lists them, plays them and opens each folder.
+`sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` and `sorties/audio/effets_micro`;
+the **Outputs** sub-tab lists them, plays them and opens each folder.
 - **Chain**: as many tracks as you like (“Add tracks” takes several at once, or use the media library sounds). In the
   table: start and end (filled in automatically with the whole track, edit them to trim), volume and **transition** to
   the next track. Pads: **fade**, **hard cut**, **isolator (bass
   swap)** (the bass swaps at once in the middle of the fade), and release effects: **echo** (the last beat repeats as
   it fades), **back spin** (vinyl rewind), **vinyl brake** (the record slows to a stop). **Beat-matched transitions**:
   everything lands on the beats. Click a row to listen to it.
+- **Cut**: load a song (or the latest Studio file) and its waveform appears. Drag across it to choose a part, drag
+  the start and end handles, tap the waveform to move playback there, or type the exact times. **Markers** split the
+  track into several files. Three choices: **keep the selection**, **split at markers** (one file per piece),
+  **remove the selection** (the rest is joined back without a click). **Snap to the beat**: the handles land on the
+  beats. Keyboard: I = start, O = end, M = marker, arrows = adjust. **Send to Chain** adds the pieces to the Chain
+  table.
 - **Layer**: as many tracks as you like at the same time (music, voice, ambience), offset, loop; **ducking**: the
   music dips by about 13 dB when the voice speaks.
 - **DJ deck**: pick a song (or the Chain or Layer result), press play and hit the pads. **Instruments** (tap): stadium
   horn, siren, scratch, laser, kick drum, clap, snare roll, riser, impact. **Effects** (hold): low filter, high filter,
   flanger, echo, roll (beat repeat), chopper. Every hit is written into a table you can edit by hand. **Snap to the
   beat**: everything lands right on the beat. Keyboard: 1 to 9 for instruments, Q W E R T Y for effects, Space =
-  play/pause.
+  play/pause. **Sound textures** (keys A to L): space, shimmer, dub, crush, freeze (made from your song); vinyl,
+  wind, rain, noise riser (added on top). **Effects bus**: Send/Return (the original stays intact, the effect is
+  added with its Send and Return levels and its tail rings after release), Master (the effect processes the whole
+  mix, set with Dry/Wet) or Auto (each effect on its own bus). **Effect fade**: smooth in and out (0.01 to 2 s).
 - **3-band isolator** (chain and layer): three touch faders, bass, mids, treble, from -26 to +6 dB. Slide with your
   finger or mouse, double-tap = 0 dB, **KILL** cuts a band; with the keyboard: arrows, 0 = reset.
 - **Mic effects and mixing**: record your voice in the browser or import a file, then pick an effect (studio voice,
@@ -2647,8 +2777,8 @@ alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s
 
 ### Studio audio
 Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file nella propria cartella:
-`sorties/audio/enchainements`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` e
-`sorties/audio/effets_micro`; la sotto-scheda **File creati** li elenca, li fa ascoltare e apre ogni cartella.
+`sorties/audio/enchainements`, `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj`
+e `sorties/audio/effets_micro`; la sotto-scheda **File creati** li elenca, li fa ascoltare e apre ogni cartella.
 - **Concatena**: quanti brani vuoi (« Aggiungi brani » ne prende diversi insieme, oppure i suoni della libreria).
   Nella tabella: inizio e fine (compilati da soli con il brano intero, da modificare per tagliare), volume e
   **transizione** verso il brano successivo. Pad: **dissolvenza**, **taglio
@@ -2656,6 +2786,12 @@ Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file 
   **eco** (l'ultimo battito si ripete spegnendosi), **back spin** (riavvolgimento del vinile), **frenata vinile**
   (il disco rallenta fino a fermarsi). **Transizioni a tempo**: tutto cade sui battiti. Clicca su una riga per
   ascoltarla.
+- **Taglia**: carica una musica (o l'ultimo file dello Studio) e appare la sua forma d'onda. Trascina sopra per
+  scegliere un passaggio, sposta le maniglie di inizio e fine, tocca la forma d'onda per spostare lì la
+  riproduzione, oppure scrivi i tempi esatti. I **segnaposto** tagliano il brano in più file. Tre scelte: **tieni
+  la selezione**, **taglia ai segnaposto** (un file per pezzo), **togli la selezione** (il resto viene riunito senza
+  clic). **Calamita sul battito**: le maniglie cadono sui battiti. Tastiera: I = inizio, O = fine, M = segnaposto,
+  frecce = regola. **Invia a Concatena** aggiunge i pezzi alla tabella di Concatena.
 - **Sovrapponi**: quante tracce vuoi insieme (musica, voce, ambiente), ritardo, loop; **ducking**: la musica si
   abbassa di circa 13 dB quando parla la voce.
 - **Console DJ**: scegli una musica (o il risultato di Concatena o Sovrapponi), avvia l'ascolto e suona i pad.
@@ -2663,6 +2799,11 @@ Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file 
   **Effetti** (si tengono premuti): filtro bassi, filtro acuti, flanger, eco, roll (ripetizione del battito),
   trancia. Ogni colpo si scrive in una tabella modificabile a mano. **Aggancia al battito**: tutto cade esattamente
   sul battito. Tastiera: da 1 a 9 per gli strumenti, Q W E R T Y per gli effetti, Spazio = play/pausa.
+  **Texture sonore** (tasti da A a L): spazio, shimmer, dub, crush, congela (dalla tua musica); vinile, vento,
+  pioggia, rumore in salita (aggiunte). **Bus degli effetti**: Send/Return (l'originale resta intatto, l'effetto si
+  aggiunge con i livelli Send e Return e la sua coda risuona dopo il rilascio), Master (l'effetto tratta tutto il
+  mix, dosato con Dry/Wet) o Auto (ogni effetto sul suo bus). **Dissolvenza degli effetti**: entrata e uscita
+  morbide (da 0,01 a 2 s).
 - **Isolatore a 3 bande** (concatena e sovrapponi): tre fader tattili, bassi, medi, acuti, da -26 a +6 dB. Scorri
   con il dito o il mouse, doppio tocco = 0 dB, **KILL** taglia una banda; da tastiera: frecce, 0 = azzera.
 - **Effetti microfono e mixaggio**: registra la tua voce nel browser o importa un file, poi scegli un effetto (voce
@@ -2774,8 +2915,8 @@ PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12
 
 ### Estudio de audio
 Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus archivos en su carpeta:
-`sorties/audio/enchainements`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` y
-`sorties/audio/effets_micro`; la subpestaña **Salidas** los lista, los reproduce y abre cada carpeta.
+`sorties/audio/enchainements`, `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj`
+y `sorties/audio/effets_micro`; la subpestaña **Salidas** los lista, los reproduce y abre cada carpeta.
 - **Encadenar**: tantas pistas como quieras («Añadir pistas» acepta varias a la vez, o los sonidos de la
   biblioteca). En la tabla: inicio y fin (se rellenan solos con la pista entera, cámbialos para recortar), volumen y
   **transición** a la pista siguiente. Pads: **fundido**, **corte
@@ -2783,6 +2924,12 @@ Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus
   **eco** (el último tiempo se repite apagándose), **back spin** (rebobinado del vinilo), **frenado de vinilo** (el
   disco se frena hasta pararse). **Transiciones al ritmo**: todo cae en los tiempos. Haz clic en una fila para
   escucharla.
+- **Cortar**: carga una canción (o el último archivo del Estudio) y aparece su forma de onda. Arrastra encima para
+  elegir un fragmento, mueve las asas de inicio y fin, toca la forma de onda para llevar ahí la reproducción, o
+  escribe los tiempos exactos. Las **marcas** cortan la pista en varios archivos. Tres opciones: **conservar la
+  selección**, **cortar en las marcas** (un archivo por trozo), **quitar la selección** (el resto se vuelve a unir sin
+  chasquido). **Imán en el tiempo**: las asas caen en los tiempos. Teclado: I = inicio, O = fin, M = marca,
+  flechas = ajustar. **Enviar a Encadenar** añade los trozos a la tabla de Encadenar.
 - **Superponer**: tantas pistas como quieras a la vez (música, voz, ambiente), desfase, bucle; **ducking**: la
   música baja unos 13 dB cuando habla la voz.
 - **Mesa de DJ**: elige una canción (o el resultado de Encadenar o Superponer), pulsa reproducir y toca los pads.
@@ -2790,6 +2937,10 @@ Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus
   **Efectos** (se mantienen pulsados): filtro de graves, filtro de agudos, flanger, eco, roll (repetición del
   tiempo), cortador. Cada golpe se anota en una tabla que puedes editar a mano. **Ajustar al tiempo**: todo cae
   justo en el tiempo. Teclado: 1 a 9 para los instrumentos, Q W E R T Y para los efectos, Espacio = reproducir/pausa.
+  **Texturas sonoras** (teclas A a L): espacio, shimmer, dub, crush, congelar (de tu canción); vinilo, viento,
+  lluvia, ruido ascendente (añadidas). **Bus de efectos**: Send/Return (el original queda intacto, el efecto se suma
+  con sus niveles Send y Return y su cola suena tras soltar), Master (el efecto procesa toda la mezcla, dosificado
+  con Dry/Wet) o Auto (cada efecto en su bus). **Fundido de los efectos**: entrada y salida suaves (0,01 a 2 s).
 - **Aislador de 3 bandas** (encadenar y superponer): tres faders táctiles, graves, medios, agudos, de -26 a +6 dB.
   Desliza con el dedo o el ratón, doble toque = 0 dB, **KILL** corta una banda; con el teclado: flechas, 0 = reinicio.
 - **Efectos de micro y mezcla**: graba tu voz en el navegador o importa un archivo, elige un efecto (voz de estudio,
