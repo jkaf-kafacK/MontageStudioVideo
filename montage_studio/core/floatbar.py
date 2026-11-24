@@ -11,6 +11,8 @@ Boutons, de haut en bas :
   ▭      un écran, une fenêtre ou une zone dessinée, puis « Photo » ou « Enregistrer » ;
   ⚙      ouvrir Screen Record dans MSV, le dossier des enregistrements, fermer la barre.
 (Sous macOS, où la zone n'existe pas, 📷 et 🎥 prennent l'écran choisi dans ▭.)
+Pendant un enregistrement avec webcam, une petite fenêtre à côté de la barre montre la webcam en direct (Windows,
+invisible dans la vidéo ; à cacher par ✕ ou dans ⚙).
 On la déplace en la faisant glisser ; sa position est gardée. Sous Windows 10 (2004) et 11, elle est invisible dans
 les enregistrements et les photos (SetWindowDisplayAffinity) ; ailleurs, elle se replie pendant l'enregistrement.
 La barre se ferme toute seule quand MSV est fermé.
@@ -45,6 +47,8 @@ INK, PAPER, MUTED, REC_RED = "#FFFFFF", "#FFFFFF", "#F3D3A3", "#E5484D"
 BUSY = ("countdown", "recording", "paused", "resuming", "processing")
 ZONE_MIN = 64
 POLL_MS = 400
+CAM_MS = 80                  # aperçu de la webcam : ~12 images par seconde au plus
+CAM_W, CAM_H = 240, 180      # taille de la fenêtre d'aperçu (avant mise à l'échelle de l'écran)
 OFFLINE_LIMIT = 25           # ~10 s sans réponse de MSV : la barre se ferme
 
 
@@ -204,6 +208,17 @@ def copy_image(png: str | Path, hwnd: int = 0) -> bool:
     return False
 
 
+def cam_window_xy(bar: tuple[int, int, int, int], size: tuple[int, int], screen: tuple[int, int, int, int],
+                  on_left: bool, gap: int = 8) -> tuple[int, int]:
+    """Place de la fenêtre d'aperçu de la webcam : à côté de la barre (bar = x, y, largeur, hauteur), du côté du
+    centre de l'écran, toujours dans l'écran."""
+    bx, by, bw, bh = bar
+    w, h = size
+    l, t, r, b = screen
+    x = bx + bw + gap if on_left else bx - w - gap
+    return max(l, min(r - w, x)), max(t, min(b - h, by))
+
+
 # =============================================================================================== appels à MSV
 class ApiError(Exception):
     def __init__(self, message: str, status: int = 0):
@@ -230,6 +245,16 @@ class Api:
             raise ApiError(str(detail), e.code) from e
         except (OSError, ValueError) as e:
             raise ApiError("", 0) from e
+
+    def get_bytes(self, path: str, timeout: float = 2.0) -> Optional[bytes]:
+        """Contenu brut (image) ; None si vide (204) ou en cas d'erreur."""
+        req = urllib.request.Request(self.base + "msv-barre/" + path, headers={"X-MSV-Barre": self.token})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                data = r.read()
+                return data or None
+        except (OSError, ValueError):
+            return None
 
 
 def open_path(p: str | Path) -> None:
@@ -289,6 +314,104 @@ def virtual_screen(root: tk.Misc) -> tuple[int, int, int, int]:
         x, y = m(76), m(77)
         return x, y, x + m(78), y + m(79)
     return 0, 0, root.winfo_screenwidth(), root.winfo_screenheight()
+
+
+# =============================================================================================== aperçu webcam
+class CamWindow:
+    """Webcam en direct pendant l'enregistrement, à côté de la barre. Invisible dans la vidéo : jamais montrée si
+    Windows ne peut pas l'exclure de la capture. Les images arrivent par un fil à part ; seul le fil principal
+    touche à Tk."""
+
+    def __init__(self, bar: "Bar"):
+        self.bar = bar
+        self.win: Optional[tk.Toplevel] = None
+        self.view: Optional[tk.Label] = None
+        self.photo = None
+        self.closed = False               # ✕ : cachée jusqu'au prochain enregistrement
+        self._frames: queue.Queue = queue.Queue(maxsize=1)
+        self._run = threading.Event()
+        self.size = (round(CAM_W * bar.k), round(CAM_H * bar.k))
+        self._xy: Optional[tuple[int, int]] = None
+
+    def update(self, wanted: bool) -> None:
+        if wanted and self.win is None:
+            self.show()
+        elif not wanted and self.win is not None:
+            self.hide()
+
+    def show(self) -> None:
+        root, k = self.bar.root, self.bar.k
+        w = tk.Toplevel(root)
+        w.title(TITLE)
+        w.overrideredirect(True)
+        w.attributes("-topmost", True)
+        w.configure(bg=BRONZE_EDGE)
+        self.photo = tk.PhotoImage(master=w, width=self.size[0], height=self.size[1])   # noir en attendant
+        self.view = tk.Label(w, bg="#000000", bd=0, image=self.photo)
+        self.view.pack(padx=1, pady=1)
+        x = tk.Label(w, text="✕", bg="#18181B", fg="#FFFFFF", cursor="hand2", padx=round(5 * k), pady=0,
+                     font=("Segoe UI", -round(11 * k), "bold"))
+        x.place(relx=1.0, x=-round(4 * k), y=round(4 * k), anchor="ne")
+        x.bind("<Button-1>", lambda _e: self.close())
+        self.win = w
+        self._place()
+        if not hide_from_capture(w):          # elle serait filmée : pas d'aperçu
+            self.hide()
+            return
+        round_corners(w, self.size[0] + 2, self.size[1] + 2, round(14 * k))
+        self._run.set()
+        threading.Thread(target=self._fetch, daemon=True, name="msv-barre-webcam").start()
+        w.after(CAM_MS, self._draw)
+
+    def close(self) -> None:
+        self.closed = True
+        self.hide()
+
+    def hide(self) -> None:
+        self._run.clear()
+        if self.win is not None:
+            self.win.destroy()
+        self.win, self.view, self.photo, self._xy = None, None, None, None
+
+    def _place(self) -> None:
+        if self.win is None:
+            return
+        r = self.bar.root
+        bar = (r.winfo_rootx(), r.winfo_rooty(), r.winfo_width(), r.winfo_height())
+        x, y = cam_window_xy(bar, (self.size[0] + 2, self.size[1] + 2), virtual_screen(r), self.bar.on_left_half(),
+                             round(8 * self.bar.k))
+        if (x, y) != self._xy:
+            self._xy = (x, y)
+            self.win.geometry(f"+{x}+{y}")
+
+    def _fetch(self) -> None:
+        while self._run.is_set():
+            data = self.bar.api.get_bytes("webcam", timeout=1.5)
+            if data:
+                try:
+                    self._frames.get_nowait()       # seule la plus récente compte
+                except queue.Empty:
+                    pass
+                self._frames.put(data)
+            time.sleep(CAM_MS / 1000)
+
+    def _draw(self) -> None:
+        if self.win is None or self.view is None:
+            return
+        try:
+            data = self._frames.get_nowait()
+        except queue.Empty:
+            data = None
+        if data:
+            try:
+                from PIL import Image, ImageOps, ImageTk
+                img = ImageOps.fit(Image.open(io.BytesIO(data)).convert("RGB"), self.size)
+                self.photo = ImageTk.PhotoImage(img)
+                self.view.configure(image=self.photo)
+            except (OSError, ValueError, tk.TclError):
+                pass
+        self._place()                          # suit la barre si on la déplace
+        self.win.after(CAM_MS, self._draw)
 
 
 # =============================================================================================== bouton dessiné
@@ -373,6 +496,7 @@ class Bar:
         self._shooting = False            # une photo est en cours : les clics suivants sont ignorés
         self.zone_ok = True               # zone dessinée possible (pas sous macOS) ; vrai réponse de MSV au démarrage
         self._sig: Optional[tuple] = None
+        self.cam = CamWindow(self)
 
         root.title(TITLE)
         root.overrideredirect(True)
@@ -577,6 +701,10 @@ class Bar:
             self.collapsed = True                     # la barre serait visible dans la vidéo : on la fait petite
             self.b_toggle.show("expand")
         self.layout()
+        if state not in BUSY:
+            self.cam.closed = False
+        self.cam.update(state == "recording" and bool(st.get("webcam")) and self.excluded
+                        and self.cfg.get("cam_preview", True) is not False and not self.cam.closed)
         if state == "done" and st.get("video") and st.get("video") != self.shown_result:
             self.shown_result = st["video"]
             msg = _("✅ Vidéo prête : {dur}.", dur=fmt_elapsed(st.get("duration", 0)))
@@ -777,9 +905,19 @@ class Bar:
                          command=lambda: webbrowser.open(f"{self.api.base}{self.lang}/#screen-record"))
         menu.add_command(label=_("Ouvrir le dossier des enregistrements"),
                          command=lambda: open_path(self._out_dir()))
+        if self.excluded:                      # ailleurs, la fenêtre serait filmée : pas d'aperçu
+            on = tk.BooleanVar(value=self.cfg.get("cam_preview", True) is not False)
+            menu.add_checkbutton(label=_("Aperçu de la webcam pendant l'enregistrement"), variable=on,
+                                 command=lambda: self._cam_option(on.get()))
         menu.add_separator()
         menu.add_command(label=_("Fermer la barre"), command=self.root.destroy)
         self._popup(menu, self.b_gear)
+
+    def _cam_option(self, on: bool) -> None:
+        self.save(cam_preview=bool(on))
+        if on:
+            self.cam.closed = False
+        self.apply(self.st)
 
     @staticmethod
     def _out_dir() -> Path:

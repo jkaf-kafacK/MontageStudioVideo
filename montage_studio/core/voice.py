@@ -4,6 +4,8 @@ Trois moteurs :
   * ElevenLabs  — voix très naturelles, payant, nécessite une clé API (https://elevenlabs.io).
                   Renvoie le minutage exact de chaque caractère : les sous-titres sont parfaitement synchronisés.
   * Piper       — gratuit, 100 % local et hors ligne (via sherpa-onnx). Qualité correcte, minutage estimé.
+                  Le même moteur fait parler les voix Kokoro (★) : plus naturelles, en français, italien, espagnol
+                  et anglais (modèle Kokoro-82M, Apache-2.0, 132 Mo téléchargés une fois).
   * Ma voix     — clonage local de ta propre voix (Chatterbox Multilingual, licence MIT) à partir d'un
                   enregistrement de 10 à 60 s. Tourne dans un environnement Python séparé (.venv_clonage),
                   voir voice_clone_worker.py. Minutage estimé.
@@ -66,6 +68,26 @@ PIPER_VOICES = {
 }
 DEFAULT_PIPER = "Pierre — homme, français"
 PIPER_URL = "https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-{name}.tar.bz2"
+
+# Kokoro-82M (hexgrad, Apache-2.0) : voix locales plus naturelles que Piper, avec le même moteur (sherpa-onnx).
+# Un seul modèle multilingue (132 Mo, 54 voix), téléchargé au premier usage et vérifié par son empreinte.
+KOKORO = "kokoro-int8-multi-lang-v1_0"
+KOKORO_URL = f"https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/{KOKORO}.tar.bz2"
+KOKORO_SHA256 = "72c347230107ef8a31098ec4d468a605244beef5f1ed00db97efa13518800653"
+# libellé -> (modèle, locuteur, licence), comme PIPER_VOICES ; KOKORO_LANG : langue de lecture de chaque locuteur
+KOKORO_VOICES = {
+    "Siwis — femme, français · Kokoro ★": (KOKORO, 30, "Apache-2.0"),
+    "Sara — femme, italien · Kokoro ★": (KOKORO, 35, "Apache-2.0"),
+    "Nicola — homme, italien · Kokoro ★": (KOKORO, 36, "Apache-2.0"),
+    "Dora — femme, espagnol · Kokoro ★": (KOKORO, 28, "Apache-2.0"),
+    "Alex — homme, espagnol · Kokoro ★": (KOKORO, 29, "Apache-2.0"),
+    "Heart — femme, anglais US · Kokoro ★": (KOKORO, 3, "Apache-2.0"),
+    "Michael — homme, anglais US · Kokoro ★": (KOKORO, 16, "Apache-2.0"),
+    "Emma — femme, anglais UK · Kokoro ★": (KOKORO, 21, "Apache-2.0"),
+    "George — homme, anglais UK · Kokoro ★": (KOKORO, 26, "Apache-2.0"),
+}
+KOKORO_LANG = {30: "fr", 35: "it", 36: "it", 28: "es", 29: "es", 3: "en-us", 16: "en-us", 21: "en-gb", 26: "en-gb"}
+PIPER_VOICES = {**KOKORO_VOICES, **PIPER_VOICES}   # voix locales : Kokoro en tête de liste (meilleure qualité)
 # Un peu plus de variation que les réglages d'origine (0,667 / 0,8) : intonation et rythme moins monotones.
 PIPER_NOISE, PIPER_NOISE_W = 0.72, 0.9
 
@@ -265,9 +287,34 @@ def _piper_model(name: str) -> Path:
     d = MODELS_DIR / f"vits-piper-{name}"
     if (d / f"{name}.onnx").exists():
         return d
+    _download_model(PIPER_URL.format(name=name), name)
+    return d
+
+
+def _kokoro_model() -> Path:
+    d = MODELS_DIR / KOKORO
+    if (d / "model.int8.onnx").exists() and (d / "voices.bin").exists():
+        return d
+    _download_model(KOKORO_URL, KOKORO, KOKORO_SHA256)
+    return d
+
+
+def _download_model(url: str, name: str, sha256: str | None = None) -> None:
+    """Télécharge et extrait une archive de voix dans MODELS_DIR (empreinte vérifiée quand elle est connue)."""
+    import hashlib
+
     MODELS_DIR.mkdir(parents=True, exist_ok=True)
     arch = MODELS_DIR / f"{name}.tar.bz2"
-    urllib.request.urlretrieve(PIPER_URL.format(name=name), arch)
+    urllib.request.urlretrieve(url, arch)
+    if sha256:
+        h = hashlib.sha256()
+        with open(arch, "rb") as f:
+            for block in iter(lambda: f.read(1 << 20), b""):
+                h.update(block)
+        if h.hexdigest() != sha256:
+            arch.unlink(missing_ok=True)
+            raise RuntimeError(_("Le fichier de voix téléchargé est abîmé ou modifié (empreinte différente). "
+                                 "Réessaie ; si le problème continue, vérifie ta connexion."))
     with tarfile.open(arch, "r:bz2") as t:
         root = MODELS_DIR.resolve()
         for m in t.getmembers():   # refuse tout chemin qui sortirait du dossier des modèles
@@ -276,7 +323,6 @@ def _piper_model(name: str) -> Path:
         extra = {"filter": "data"} if hasattr(tarfile, "data_filter") else {}
         t.extractall(MODELS_DIR, **extra)
     arch.unlink(missing_ok=True)
-    return d
 
 
 _tts_cache: dict = {}
@@ -292,26 +338,53 @@ def _write_wav(path: Path, samples, sr: int) -> None:
         w.writeframes((np.clip(samples, -1, 1) * 32767).astype(np.int16).tobytes())
 
 
+def _threads() -> int:
+    return max(1, (os.cpu_count() or 2) // 2)
+
+
+def _piper_engine(name: str):
+    import sherpa_onnx
+
+    d = _piper_model(name)
+    return sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
+        vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=str(d / f"{name}.onnx"), tokens=str(d / "tokens.txt"),
+                                                  data_dir=str(d / "espeak-ng-data"), noise_scale=PIPER_NOISE,
+                                                  noise_scale_w=PIPER_NOISE_W),
+        num_threads=_threads())))
+
+
+def _kokoro_engine(lang: str):
+    """Moteur Kokoro pour une langue de lecture (fr, it, es, en-us, en-gb) : la langue fixe la phonétisation."""
+    import sherpa_onnx
+
+    d = _kokoro_model()
+    try:
+        model = sherpa_onnx.OfflineTtsKokoroModelConfig(
+            model=str(d / "model.int8.onnx"), voices=str(d / "voices.bin"), tokens=str(d / "tokens.txt"),
+            data_dir=str(d / "espeak-ng-data"), lexicon="", dict_dir="", lang=lang)
+    except TypeError:   # sherpa-onnx trop ancien : pas de choix de langue (tout serait lu avec l'accent anglais)
+        raise UserError(_("Ta version de sherpa-onnx est trop ancienne pour les voix Kokoro."),
+                        _("Mets à jour le moteur de voix : {cmd}", cmd=PIPER_CMD.replace("install", "install -U")))
+    return sherpa_onnx.OfflineTts(sherpa_onnx.OfflineTtsConfig(
+        model=sherpa_onnx.OfflineTtsModelConfig(kokoro=model, num_threads=_threads())))
+
+
 def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1.0,
               pitch_semitones: float = 0.0, lexicon: str | None = None,
               studio: bool = True) -> list[tuple[str, float, float]]:
-    """Synthèse locale, phrase par phrase. pitch_semitones < 0 donne une voix plus grave (ex. -2)."""
+    """Synthèse locale (voix Piper ou Kokoro), phrase par phrase. pitch_semitones < 0 donne une voix plus grave."""
     import numpy as np
-    import sherpa_onnx
 
     name, sid, _lic = PIPER_VOICES.get(voice_label, PIPER_VOICES[DEFAULT_PIPER])
-    if name not in _tts_cache:
-        d = _piper_model(name)
-        cfg = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(
-            vits=sherpa_onnx.OfflineTtsVitsModelConfig(model=str(d / f"{name}.onnx"), tokens=str(d / "tokens.txt"),
-                                                      data_dir=str(d / "espeak-ng-data"), noise_scale=PIPER_NOISE,
-                                                      noise_scale_w=PIPER_NOISE_W),
-            num_threads=max(1, (os.cpu_count() or 2) // 2)))
-        _tts_cache[name] = sherpa_onnx.OfflineTts(cfg)
+    kokoro = name == KOKORO
+    lang = KOKORO_LANG.get(sid, "en-us")[:2] if kokoro else name[:2]
+    key = (name, KOKORO_LANG.get(sid)) if kokoro else name
+    if key not in _tts_cache:
+        _tts_cache[key] = _kokoro_engine(KOKORO_LANG.get(sid, "en-us")) if kokoro else _piper_engine(name)
     rules = speech.parse_lexicon(lexicon_text(lexicon))
     segs, pieces, sr = speech.segments(text), [], 22050
     for seg in segs:
-        audio = _tts_cache[name].generate(speech.spoken(seg.text, name[:2], rules), sid=sid, speed=speed)
+        audio = _tts_cache[key].generate(speech.spoken(seg.text, lang, rules), sid=sid, speed=speed)
         if audio.sample_rate <= 0 or len(audio.samples) == 0:
             raise UserError(_("La voix Piper n'a produit aucun son pour « {text} ».", text=seg.text[:60]),
                             _(PIPER_FIX, cmd=PIPER_CMD))
@@ -324,7 +397,7 @@ def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1
     pre = f"rubberband=pitch={2 ** (pitch_semitones / 12):.5f}:formant=preserved" if pitch_semitones else ""
     finish_audio(raw, out_wav, pre, studio)
     raw.unlink(missing_ok=True)
-    return timed_words(segs, spans, name[:2])
+    return timed_words(segs, spans, lang)
 
 
 # --------------------------------------------------------------------------- Ma voix (clonage local)
@@ -518,23 +591,32 @@ def generate(text: str, out_dir: str | Path, name: str = "voix", provider: str =
 
 
 def replace_clip_voice(video: str, new_voice: str, out_path: str, at: float = 0.0,
-                       keep_original: float = 0.0, match_level_of: str | None = None) -> str:
-    """Remplace la voix d'un clip vidéo (ex. une scène générée avec la mauvaise voix).
+                       keep_original: float = 0.0, match_level_of: str | None = None,
+                       background: str | None = None) -> str:
+    """Remplace la voix d'un clip vidéo (doublage, ou scène générée avec la mauvaise voix).
 
-    at : moment où la nouvelle voix commence ; keep_original : volume conservé du son d'origine (0 = coupé).
+    at : moment où la nouvelle voix commence ; keep_original : volume du son gardé sous la nouvelle voix (0 = coupé).
     match_level_of : autre clip dont on copie le niveau de voix.
+    background : piste gardée sous la nouvelle voix à la place du son d'origine (le fond sans la voix, obtenu avec
+    core/separation.py) ; keep_original règle alors son volume.
     """
     gain = 1.0
     if match_level_of:
         gain = _level_ratio(new_voice, match_level_of)
     delay = int(at * 1000)
-    dur = ff.probe(video).duration
+    info = ff.probe(video)
+    dur = info.duration
     fc = f"[1:a]aresample=48000,volume={gain:.3f},adelay={delay}:all=1,apad=whole_dur={dur:.3f},atrim=0:{dur:.3f}[v]"
-    if keep_original > 0 and ff.probe(video).has_audio:
+    inputs = ["-i", video, "-i", new_voice]
+    if background and keep_original > 0:
+        inputs += ["-i", background]
+        fc += (f";[2:a]aresample=48000,volume={keep_original:.2f},apad=whole_dur={dur:.3f},atrim=0:{dur:.3f}[o]"
+               ";[o][v]amix=inputs=2:duration=first:normalize=0[a]")
+    elif keep_original > 0 and info.has_audio and not background:
         fc += f";[0:a]volume={keep_original:.2f}[o];[o][v]amix=inputs=2:duration=first:normalize=0[a]"
     else:
         fc += ";[v]anull[a]"
-    ff.run_ffmpeg(["-i", video, "-i", new_voice, "-filter_complex", fc, "-map", "0:v", "-map", "[a]",
+    ff.run_ffmpeg([*inputs, "-filter_complex", fc, "-map", "0:v", "-map", "[a]",
                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-ac", "2", "-t", f"{dur:.3f}", out_path])
     return out_path
 

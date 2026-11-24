@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request, Response
 from pydantic import BaseModel
 
 from . import errors, paths, screenrec
@@ -105,7 +105,14 @@ def router() -> APIRouter:
         if st["state"] == "done" and rec.result:
             st["video"] = rec.result.get("video")
             st["duration"] = rec.result.get("duration", 0)
+        st["webcam"] = rec.cam_preview() is not None
         return st
+
+    @r.get("/webcam")
+    def webcam(x_msv_barre: Optional[str] = Header(None)):
+        """Dernière image de la webcam pendant l'enregistrement (fenêtre d'aperçu de la barre) ; 204 sinon."""
+        _check(x_msv_barre)
+        return cam_response()
 
     @r.get("/sources")
     def sources(lang: str = "fr", x_msv_barre: Optional[str] = Header(None)):
@@ -161,5 +168,30 @@ def router() -> APIRouter:
             raise _fail(e) from e
         finally:
             LANG.reset(token)
+
+    return r
+
+
+def cam_response() -> Response:
+    """Image JPEG de l'aperçu de la webcam, ou 204 (pas d'image). En-tête X-MSV-Occupe : enregistrement lancé."""
+    rec = screenrec.RECORDER
+    frame = rec.cam_preview()
+    headers = {"Cache-Control": "no-store", "X-MSV-Occupe": "1" if rec.busy() else "0"}
+    if frame is None:
+        return Response(status_code=204, headers=headers)
+    headers["X-MSV-Image"] = str(frame[0])
+    return Response(frame[1], media_type="image/jpeg", headers=headers)
+
+
+def webcam_router() -> APIRouter:
+    """Aperçu de la webcam pour la page de MSV. En plus de la garde LocalOnly d'app.py : en-tête X-MSV-Apercu
+    obligatoire (une image <img> d'un autre site ne peut pas l'envoyer) et appel du même site seulement."""
+    r = APIRouter(prefix="/msv-webcam", include_in_schema=False)
+
+    @r.get("/image")
+    def image(request: Request, x_msv_apercu: Optional[str] = Header(None)):
+        if x_msv_apercu != "1" or request.headers.get("sec-fetch-site", "same-origin") not in ("same-origin", "none"):
+            raise HTTPException(403)
+        return cam_response()
 
     return r

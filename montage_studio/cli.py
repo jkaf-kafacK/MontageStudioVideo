@@ -114,7 +114,7 @@ def main() -> None:
     if a.cmd in ("voix", "voix-liste"):
         from core import voice
         if a.cmd == "voix-liste":
-            print("Piper (gratuit) :")
+            print("Gratuit, local (Kokoro ★, Piper) :")
             for nom, (_m, _s, lic) in voice.PIPER_VOICES.items():
                 print(f"  {nom}   [{lic}]")
             try:

@@ -179,11 +179,10 @@ def test_dernier_fichier_du_studio(sons):
 def test_onglet_decouper(lang):
     token = LANG.set(lang)
     try:
-        titre, sorties = "✂️ " + _("Découper"), _("découpe")
+        titre, fichiers = "✂️ " + _("Découper"), "📁 " + _("Mes fichiers")
         demo = app.build_ui(lang)
     finally:
         LANG.reset(token)
     titres = [c["props"].get("label") for c in demo.config["components"] if c.get("type") == "tabitem"]
     assert titre in titres
-    textes = " ".join(str(c["props"].get("value", "")) for c in demo.config["components"] if c.get("type") == "markdown")
-    assert sorties.capitalize() in textes                       # colonne de l'onglet Sorties
+    assert fichiers in titres                                   # les morceaux coupés y sont listés

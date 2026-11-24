@@ -1,4 +1,5 @@
-"""Menu principal : les 10 onglets, toujours visibles, dans les 4 langues.
+"""Menu principal : Accueil et les 6 espaces (Montage, Créer, Audio, Vidéo, Mes fichiers, Aide), toujours visibles,
+dans les 4 langues.
 Colonne verticale à gauche sur ordinateur, barre horizontale sur téléphone.
 
     .venv\\Scripts\\python.exe -m pytest tests/test_menu.py -v
@@ -18,8 +19,7 @@ sys.path.insert(0, str(ROOT))
 import app  # noqa: E402
 from core.i18n import LANG, LANGS  # noqa: E402
 
-ATTENDUS_IT = ["Montaggio", "🎚️ Studio audio", "Scene animate", "Classifica", "Voce fuori campo", "Shorts in serie",
-               "✂️ Scene e schermo diviso", "Strumenti rapidi", "🎥 Registra schermo", "Aiuto"]
+ATTENDUS_IT = ["🏠 Home", "Montaggio", "✨ Crea", "🎚️ Audio", "🎥 Video", "📁 I miei file", "Aiuto"]
 
 
 def _menu(lang: str) -> str:
@@ -34,10 +34,10 @@ def _labels(html: str) -> list[str]:
     return [unescape(x) for x in re.findall(r'data-label="([^"]*)"', html)]
 
 
-def test_les_dix_onglets_en_italien():
+def test_accueil_et_les_six_espaces_en_italien():
     html = _menu("it")
     assert _labels(html) == ATTENDUS_IT
-    assert html.count('class="menu-item') == 10
+    assert html.count('class="menu-item') == 7
     assert html.startswith('<nav class="menu-onglets" aria-label="Menu principale">')
 
 
@@ -53,7 +53,7 @@ def test_menu_et_onglets_ont_les_memes_titres(lang):
     assert _labels(_menu(lang)) == attendus
     titres = [c["props"].get("label") for c in demo.config["components"] if c.get("type") == "tabitem"]
     assert [t for t in titres if t in attendus] == attendus     # tous présents, dans le même ordre
-    assert len(set(attendus)) == 10                              # aucun doublon (sinon le menu se tromperait)
+    assert len(set(attendus)) == 7                              # aucun doublon (sinon le menu se tromperait)
 
 
 def test_premiere_entree_active_et_texte_protege():
@@ -61,7 +61,7 @@ def test_premiere_entree_active_et_texte_protege():
     boutons = re.findall(r"<button[^>]*>", html)
     assert 'aria-current="page"' in boutons[0] and "actif" in boutons[0]
     assert all("aria-current" not in b for b in boutons[1:])
-    assert "Enregistrer l&#x27;écran" in html                   # apostrophe échappée dans les attributs
+    assert 'data-key="Vidéo"' in html                         # le lien #screen-record cherche cette entrée
     assert all(b.startswith('<button type="button"') for b in boutons)   # pas d'envoi de formulaire
 
 

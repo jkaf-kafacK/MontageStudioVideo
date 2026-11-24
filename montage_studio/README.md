@@ -87,7 +87,7 @@ Le modèle (`small` ≈ 500 Mo) est téléchargé au premier usage. Avec une car
 | Transcription | Outils rapides | Audio/vidéo → `.srt` (Whisper) |
 | Effacer un logo | Outils rapides | Efface ou floute une zone sur toute la vidéo (vidéos dont tu as les droits) |
 | Logo MSV | Outils rapides | Ajoute ton logo en mémorisant sa position, pour l'enlever proprement ensuite |
-| **Voix off** | Voix off | Texte → voix avec **ElevenLabs** (ta clé API) ou **Piper** (gratuit, hors ligne) ; une piste par scène + `.srt` |
+| **Voix off** | Voix off | Texte → voix avec **ElevenLabs** (ta clé API) ou **Kokoro / Piper** (gratuit, hors ligne) ; une piste par scène + `.srt` |
 | **Ma voix** | Voix off | Ta propre voix clonée sur ton PC à partir de 10 à 60 s d'enregistrement (avec consentement) |
 | Remplacer une voix | Voix off | Change la voix d'un clip existant, au même volume qu'un clip de référence |
 | Voix auto en série | Shorts en série | Chaque ligne du CSV avec un `texte` reçoit sa voix off générée |
@@ -117,7 +117,7 @@ flowchart LR
 | `core/ranking.py` | Classement « Top N » : description JSON → projet standard |
 | `core/layers.py` | Calques : incrustations et textes animés |
 | `core/music.py` | Musique générée libre de droits |
-| `core/voice.py` | Voix off : Piper, ElevenLabs, Ma voix |
+| `core/voice.py` | Voix off : Kokoro, Piper, ElevenLabs, Ma voix |
 | `core/subs.py` | SRT, minutage automatique, Whisper |
 | `core/textimg.py` | Rendu du texte (titres, sous-titres, karaoké) |
 | `core/tools.py` | Silences, captures, miniatures, audio |
@@ -177,6 +177,37 @@ python cli.py classement exemples/classement_exemple.json -o sorties/top5.mp4 --
 ```
 
 Pratique pour programmer un rendu de nuit (Planificateur de tâches Windows, cron).
+
+### Piloter MSV avec une IA (MCP)
+
+`mcp_server.py` branche MSV sur une IA compatible MCP (Claude Desktop, Claude Code…). Tu écris par exemple
+« Coupe les silences de mes 3 vidéos, ajoute des sous-titres en français et assemble-les en Short 9:16 » : l'IA
+appelle elle-même les outils de MSV.
+
+```bash
+python mcp_server.py --installer   # une fois : SDK MCP, versions fixées avec empreintes (requirements-mcp.txt)
+python mcp_server.py --config      # la commande pour Claude Code et le bloc à coller dans Claude Desktop
+```
+
+Outils : `lister_medias`, `infos_media`, `couper_silences`, `decouper`, `assembler`, `sous_titres`, `separer_voix`,
+`doubler`, `stabiliser`, `detourer`, `miniature`, `rendre_projet`.
+
+- Les vidéos sont traitées sur ton PC et ne sont jamais envoyées à l'IA. Elle voit seulement ce que les outils lui
+  renvoient : noms et chemins des fichiers, durées, textes transcrits.
+- Chaque outil crée un nouveau fichier dans `sorties/mcp` : tes fichiers d'origine ne sont jamais modifiés.
+- L'interface de MSV n'a pas besoin d'être ouverte.
+
+**ChatGPT** (mode développeur) n'accepte qu'une adresse HTTPS sur Internet :
+
+```bash
+python mcp_server.py --http        # serveur sur ce PC, protégé par une clé secrète ; affiche la suite
+ngrok http 8765                    # tunnel : donne une adresse https://… vers ce serveur
+```
+
+Dans ChatGPT, crée un connecteur avec l'adresse `https://<domaine-du-tunnel>/<clé>/mcp`, sans authentification :
+la clé est dans l'adresse. **Cette adresse est un mot de passe** : elle donne accès aux outils de MSV et à tes
+fichiers vidéo. Ferme le tunnel quand tu as fini. Si elle a fuité, change-la avec
+`python mcp_server.py --http --nouvelle-cle`.
 
 ---
 
@@ -253,13 +284,16 @@ Le classement est traduit en projet standard et rendu par le même moteur que l'
 
 ## Voix off
 
-| | **Piper** | **ElevenLabs** |
-|---|---|---|
-| Prix | Gratuit | Selon ton abonnement ElevenLabs |
-| Internet | Seulement pour télécharger la voix la 1re fois | Obligatoire |
-| Qualité | Correcte, un peu synthétique | Très naturelle, voix clonées possibles |
-| Sous-titres | Minutage estimé | Minutage **exact**, mot par mot |
-| Voix | FR : Pierre, Tom, Jessica, Siwis · EN : LibriTTS · ES : DaveFX, Sharvard | Toutes celles de ton compte |
+| | **Kokoro ★** | **Piper** | **ElevenLabs** |
+|---|---|---|---|
+| Prix | Gratuit | Gratuit | Selon ton abonnement ElevenLabs |
+| Internet | Seulement la 1re fois (132 Mo pour toutes les voix) | Seulement pour télécharger la voix la 1re fois | Obligatoire |
+| Qualité | Naturelle | Correcte, un peu synthétique | Très naturelle, voix clonées possibles |
+| Vitesse (processeur) | Environ le temps réel | Très rapide | Selon le réseau |
+| Sous-titres | Minutage estimé | Minutage estimé | Minutage **exact**, mot par mot |
+| Voix | FR : Siwis · IT : Sara, Nicola · ES : Dora, Alex · EN : Heart, Michael, Emma, George | FR : Pierre, Tom, Jessica, Siwis · EN : LibriTTS · ES : DaveFX, Sharvard | Toutes celles de ton compte |
+
+Kokoro et Piper sont dans le même moteur, « Gratuit, local » : choisis simplement la voix dans la liste.
 
 **ElevenLabs** : sur elevenlabs.io, *Profile → API Keys*, crée une clé, colle-la dans l'onglet Voix off puis
 « Charger mes voix ». La clé est mémorisée dans `voix_config.json` sur ton PC (ou mets-la dans la variable

@@ -749,7 +749,7 @@ def test_onglet_traduit(lang, onglet_traduit):
     finally:
         LANG.reset(token)
     labels = json.dumps(demo.config, ensure_ascii=False, default=str)
-    assert f'"{onglet_traduit}"' in labels
+    assert f'"🏆 {onglet_traduit}"' in labels
 
 
 # =========================================================================== après les essais : style « Podium »

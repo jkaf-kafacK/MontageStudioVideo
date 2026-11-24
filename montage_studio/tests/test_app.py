@@ -285,7 +285,10 @@ def test_barre_flottante_dans_l_onglet(monkeypatch, tmp_path):
         trig = {getattr(demo.blocks.get(t[0]), "elem_id", None) for t in f.targets}
         links.append((getattr(f.fn, "__name__", ""), trig))
     assert ("bar_show", {"sr-bar-btn"}) in links and ("bar_auto", {"sr-bar-auto"}) in links
-    assert "#screen-record" in app.PAGE_JS and "🎥" in app.PAGE_JS      # ⚙ de la barre : ouvre l'onglet
+    # ⚙ de la barre : ouvre Vidéo → Enregistrer l'écran (entrée du menu, puis sous-onglet repéré par son id)
+    assert "#screen-record" in app.PAGE_JS and 'data-key="Vidéo"' in app.PAGE_JS
+    assert 'data-tab-id="vi-ecran"' in app.PAGE_JS
+    assert any(c.get("type") == "tabitem" and c["props"].get("id") == "vi-ecran" for c in demo.config["components"])
 
 
 def test_bouton_theme_a_cote_des_langues():

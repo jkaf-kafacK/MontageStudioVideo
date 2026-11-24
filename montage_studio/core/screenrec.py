@@ -12,7 +12,7 @@ Montage automatique (process) :
   * coupe le début et la fin passés dans MSV (avant d'aller sur la page à filmer, et pour cliquer sur « Arrêter ») ;
   * raccourcit les longues pauses (écran immobile, aucune action, aucun son) ;
   * zoom fluide vers chaque clic, qui suit ensuite le curseur, puis revient au plan large ;
-  * webcam dans un médaillon rond ; version verticale 9:16 (Shorts, Reels, TikTok) au choix : cadre qui suit le
+  * webcam dans un médaillon rond ou carré, de la taille choisie ; version verticale 9:16 (Shorts, Reels, TikTok) au choix : cadre qui suit le
     curseur, écran entier sur fond flou, ou écran en haut et webcam en bas ;
   * réduction du bruit du micro (core/denoise.py).
 
@@ -50,6 +50,8 @@ APP_TITLE = "Montage Studio Video"        # titre de l'onglet MSV : ces moments-
 HOTKEY = "Ctrl + Shift + F9"              # arrêt sans revenir dans MSV
 PAUSE_HOTKEY = "Ctrl + Shift + F8"        # pause / reprise sans revenir dans MSV
 CAM_POSITIONS = ["bas droite", "bas gauche", "haut droite", "haut gauche"]
+CAM_SHAPES = ["rond", "carré"]
+CAM_SIZE = (12, 45, 26)       # taille du médaillon : min, max, défaut (% du petit côté de la vidéo 16:9)
 VERTICAL_LAYOUTS = ["suivre le curseur", "écran entier + fond flou", "écran en haut + webcam en bas"]
 FPS_CHOICES = [15, 30, 60]
 OUT_DIR = paths.OUT_DIR / "screen_record"
@@ -522,6 +524,8 @@ class Options:
     system_audio: str = ""       # son de l'ordinateur : sortie WASAPI, source « monitor », périphérique de bouclage
     webcam: str = ""             # webcam : nom dshow, /dev/videoN ou index avfoundation ("" = aucune)
     cam_position: str = "bas droite"
+    cam_shape: str = "rond"       # médaillon : CAM_SHAPES
+    cam_size: float = CAM_SIZE[2]  # % du petit côté (16:9) ; en 9:16, agrandi dans la même proportion
     zoom: bool = True
     zoom_level: float = 1.8
     trim: bool = True
@@ -530,6 +534,60 @@ class Options:
     countdown: int = 3
     denoise: str = "légère"      # réduction du bruit du micro : voir core/denoise.py
     vertical_layout: str = VERTICAL_LAYOUTS[0]
+
+
+# aperçu en direct de la webcam pendant l'enregistrement : petite image JPEG, en miroir comme dans la vidéo montée
+CAM_PREVIEW_ARGS = ["-map", "0:v:0", "-an", "-vf", "fps=12,scale=-2:240,hflip", "-q:v", "8", "-f", "mjpeg", "pipe:1"]
+JPEG_START, JPEG_END = bytes([0xFF, 0xD8]), bytes([0xFF, 0xD9])     # début et fin de chaque image du flux MJPEG
+
+
+class CamFrames:
+    """Dernière image de la webcam pendant l'enregistrement, lue dans la sortie MJPEG du FFmpeg qui l'enregistre."""
+
+    MAX_AGE = 2.0                 # plus vieille : la webcam ne donne plus d'image (pause, fin, débranchée)
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._jpeg: Optional[bytes] = None
+        self._t = 0.0
+        self.seq = 0
+
+    def feed(self, stream) -> None:
+        """Lit le flux jusqu'au bout. Il est toujours vidé : sinon FFmpeg se bloquerait et la webcam ne serait plus
+        enregistrée."""
+        buf = b""
+        while True:
+            try:
+                chunk = stream.read1(65536) if hasattr(stream, "read1") else stream.read(65536)
+            except (OSError, ValueError):
+                break
+            if not chunk:
+                break
+            buf += chunk
+            end = buf.rfind(JPEG_END)
+            if end < 0:
+                if len(buf) > 4_000_000:          # jamais de fin d'image : on repart de zéro
+                    buf = b""
+                continue
+            start = buf.rfind(JPEG_START, 0, end)
+            if start >= 0:
+                self.put(buf[start:end + 2])
+            buf = buf[end + 2:]
+
+    def put(self, jpeg: bytes) -> None:
+        with self._lock:
+            self._jpeg, self._t = jpeg, time.perf_counter()
+            self.seq += 1
+
+    def clear(self) -> None:
+        with self._lock:
+            self._jpeg = None
+
+    def latest(self) -> Optional[tuple[int, bytes]]:
+        with self._lock:
+            if self._jpeg is None or time.perf_counter() - self._t > self.MAX_AGE:
+                return None
+            return self.seq, self._jpeg
 
 
 class Recorder:
@@ -558,6 +616,7 @@ class Recorder:
         self._seg_idle = threading.Event()           # aucun morceau en cours de fermeture
         self._seg_idle.set()
         self._off: set[str] = set()                  # sources en échec (pas de nouvel essai à chaque reprise)
+        self.cam_frames = CamFrames()                # aperçu en direct de la webcam
 
     # ------------------------------------------------------------------ commandes
     def start(self, opts: Options, lang: str) -> None:
@@ -630,6 +689,14 @@ class Recorder:
         return {"state": self.state, "countdown": max(0.0, wait), "elapsed": self.recorded(),
                 "progress": self.progress, "message": self.message, "error": self.error,
                 "warnings": list(self.warnings)}
+
+    def busy(self) -> bool:
+        """Un enregistrement est lancé (la webcam est ou va être prise par FFmpeg)."""
+        return self.state in ("countdown", "recording", "paused", "resuming")
+
+    def cam_preview(self) -> Optional[tuple[int, bytes]]:
+        """(numéro, JPEG) de la dernière image de la webcam pendant l'enregistrement, sinon None."""
+        return self.cam_frames.latest() if self.state == "recording" else None
 
     def take_result(self) -> Optional[dict]:
         """Résultat terminé (une seule fois) ; l'état repasse à « idle »."""
@@ -718,8 +785,9 @@ class Recorder:
             seg["cam"] = self._raw / f"cam_{i:03d}.mkv"
             cam_cmd = [ffexe, "-hide_banner", "-loglevel", "warning", "-y", "-thread_queue_size", "512",
                        *cam_input(o.webcam), "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
-                       "-pix_fmt", "yuv420p", "-f", "matroska", str(seg["cam"])]
-            seg["procs"]["cam"] = self._spawn(cam_cmd, f"cam_{i:03d}")
+                       "-pix_fmt", "yuv420p", "-f", "matroska", str(seg["cam"]), *CAM_PREVIEW_ARGS]
+            self.cam_frames.clear()
+            seg["procs"]["cam"] = self._spawn(cam_cmd, f"cam_{i:03d}", self.cam_frames)
         seg["t_start"] = time.perf_counter()
         time.sleep(1.0)                        # la capture a-t-elle bien démarré ?
         if seg["procs"]["screen"].poll() is not None:
@@ -739,10 +807,15 @@ class Recorder:
             seg["cam"] = None
         return seg
 
-    def _spawn(self, cmd: list[str], name: str) -> subprocess.Popen:
+    def _spawn(self, cmd: list[str], name: str, frames: Optional[CamFrames] = None) -> subprocess.Popen:
+        """frames : la sortie standard (images de l'aperçu) est lue par un fil à part."""
         assert self._raw is not None
         log = open(self._raw / f"{name}.log", "wb")
-        return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log, **_NO_WINDOW)
+        proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE if frames else subprocess.DEVNULL,
+                                stderr=log, **_NO_WINDOW)
+        if frames is not None:
+            threading.Thread(target=frames.feed, args=(proc.stdout,), daemon=True, name=f"msv-{name}-apercu").start()
+        return proc
 
     def _log_tail(self, name: str) -> str:
         try:
@@ -1050,10 +1123,23 @@ def output_sizes(W: int, H: int) -> tuple[tuple[int, int], tuple[float, float]]:
     return main, (vw, min(H, vw * 16 / 9))
 
 
-def cam_layout(ow: int, oh: int, position: str, vertical: bool) -> tuple[int, int, int]:
-    """Taille et position du médaillon de la webcam."""
-    size = _even((ow if vertical else min(ow, oh)) * (0.32 if vertical else 0.26))
+def cam_size_pct(value: object) -> float:
+    """Taille du médaillon bornée à CAM_SIZE (valeur invalide : taille par défaut)."""
+    try:
+        v = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return float(CAM_SIZE[2])
+    return float(CAM_SIZE[2]) if v != v else min(float(CAM_SIZE[1]), max(float(CAM_SIZE[0]), v))
+
+
+def cam_layout(ow: int, oh: int, position: str, vertical: bool,
+               size_pct: float = CAM_SIZE[2]) -> tuple[int, int, int]:
+    """Taille et position du médaillon de la webcam (size_pct : % du petit côté en 16:9 ; en 9:16, la largeur
+    occupée garde la proportion d'origine 32 % pour 26 %)."""
+    k = cam_size_pct(size_pct) / 100
     m = int(min(ow, oh) * 0.035)
+    size = _even(ow * k * 32 / 26 if vertical else min(ow, oh) * k)
+    size = min(size, _even(min(ow, oh) - 2 * m))
     x = m if "gauche" in position else ow - size - m
     y = m if "haut" in position else oh - size - m
     if vertical and "bas" in position:
@@ -1081,8 +1167,9 @@ def _cam_masks(raw: Path) -> tuple[Path, Path]:
     return mp, rp
 
 
-def _rect_masks(raw: Path, w: int, h: int) -> tuple[Path, Path]:
-    """Masque et bordure d'une webcam rectangulaire aux coins arrondis (mise en page « écran + webcam »)."""
+def _rect_masks(raw: Path, w: int, h: int, name: str = "cam_rect") -> tuple[Path, Path]:
+    """Masque et bordure d'une webcam rectangulaire aux coins arrondis (mise en page « écran + webcam », médaillon
+    carré)."""
     from PIL import Image, ImageDraw
 
     k = 2
@@ -1092,7 +1179,7 @@ def _rect_masks(raw: Path, w: int, h: int) -> tuple[Path, Path]:
     ring = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     ImageDraw.Draw(ring).rounded_rectangle((0, 0, W - 1, H - 1), radius=r, outline=(255, 255, 255, 210),
                                            width=max(4, int(min(W, H) * 0.012)))
-    mp, rp = raw / "cam_rect_mask.png", raw / "cam_rect_ring.png"
+    mp, rp = raw / f"{name}_mask.png", raw / f"{name}_ring.png"
     mask.resize((w, h), Image.LANCZOS).save(mp)
     ring.resize((w, h), Image.LANCZOS).save(rp)
     return mp, rp
@@ -1454,10 +1541,11 @@ def process(raw: Path, progress: Progress = None, out_dir: Optional[Path] = None
     if meta.get("cam") and Path(meta["cam"]).exists() and Path(meta["cam"]).stat().st_size > 1000:
         t0 = meta["cam_t0"] if "cam_t0" in meta else meta["t_stop"] - ff.probe(meta["cam"]).duration
         cam = {"path": meta["cam"], "t0": t0}
-    circle = _cam_masks(raw) if cam else None
+    # médaillon rond, ou carré aux coins arrondis (masques mis à la taille voulue par FFmpeg)
+    circle = (_rect_masks(raw, 512, 512, "cam_carre") if opts.cam_shape == "carré" else _cam_masks(raw))         if cam else None
 
     def round_cam(ow: int, oh: int, vertical: bool) -> tuple[int, int, int, int]:
-        s, x, y = cam_layout(ow, oh, opts.cam_position, vertical)
+        s, x, y = cam_layout(ow, oh, opts.cam_position, vertical, opts.cam_size)
         return x, y, s, s
 
     main_track = camera_path(times, keep_clicks if opts.zoom else [], samples, level)

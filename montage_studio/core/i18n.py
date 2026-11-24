@@ -29,7 +29,6 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Montage Studio Video · todo se procesa en tu ordenador, no se envía nada a Internet"),
     ("Montage", "Editor", "Montaggio", "Edición"),
     ("Shorts en série", "Batch Shorts", "Shorts in serie", "Shorts en serie"),
-    ("Outils rapides", "Quick tools", "Strumenti rapidi", "Herramientas rápidas"),
     ("Aide", "Help", "Aiuto", "Ayuda"),
 
     # ---- sections
@@ -358,7 +357,51 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("FFmpeg a échoué (code {code}) :\n{msg}", "FFmpeg failed (code {code}):\n{msg}",
      "FFmpeg non è riuscito (codice {code}):\n{msg}", "FFmpeg ha fallado (código {code}):\n{msg}"),
     # ---- voix off (ElevenLabs / Piper)
-    ("Piper (gratuit, local)", "Piper (free, local)", "Piper (gratuito, locale)", "Piper (gratis, local)"),
+    ("Gratuit, local (Kokoro, Piper)", "Free, local (Kokoro, Piper)", "Gratuito, locale (Kokoro, Piper)",
+     "Gratis, local (Kokoro, Piper)"),
+    ("Siwis — femme, français · Kokoro ★", "Siwis — female, French · Kokoro ★", "Siwis — donna, francese · Kokoro ★",
+     "Siwis — mujer, francés · Kokoro ★"),
+    ("Sara — femme, italien · Kokoro ★", "Sara — female, Italian · Kokoro ★", "Sara — donna, italiano · Kokoro ★",
+     "Sara — mujer, italiano · Kokoro ★"),
+    ("Nicola — homme, italien · Kokoro ★", "Nicola — male, Italian · Kokoro ★", "Nicola — uomo, italiano · Kokoro ★",
+     "Nicola — hombre, italiano · Kokoro ★"),
+    ("Dora — femme, espagnol · Kokoro ★", "Dora — female, Spanish · Kokoro ★", "Dora — donna, spagnolo · Kokoro ★",
+     "Dora — mujer, español · Kokoro ★"),
+    ("Alex — homme, espagnol · Kokoro ★", "Alex — male, Spanish · Kokoro ★", "Alex — uomo, spagnolo · Kokoro ★",
+     "Alex — hombre, español · Kokoro ★"),
+    ("Heart — femme, anglais US · Kokoro ★", "Heart — female, US English · Kokoro ★",
+     "Heart — donna, inglese US · Kokoro ★", "Heart — mujer, inglés EE. UU. · Kokoro ★"),
+    ("Michael — homme, anglais US · Kokoro ★", "Michael — male, US English · Kokoro ★",
+     "Michael — uomo, inglese US · Kokoro ★", "Michael — hombre, inglés EE. UU. · Kokoro ★"),
+    ("Emma — femme, anglais UK · Kokoro ★", "Emma — female, UK English · Kokoro ★",
+     "Emma — donna, inglese UK · Kokoro ★", "Emma — mujer, inglés británico · Kokoro ★"),
+    ("George — homme, anglais UK · Kokoro ★", "George — male, UK English · Kokoro ★",
+     "George — uomo, inglese UK · Kokoro ★", "George — hombre, inglés británico · Kokoro ★"),
+    ("le premier usage télécharge les voix Kokoro (132 Mo)", "first use downloads the Kokoro voices (132 MB)",
+     "il primo utilizzo scarica le voci Kokoro (132 MB)", "el primer uso descarga las voces Kokoro (132 MB)"),
+    ("**Voix locales** : gratuites, hors ligne. Les voix **Kokoro ★** sont les plus naturelles (français, italien, "
+     "espagnol, anglais) ; les voix **Piper** sont plus légères et plus rapides. Chaque voix est téléchargée au "
+     "premier usage.",
+     "**Local voices**: free, offline. **Kokoro ★** voices sound the most natural (French, Italian, Spanish, "
+     "English); **Piper** voices are lighter and faster. Each voice is downloaded on first use.",
+     "**Voci locali**: gratuite, offline. Le voci **Kokoro ★** sono le più naturali (francese, italiano, spagnolo, "
+     "inglese); le voci **Piper** sono più leggere e veloci. Ogni voce viene scaricata al primo utilizzo.",
+     "**Voces locales**: gratis, sin conexión. Las voces **Kokoro ★** son las más naturales (francés, italiano, "
+     "español, inglés); las voces **Piper** son más ligeras y rápidas. Cada voz se descarga en el primer uso."),
+    ("Ta version de sherpa-onnx est trop ancienne pour les voix Kokoro.",
+     "Your sherpa-onnx version is too old for the Kokoro voices.",
+     "La tua versione di sherpa-onnx è troppo vecchia per le voci Kokoro.",
+     "Tu versión de sherpa-onnx es demasiado antigua para las voces Kokoro."),
+    ("Mets à jour le moteur de voix : {cmd}", "Update the voice engine: {cmd}", "Aggiorna il motore vocale: {cmd}",
+     "Actualiza el motor de voz: {cmd}"),
+    ("Le fichier de voix téléchargé est abîmé ou modifié (empreinte différente). Réessaie ; si le problème "
+     "continue, vérifie ta connexion.",
+     "The downloaded voice file is damaged or modified (fingerprint mismatch). Try again; if the problem persists, "
+     "check your connection.",
+     "Il file della voce scaricato è danneggiato o modificato (impronta diversa). Riprova; se il problema continua, "
+     "controlla la connessione.",
+     "El archivo de voz descargado está dañado o modificado (huella distinta). Vuelve a intentarlo; si el problema "
+     "continúa, revisa tu conexión."),
     ("ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)", "ElevenLabs (API)"),
     ("Pierre — homme, français", "Pierre — male, French", "Pierre — uomo, francese", "Pierre — hombre, francés"),
     ("Tom — homme, français", "Tom — male, French", "Tom — uomo, francese", "Tom — hombre, francés"),
@@ -1472,14 +1515,6 @@ _STRINGS: list[tuple[str, str, str, str]] = [
 
     # ---- studio audio
     ("Studio audio", "Audio studio", "Studio audio", "Estudio de audio"),
-    ("Enchaîne tes musiques, superpose voix et ambiances, transforme ta voix. Chaque outil range ses fichiers dans "
-     "son propre dossier.",
-     "Chain your music, layer voices and ambiences, transform your voice. Each tool stores its files in its own "
-     "folder.",
-     "Concatena le tue musiche, sovrapponi voci e ambienti, trasforma la tua voce. Ogni strumento salva i suoi file "
-     "nella propria cartella.",
-     "Encadena tus músicas, superpón voces y ambientes, transforma tu voz. Cada herramienta guarda sus archivos en "
-     "su propia carpeta."),
     ("enchaînement", "chain", "concatenazione", "encadenado"),
     ("superposition", "layering", "sovrapposizione", "superposición"),
     ("effets micro", "mic effects", "effetti microfono", "efectos de micro"),
@@ -1489,7 +1524,6 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Enchaîner", "Chain", "Concatena", "Encadenar"),
     ("Superposer", "Layer", "Sovrapponi", "Superponer"),
     ("Effets micro et mixage", "Mic effects and mixing", "Effetti microfono e mixaggio", "Efectos de micro y mezcla"),
-    ("Sorties", "Outputs", "File creati", "Salidas"),
     ("Morceaux", "Tracks", "Brani", "Pistas"),
     ("Durée du fondu enchaîné (s)", "Crossfade length (s)", "Durata della dissolvenza incrociata (s)",
      "Duración del fundido cruzado (s)"),
@@ -1920,6 +1954,8 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "ordenador, para que compartas al instante después de cada grabación."),
     ("Gratuit · 100 % local · sans filigrane", "Free · 100% local · no watermark",
      "Gratis · 100% locale · senza filigrana", "Gratis · 100 % local · sin marca de agua"),
+    ("Voir ce que fait chaque fonction", "See what each feature does", "Vedi cosa fa ogni funzione",
+     "Ver qué hace cada función"),
     ("Enregistrement d'écran rapide et simple", "Fast and easy screen recording",
      "Registrazione dello schermo facile e veloce", "Grabación de pantalla rápida y sencilla"),
     ("Un écran entier ou une seule fenêtre, en un clic.", "A whole screen or a single window, in one click.",
@@ -1935,10 +1971,10 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Video, musica, suoni delle app: senza cavo virtuale né configurazione.",
      "Vídeos, música, sonidos de las apps: sin cable virtual ni configuración."),
     ("Ta webcam", "Record from your webcam", "Registra dalla webcam", "Graba con tu webcam"),
-    ("Ton visage dans un médaillon rond, dans le coin de ton choix.",
-     "Your face in a round bubble, in the corner you choose.",
-     "Il tuo volto in un riquadro rotondo, nell'angolo che preferisci.",
-     "Tu cara en un círculo, en la esquina que elijas."),
+    ("Ton visage dans un médaillon rond ou carré, de la taille et dans le coin de ton choix.",
+     "Your face in a round or square bubble, at the size and in the corner you choose.",
+     "Il tuo volto in un riquadro rotondo o quadrato, della dimensione e nell'angolo che preferisci.",
+     "Tu cara en un círculo o un cuadrado, del tamaño y en la esquina que elijas."),
     ("Sans filigrane ni limite de durée", "No watermark and no time limit",
      "Nessuna filigrana e nessun limite di tempo", "Sin marca de agua ni límite de tiempo"),
     ("Tes vidéos t'appartiennent : enregistre aussi longtemps que tu veux.",
@@ -1989,6 +2025,29 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Son de l'ordinateur", "Computer audio", "Audio del computer", "Audio del ordenador"),
     ("Webcam", "Webcam", "Webcam", "Webcam"),
     ("Position de la webcam", "Webcam position", "Posizione della webcam", "Posición de la webcam"),
+    ("Forme de la webcam", "Webcam shape", "Forma della webcam", "Forma de la webcam"),
+    ("rond", "round", "rotondo", "redondo"),
+    ("carré", "square", "quadrato", "cuadrado"),
+    ("Taille de la webcam (%)", "Webcam size (%)", "Dimensione della webcam (%)", "Tamaño de la webcam (%)"),
+    ("part de la hauteur de la vidéo", "share of the video height", "parte dell'altezza del video",
+     "parte de la altura del vídeo"),
+    ("Aperçu de la place de la webcam", "Preview of the webcam placement", "Anteprima della posizione della webcam",
+     "Vista previa de la posición de la webcam"),
+    ("ton écran", "your screen", "il tuo schermo", "tu pantalla"),
+    ("Voir ma webcam en direct", "Show my webcam live", "Mostra la mia webcam in diretta", "Ver mi webcam en directo"),
+    ("Arrêter l'aperçu", "Stop the preview", "Ferma l'anteprima", "Detener la vista previa"),
+    ("Aperçu impossible : autorise la caméra dans le navigateur, ou ferme le programme qui l'utilise déjà.",
+     "Preview unavailable: allow the camera in the browser, or close the program already using it.",
+     "Anteprima impossibile: consenti la fotocamera nel browser, o chiudi il programma che la sta già usando.",
+     "Vista previa imposible: permite la cámara en el navegador, o cierra el programa que ya la usa."),
+    ("L'aperçu s'arrête tout seul au démarrage de l'enregistrement.",
+     "The preview stops by itself when recording starts.",
+     "L'anteprima si ferma da sola all'inizio della registrazione.",
+     "La vista previa se detiene sola al empezar la grabación."),
+    ("En direct : ce que la webcam enregistre", "Live: what the webcam is recording",
+     "In diretta: ciò che la webcam sta registrando", "En directo: lo que graba la webcam"),
+    ("Aperçu de la webcam pendant l'enregistrement", "Webcam preview while recording",
+     "Anteprima della webcam durante la registrazione", "Vista previa de la webcam durante la grabación"),
     ("Aucun", "None", "Nessuno", "Ninguno"),
     ("Aucune", "None", "Nessuna", "Ninguna"),
     ("Actualiser les listes", "Refresh lists", "Aggiorna gli elenchi", "Actualizar las listas"),
@@ -2208,7 +2267,6 @@ _STRINGS: list[tuple[str, str, str, str]] = [
      "Linux: funziona in una sessione X11 (Xorg). Con Wayland, scegli «Xorg» nella schermata di accesso.",
      "Linux: funciona en una sesión X11 (Xorg). Con Wayland, elige «Xorg» en la pantalla de inicio de sesión."),
     # ---- Découper en scènes (core/scenecut.py)
-    ("Scènes et écran partagé", "Scenes & split screen", "Scene e schermo diviso", "Escenas y pantalla dividida"),
     ("Découper en scènes", "Split into scenes", "Dividi in scene", "Dividir en escenas"),
     ("Vidéo à découper", "Video to split", "Video da dividere", "Vídeo que dividir"),
     ("Comment découper ?", "How to split?", "Come dividere?", "¿Cómo dividir?"),
@@ -2444,10 +2502,498 @@ _STRINGS: list[tuple[str, str, str, str]] = [
     ("Choisis le son d'une vidéo ajoutée, ou « toutes (mélange) ».", "Choose the sound of an added video, or “all (mixed)”.",
      "Scegli l'audio di un video aggiunto, oppure «tutti (mix)».",
      "Elige el sonido de un vídeo añadido, o «todos (mezcla)»."),
+    # ---- organisation en espaces (menu principal et sous-onglets)
+    ("Créer", "Create", "Crea", "Crear"),
+    ("Mes fichiers", "My files", "I miei file", "Mis archivos"),
+    ("Écran partagé", "Split screen", "Schermo diviso", "Pantalla dividida"),
+    ("Remplacer la voix", "Replace the voice", "Sostituisci la voce", "Sustituir la voz"),
+    ("Extraire l'audio", "Extract audio", "Estrai l'audio", "Extraer el audio"),
+    ("Vidéo → Short", "Video → Short", "Video → Short", "Vídeo → Short"),
+    ("Voix off, musiques, mixage et nettoyage du son. Tout ce que tu crées ici se retrouve dans « Mes fichiers ».",
+     "Voice-overs, music, mixing and sound clean-up. Everything you create here shows up in “My files”.",
+     "Voci fuori campo, musiche, mixaggio e pulizia del suono. Tutto ciò che crei qui si ritrova in «I miei file».",
+     "Voces en off, música, mezcla y limpieza del sonido. Todo lo que crees aquí aparece en «Mis archivos»."),
+    # ---- Mes fichiers
+    ("Tout ce que tu crées dans MSV, du plus récent au plus ancien. Les fichiers sont rangés dans {path}.",
+     "Everything you create in MSV, newest first. The files are stored in {path}.",
+     "Tutto ciò che crei in MSV, dal più recente al più vecchio. I file sono salvati in {path}.",
+     "Todo lo que creas en MSV, del más reciente al más antiguo. Los archivos se guardan en {path}."),
+    ("Trouve un fichier", "Find a file", "Trova un file", "Encuentra un archivo"),
+    ("Type", "Type", "Tipo", "Tipo"),
+    ("tous les types", "all types", "tutti i tipi", "todos los tipos"),
+    ("vidéos", "videos", "video", "vídeos"),
+    ("sons", "sounds", "suoni", "sonidos"),
+    ("images", "images", "immagini", "imágenes"),
+    ("sous-titres et textes", "subtitles and texts", "sottotitoli e testi", "subtítulos y textos"),
+    ("Dossier", "Folder", "Cartella", "Carpeta"),
+    ("tous les dossiers", "all folders", "tutte le cartelle", "todas las carpetas"),
+    ("Rechercher dans le nom", "Search in the name", "Cerca nel nome", "Buscar en el nombre"),
+    ("nom du fichier…", "file name…", "nome del file…", "nombre del archivo…"),
+    ("Ouvrir le dossier des sorties", "Open the output folder", "Apri la cartella delle uscite",
+     "Abrir la carpeta de salidas"),
+    ("Ouvrir son dossier", "Open its folder", "Apri la sua cartella", "Abrir su carpeta"),
+    ("Ajouter à la médiathèque du Montage", "Add to the Editor media library", "Aggiungi alla mediateca del Montaggio",
+     "Añadir a la mediateca de Edición"),
+    ("Aucun fichier pour l'instant : ce que tu crées dans MSV apparaîtra ici.",
+     "No files yet: what you create in MSV will appear here.",
+     "Ancora nessun file: ciò che crei in MSV apparirà qui.",
+     "Todavía no hay archivos: lo que crees en MSV aparecerá aquí."),
+    ("Aucun fichier ne correspond à ces filtres.", "No file matches these filters.",
+     "Nessun file corrisponde a questi filtri.", "Ningún archivo coincide con estos filtros."),
+    ("{n} fichier(s) sur {total}", "{n} file(s) out of {total}", "{n} file su {total}", "{n} archivo(s) de {total}"),
+    ("les {n} plus récents sont listés", "the {n} most recent are listed", "sono elencati i {n} più recenti",
+     "se muestran los {n} más recientes"),
+    ("Ce fichier n'existe plus.", "This file no longer exists.", "Questo file non esiste più.",
+     "Este archivo ya no existe."),
+    ("Choisis un fichier dans la liste.", "Choose a file from the list.", "Scegli un file dall'elenco.",
+     "Elige un archivo de la lista."),
+    ("✅ Ajouté à la médiathèque (onglet Montage).", "✅ Added to the media library (Editor tab).",
+     "✅ Aggiunto alla mediateca (scheda Montaggio).", "✅ Añadido a la mediateca (pestaña Edición)."),
+    # ---- Accueil et mode Simple / Avancé
+    ("Accueil", "Home", "Home", "Inicio"),
+    ("Simple", "Simple", "Semplice", "Sencillo"),
+    ("Avancé", "Advanced", "Avanzato", "Avanzado"),
+    ("Mode simple : les réglages experts sont cachés. Clique pour tout afficher.",
+     "Simple mode: expert settings are hidden. Click to show everything.",
+     "Modalità semplice: le impostazioni per esperti sono nascoste. Clicca per mostrare tutto.",
+     "Modo sencillo: los ajustes para expertos están ocultos. Haz clic para mostrarlo todo."),
+    ("Mode avancé : tous les réglages sont affichés. Clique pour passer en mode simple.",
+     "Advanced mode: all settings are shown. Click to switch to simple mode.",
+     "Modalità avanzata: tutte le impostazioni sono visibili. Clicca per passare alla modalità semplice.",
+     "Modo avanzado: se muestran todos los ajustes. Haz clic para pasar al modo sencillo."),
+    ("Que veux-tu faire ?", "What do you want to do?", "Cosa vuoi fare?", "¿Qué quieres hacer?"),
+    ("Choisis une activité : MSV ouvre le bon outil.", "Pick an activity: MSV opens the right tool.",
+     "Scegli un'attività: MSV apre lo strumento giusto.", "Elige una actividad: MSV abre la herramienta adecuada."),
+    ("Faire un Short viral", "Make a viral Short", "Crea uno Short virale", "Hacer un Short viral"),
+    ("Format 9:16, sous-titres karaoké, silences coupés et zooms, en un clic.",
+     "9:16 format, karaoke subtitles, silences removed and zooms, in one click.",
+     "Formato 9:16, sottotitoli karaoke, silenzi tagliati e zoom, in un clic.",
+     "Formato 9:16, subtítulos karaoke, silencios cortados y zooms, en un clic."),
+    ("Monter une vidéo", "Edit a video", "Monta un video", "Montar un vídeo"),
+    ("Importe tes vidéos et images, place-les sur la timeline, ajoute textes et musique.",
+     "Import your videos and images, put them on the timeline, add text and music.",
+     "Importa i tuoi video e immagini, mettili sulla timeline, aggiungi testi e musica.",
+     "Importa tus vídeos e imágenes, colócalos en la línea de tiempo, añade textos y música."),
+    ("Créer une voix off", "Create a voice-over", "Crea una voce fuori campo", "Crear una voz en off"),
+    ("Écris le texte, choisis une voix (ou la tienne) : voix et sous-titres en une fois.",
+     "Write the text, pick a voice (or your own): voice and subtitles in one go.",
+     "Scrivi il testo, scegli una voce (o la tua): voce e sottotitoli in un colpo solo.",
+     "Escribe el texto, elige una voz (o la tuya): voz y subtítulos de una vez."),
+    ("Écran, micro et webcam, avec zoom automatique sur les clics.",
+     "Screen, microphone and webcam, with automatic zoom on clicks.",
+     "Schermo, microfono e webcam, con zoom automatico sui clic.",
+     "Pantalla, micrófono y webcam, con zoom automático en los clics."),
+    ("Travailler une musique", "Work on music", "Lavora su una musica", "Trabajar una música"),
+    ("Enchaîne, coupe, superpose tes morceaux ou mixe-les comme un DJ.",
+     "Chain, cut, layer your tracks or mix them like a DJ.",
+     "Concatena, taglia, sovrapponi i tuoi brani o mixali come un DJ.",
+     "Encadena, corta, superpón tus pistas o mézclalas como un DJ."),
+    ("Doubler une vidéo", "Dub a video", "Doppia un video", "Doblar un vídeo"),
+    ("Créer une scène animée", "Create an animated scene", "Crea una scena animata", "Crear una escena animada"),
+    ("Titre animé, écran final « S'abonner », avant / après, chiffres clés…",
+     "Animated title, “Subscribe” end screen, before / after, key figures…",
+     "Titolo animato, schermata finale «Iscriviti», prima / dopo, numeri chiave…",
+     "Título animado, pantalla final «Suscribirse», antes / después, cifras clave…"),
+    ("Faire un classement", "Make a ranking", "Crea una classifica", "Hacer una clasificación"),
+    ("Un Short « Top N » : la liste se remplit clip après clip.",
+     "A “Top N” Short: the list fills up clip after clip.",
+     "Uno Short «Top N»: la lista si riempie clip dopo clip.",
+     "Un Short «Top N»: la lista se llena clip tras clip."),
+    ("Dernières créations", "Latest creations", "Ultime creazioni", "Últimas creaciones"),
+    ("Aucun fichier pour l’instant : tes créations apparaîtront ici.",
+     "No files yet: your creations will appear here.",
+     "Ancora nessun file: le tue creazioni appariranno qui.",
+     "Todavía no hay archivos: tus creaciones aparecerán aquí."),
+    ("Tout voir dans « Mes fichiers »", "See everything in “My files”", "Vedi tutto in «I miei file»",
+     "Ver todo en «Mis archivos»"),
+    ("Mode simple ou avancé", "Simple or advanced mode", "Modalità semplice o avanzata", "Modo sencillo o avanzado"),
+    ("Mode simple : seuls les réglages essentiels sont affichés. Les valeurs par défaut sont déjà bonnes.",
+     "Simple mode: only the essential settings are shown. The default values are already good.",
+     "Modalità semplice: sono visibili solo le impostazioni essenziali. I valori predefiniti sono già buoni.",
+     "Modo sencillo: solo se muestran los ajustes esenciales. Los valores por defecto ya son buenos."),
+    ("Mode avancé : tous les réglages sont affichés (effets, rythme, bus d’effets, encodeur…).",
+     "Advanced mode: all settings are shown (effects, rhythm, effect buses, encoder…).",
+     "Modalità avanzata: tutte le impostazioni sono visibili (effetti, ritmo, bus effetti, encoder…).",
+     "Modo avanzado: se muestran todos los ajustes (efectos, ritmo, buses de efectos, codificador…)."),
+    ("Afficher tous les réglages", "Show all settings", "Mostra tutte le impostazioni", "Mostrar todos los ajustes"),
+    # ---- Doublage : séparation voix / fond (core/separation.py)
+    ("Doublage", "Dubbing", "Doppiaggio", "Doblaje"),
+    ("Doubler une vidéo : sépare la voix d'origine du fond (musique, ambiance), récupère le texte, fais-le lire par "
+     "une nouvelle voix, puis pose-la sur le fond.",
+     "Dub a video: separate the original voice from the background (music, ambience), get the text, have it read by "
+     "a new voice, then lay it over the background.",
+     "Doppia un video: separa la voce originale dallo sfondo (musica, ambiente), recupera il testo, fallo leggere da "
+     "una nuova voce, poi posala sullo sfondo.",
+     "Dobla un vídeo: separa la voz original del fondo (música, ambiente), recupera el texto, haz que lo lea una voz "
+     "nueva y colócala sobre el fondo."),
+    ("Sépare la voix du fond, puis pose une nouvelle voix sur la musique et l'ambiance.",
+     "Separate the voice from the background, then lay a new voice over the music and ambience.",
+     "Separa la voce dallo sfondo, poi posa una nuova voce sulla musica e sull'ambiente.",
+     "Separa la voz del fondo y coloca una voz nueva sobre la música y el ambiente."),
+    ("Séparer la voix et le fond", "Separate voice and background", "Separa voce e sfondo", "Separar voz y fondo"),
+    ("Demucs, sur ton PC", "Demucs, on your PC", "Demucs, sul tuo PC", "Demucs, en tu PC"),
+    ("Installer la séparation (une seule fois)", "Install separation (only once)", "Installa la separazione (una volta sola)",
+     "Instalar la separación (una sola vez)"),
+    ("Vidéo ou audio", "Video or audio", "Video o audio", "Vídeo o audio"),
+    ("Voix seule", "Voice only", "Solo voce", "Solo la voz"),
+    ("Fond seul (sans la voix)", "Background only (no voice)", "Solo sfondo (senza voce)", "Solo el fondo (sin la voz)"),
+    ("Vidéo sans la voix", "Video without the voice", "Video senza la voce", "Vídeo sin la voz"),
+    ("Utiliser le fond comme musique du projet", "Use the background as the project's music",
+     "Usa lo sfondo come musica del progetto", "Usar el fondo como música del proyecto"),
+    ("Langue de la voix d'origine", "Language of the original voice", "Lingua della voce originale",
+     "Idioma de la voz original"),
+    ("Transcrire la voix", "Transcribe the voice", "Trascrivi la voce", "Transcribir la voz"),
+    ("Texte de la voix (corrige-le ou traduis-le)", "Text of the voice (correct or translate it)",
+     "Testo della voce (correggilo o traducilo)", "Texto de la voz (corrígelo o tradúcelo)"),
+    ("Envoyer le texte dans Voix off", "Send the text to Voice-over", "Invia il testo a Voce fuori campo",
+     "Enviar el texto a Voz en off"),
+    ("Poser la nouvelle voix", "Lay down the new voice", "Posa la nuova voce", "Colocar la voz nueva"),
+    ("sur le fond ou sur le son d'origine", "over the background or the original sound",
+     "sullo sfondo o sul suono originale", "sobre el fondo o sobre el sonido original"),
+    ("Clip vidéo (rempli après la séparation)", "Video clip (filled in after separation)",
+     "Clip video (compilata dopo la separazione)", "Clip de vídeo (se rellena tras la separación)"),
+    ("Garder le fond sans la voix d'origine", "Keep the background without the original voice",
+     "Tieni lo sfondo senza la voce originale", "Conservar el fondo sin la voz original"),
+    ("après l'étape 1 ; décoché : le son d'origine est gardé au volume choisi",
+     "after step 1; unticked: the original sound is kept at the chosen volume",
+     "dopo il passaggio 1; non spuntato: il suono originale resta al volume scelto",
+     "tras el paso 1; sin marcar: se conserva el sonido original al volumen elegido"),
+    ("Volume du fond ou du son d'origine", "Volume of the background or original sound",
+     "Volume dello sfondo o del suono originale", "Volumen del fondo o del sonido original"),
+    ("Sépare d'abord la voix et le fond (étape 1), ou décoche « Garder le fond sans la voix d'origine ».",
+     "First separate the voice and background (step 1), or untick “Keep the background without the original voice”.",
+     "Separa prima la voce e lo sfondo (passaggio 1), oppure togli la spunta a «Tieni lo sfondo senza la voce "
+     "originale».",
+     "Separa primero la voz y el fondo (paso 1), o desmarca «Conservar el fondo sin la voz original»."),
+    ("Ajoute la vidéo et la nouvelle voix (ou génère-en une dans Audio → Voix off).",
+     "Add the video and the new voice (or generate one in Audio → Voice-over).",
+     "Aggiungi il video e la nuova voce (o generane una in Audio → Voce fuori campo).",
+     "Añade el vídeo y la voz nueva (o genera una en Audio → Voz en off)."),
+    ("Le fond séparé n'a pas la même durée que la vidéo : vérifie que c'est bien la même vidéo.",
+     "The separated background is not the same length as the video: check that it is the same video.",
+     "Lo sfondo separato non ha la stessa durata del video: verifica che sia proprio lo stesso video.",
+     "El fondo separado no dura lo mismo que el vídeo: comprueba que sea el mismo vídeo."),
+    ("Séparation voix / fond installée (Demucs, sur ton PC).", "Voice / background separation installed (Demucs, on your PC).",
+     "Separazione voce / sfondo installata (Demucs, sul tuo PC).", "Separación voz / fondo instalada (Demucs, en tu PC)."),
+    ("Installation de la séparation (quelques minutes)", "Installing separation (a few minutes)",
+     "Installazione della separazione (qualche minuto)", "Instalando la separación (unos minutos)"),
+    ("Séparation voix / fond installée.", "Voice / background separation installed.",
+     "Separazione voce / sfondo installata.", "Separación voz / fondo instalada."),
+    # ---- séparation en 3 pistes (voix, musique, ambiance)
+    ("Voix + fond (2 pistes)", "Voice + background (2 tracks)", "Voce + sfondo (2 tracce)",
+     "Voz + fondo (2 pistas)"),
+    ("Voix + musique + ambiance (3 pistes)", "Voice + music + ambience (3 tracks)",
+     "Voce + musica + ambiente (3 tracce)", "Voz + música + ambiente (3 pistas)"),
+    ("Ambiance et bruitages", "Ambience and sound effects", "Ambiente ed effetti sonori", "Ambiente y efectos"),
+    ("Séparer en", "Split into", "Separa in", "Separar en"),
+    ("3 pistes : la musique est séparée des bruits et de l'ambiance (son de film, vlog, reportage) ; le chant "
+     "d'une chanson reste dans la musique. 4 pistes : sépare aussi le chant des instruments (clip, vidéo sur une "
+     "chanson).",
+     "3 tracks: the music is split from the noises and ambience (film sound, vlog, report); the singing of a song "
+     "stays in the music. 4 tracks: also splits the singing from the instruments (music video, video set to a song).",
+     "3 tracce: la musica viene separata da rumori e ambiente (audio di film, vlog, reportage); il canto di una "
+     "canzone resta nella musica. 4 tracce: separa anche il canto dagli strumenti (videoclip, video su una canzone).",
+     "3 pistas: la música se separa de los ruidos y el ambiente (sonido de película, vlog, reportaje); el canto de "
+     "una canción se queda en la música. 4 pistas: separa también el canto de los instrumentos (videoclip, vídeo "
+     "con una canción)."),
+    ("Voix + chant + instruments + ambiance (4 pistes)", "Voice + singing + instruments + ambience (4 tracks)",
+     "Voce + canto + strumenti + ambiente (4 tracce)", "Voz + canto + instrumentos + ambiente (4 pistas)"),
+    ("Chant", "Singing", "Canto", "Canto"),
+    ("Chant seul", "Singing only", "Solo canto", "Solo canto"),
+    ("Instruments seuls", "Instruments only", "Solo strumenti", "Solo instrumentos"),
+    ("Séparation de la voix, du chant, des instruments et de l'ambiance",
+     "Separating voice, singing, instruments and ambience", "Separazione di voce, canto, strumenti e ambiente",
+     "Separando voz, canto, instrumentos y ambiente"),
+    ("Voix, chant, instruments et ambiance séparés en {s} s ({device}).",
+     "Voice, singing, instruments and ambience separated in {s} s ({device}).",
+     "Voce, canto, strumenti e ambiente separati in {s} s ({device}).",
+     "Voz, canto, instrumentos y ambiente separados en {s} s ({device})."),
+    ("Enlever de la vidéo", "Remove from the video", "Togli dal video", "Quitar del vídeo"),
+    ("Coche ce que tu veux retirer. Exemple en 3 pistes : Musique → la vidéo garde la voix et l'ambiance.",
+     "Tick what you want to remove. Example with 3 tracks: Music → the video keeps the voice and the ambience.",
+     "Seleziona ciò che vuoi togliere. Esempio con 3 tracce: Musica → il video mantiene voce e ambiente.",
+     "Marca lo que quieres quitar. Ejemplo con 3 pistas: Música → el vídeo conserva la voz y el ambiente."),
+    ("Vidéo après séparation", "Video after separation", "Video dopo la separazione", "Vídeo tras la separación"),
+    ("Son après séparation", "Sound after separation", "Audio dopo la separazione", "Sonido tras la separación"),
+    ("Refaire la vidéo avec ce choix", "Remake the video with this choice", "Rifai il video con questa scelta",
+     "Rehacer el vídeo con esta elección"),
+    ("Chaque piste séparée", "Each separated track", "Ogni traccia separata", "Cada pista separada"),
+    ("Enlevé", "Removed", "Tolto", "Quitado"),
+    ("Reste", "Remaining", "Resta", "Queda"),
+    ("Niveau de chaque piste : {list}", "Level of each track: {list}", "Livello di ogni traccia: {list}",
+     "Nivel de cada pista: {list}"),
+    ("Presque rien dans ce fichier pour : {parts}.", "Almost nothing in this file for: {parts}.",
+     "Quasi niente in questo file per: {parts}.", "Casi nada en este archivo para: {parts}."),
+    ("Il ne reste presque plus de son ({db} dB) : ce fichier ne contenait presque que ce que tu as enlevé.",
+     "Almost no sound is left ({db} dB): this file contained almost only what you removed.",
+     "Non resta quasi più audio ({db} dB): questo file conteneva quasi solo ciò che hai tolto.",
+     "Casi no queda sonido ({db} dB): este archivo contenía casi solo lo que has quitado."),
+    ("Ce fichier est déjà le résultat d'une séparation : pour un meilleur résultat, repars de la vidéo d'origine.",
+     "This file is already the result of a separation: for a better result, start again from the original video.",
+     "Questo file è già il risultato di una separazione: per un risultato migliore, riparti dal video originale.",
+     "Este archivo ya es el resultado de una separación: para un mejor resultado, parte del vídeo original."),
+    ("Coche au moins une piste à enlever.", "Tick at least one track to remove.",
+     "Seleziona almeno una traccia da togliere.", "Marca al menos una pista para quitar."),
+    ("Il ne resterait aucun son : décoche au moins une piste à enlever.",
+     "No sound would be left: untick at least one track to remove.",
+     "Non resterebbe alcun audio: deseleziona almeno una traccia da togliere.",
+     "No quedaría ningún sonido: desmarca al menos una pista para quitar."),
+    ("Vidéo refaite.", "Video remade.", "Video rifatto.", "Vídeo rehecho."),
+    ("Garder dans la vidéo", "Keep in the video", "Mantieni nel video", "Conservar en el vídeo"),
+    ("Meilleure qualité (3 fois plus lent)", "Best quality (3 times slower)", "Qualità migliore (3 volte più lento)",
+     "Mejor calidad (3 veces más lento)"),
+    ("Séparer", "Split", "Separa", "Separar"),
+    ("Musique seule", "Music only", "Solo musica", "Solo música"),
+    ("Vidéo avec les pistes gardées", "Video with the kept tracks", "Video con le tracce mantenute",
+     "Vídeo con las pistas conservadas"),
+    ("Refaire la vidéo avec les pistes cochées", "Remake the video with the ticked tracks",
+     "Rifai il video con le tracce selezionate", "Rehacer el vídeo con las pistas marcadas"),
+    ("Gardé : {parts}.", "Kept: {parts}.", "Mantenuto: {parts}.", "Conservado: {parts}."),
+    ("Téléchargement du modèle 3 pistes ({mb} Mo, une seule fois)",
+     "Downloading the 3-track model ({mb} MB, only once)", "Download del modello a 3 tracce ({mb} MB, una sola volta)",
+     "Descargando el modelo de 3 pistas ({mb} MB, una sola vez)"),
+    ("Séparation de la voix, de la musique et de l'ambiance", "Separating voice, music and ambience",
+     "Separazione di voce, musica e ambiente", "Separando voz, música y ambiente"),
+    ("Voix, musique et ambiance séparées en {s} s ({device}).", "Voice, music and ambience separated in {s} s ({device}).",
+     "Voce, musica e ambiente separati in {s} s ({device}).", "Voz, música y ambiente separados en {s} s ({device})."),
+    ("Ces pistes ne viennent pas de la dernière séparation : relance « Séparer ».",
+     "These tracks don't come from the last separation: run “Split” again.",
+     "Queste tracce non vengono dall'ultima separazione: rilancia «Separa».",
+     "Estas pistas no vienen de la última separación: vuelve a pulsar «Separar»."),
+    ("Téléchargement du modèle de séparation impossible : {err}", "Could not download the separation model: {err}",
+     "Impossibile scaricare il modello di separazione: {err}", "No se pudo descargar el modelo de separación: {err}"),
+    ("Le modèle de séparation téléchargé est abîmé ou modifié (empreinte différente) : il a été effacé. "
+     "Réessaie plus tard.",
+     "The downloaded separation model is damaged or modified (fingerprint mismatch): it was deleted. Try again later.",
+     "Il modello di separazione scaricato è danneggiato o modificato (impronta diversa): è stato eliminato. "
+     "Riprova più tardi.",
+     "El modelo de separación descargado está dañado o modificado (huella distinta): se ha borrado. "
+     "Vuelve a intentarlo más tarde."),
+    ("Garde au moins une piste.", "Keep at least one track.", "Mantieni almeno una traccia.",
+     "Conserva al menos una pista."),
+    ("Décoche au moins une piste : sinon le résultat serait identique à l'original.",
+     "Untick at least one track: otherwise the result would be identical to the original.",
+     "Deseleziona almeno una traccia: altrimenti il risultato sarebbe identico all'originale.",
+     "Desmarca al menos una pista: si no, el resultado sería idéntico al original."),
+    ("Ajoute une vidéo ou un fichier audio.", "Add a video or an audio file.", "Aggiungi un video o un file audio.",
+     "Añade un vídeo o un archivo de audio."),
+    ("Séparation de la voix et du fond", "Separating voice and background", "Separazione di voce e sfondo",
+     "Separando la voz y el fondo"),
+    ("Voix et fond séparés en {s} s ({device}).", "Voice and background separated in {s} s ({device}).",
+     "Voce e sfondo separati in {s} s ({device}).", "Voz y fondo separados en {s} s ({device})."),
+    ("Sépare d'abord la voix et le fond (étape 1).", "First separate the voice and background (step 1).",
+     "Separa prima la voce e lo sfondo (passaggio 1).", "Separa primero la voz y el fondo (paso 1)."),
+    ("Écris ou transcris d'abord le texte.", "Write or transcribe the text first.", "Scrivi o trascrivi prima il testo.",
+     "Escribe o transcribe primero el texto."),
+    ("Texte envoyé dans Voix off : choisis une voix et génère, puis reviens ici pour l'étape 2.",
+     "Text sent to Voice-over: pick a voice and generate, then come back here for step 2.",
+     "Testo inviato a Voce fuori campo: scegli una voce e genera, poi torna qui per il passaggio 2.",
+     "Texto enviado a Voz en off: elige una voz y genera, luego vuelve aquí para el paso 2."),
+    ("La séparation voix / fond n'est pas encore installée : clique sur « Installer la séparation » ({size} à "
+     "télécharger, une seule fois).",
+     "Voice / background separation is not installed yet: click “Install separation” ({size} to download, only "
+     "once).",
+     "La separazione voce / sfondo non è ancora installata: clicca su «Installa la separazione» ({size} da "
+     "scaricare, una volta sola).",
+     "La separación voz / fondo aún no está instalada: haz clic en «Instalar la separación» ({size} para descargar, "
+     "una sola vez)."),
+    ("Installation de la séparation impossible : {err}", "Separation could not be installed: {err}",
+     "Impossibile installare la separazione: {err}", "No se pudo instalar la separación: {err}"),
+    ("Ce fichier n'a pas de son : il n'y a rien à séparer.", "This file has no sound: there is nothing to separate.",
+     "Questo file non ha audio: non c'è niente da separare.", "Este archivo no tiene sonido: no hay nada que separar."),
+    ("La séparation a échoué : {err}", "Separation failed: {err}", "La separazione non è riuscita: {err}",
+     "La separación ha fallado: {err}"),
+    # ---- Fond vert et détourage (core/keying.py)
+    ("Fond vert et détourage", "Green screen and cut-out", "Green screen e scontorno", "Croma y recorte"),
+    ("Retire le fond d'une vidéo ou d'une photo : fond vert (ou bleu), ou détourage IA sans fond vert pour les "
+     "personnes. Remplace-le par une couleur, une image, une vidéo, un flou, ou laisse-le transparent pour en faire un "
+     "calque du Montage.",
+     "Remove the background of a video or photo: green (or blue) screen, or AI cut-out without a green screen for "
+     "people. Replace it with a colour, an image, a video, a blur, or leave it transparent to use it as an Editor "
+     "layer.",
+     "Togli lo sfondo di un video o di una foto: green screen (o blu), oppure scontorno IA senza green screen per le "
+     "persone. Sostituiscilo con un colore, un'immagine, un video, una sfocatura, o lascialo trasparente per farne un "
+     "livello del Montaggio.",
+     "Quita el fondo de un vídeo o de una foto: croma verde (o azul), o recorte IA sin croma para personas. "
+     "Sustitúyelo por un color, una imagen, un vídeo, un desenfoque, o déjalo transparente para usarlo como capa de "
+     "Edición."),
+    ("Ta vidéo ou ta photo", "Your video or photo", "Il tuo video o la tua foto", "Tu vídeo o tu foto"),
+    ("Comment trouver le sujet ?", "How to find the subject?", "Come trovare il soggetto?", "¿Cómo encontrar al sujeto?"),
+    ("fond vert", "green screen", "green screen", "croma verde"),
+    ("fond bleu", "blue screen", "blue screen", "croma azul"),
+    ("couleur choisie", "chosen colour", "colore scelto", "color elegido"),
+    ("détourage IA", "AI cut-out", "scontorno IA", "recorte IA"),
+    ("détourage IA : sans fond vert, pour les personnes (RobustVideoMatting, sur ton PC)",
+     "AI cut-out: no green screen, for people (RobustVideoMatting, on your PC)",
+     "scontorno IA: senza green screen, per le persone (RobustVideoMatting, sul tuo PC)",
+     "recorte IA: sin croma, para personas (RobustVideoMatting, en tu PC)"),
+    ("Couleur du fond à retirer", "Background colour to remove", "Colore dello sfondo da togliere",
+     "Color del fondo que se quita"),
+    ("Tolérance de couleur", "Colour tolerance", "Tolleranza del colore", "Tolerancia de color"),
+    ("plus haut = retire aussi les teintes proches (ombres, reflets)",
+     "higher = also removes similar shades (shadows, reflections)",
+     "più alto = toglie anche le tinte vicine (ombre, riflessi)",
+     "más alto = quita también los tonos parecidos (sombras, reflejos)"),
+    ("Adoucir les bords", "Soften edges", "Ammorbidisci i bordi", "Suavizar los bordes"),
+    ("Retirer le reflet vert sur les bords", "Remove the green spill on the edges", "Togli il riflesso verde sui bordi",
+     "Quitar el reflejo verde de los bordes"),
+    ("Installer le détourage IA (une seule fois)", "Install AI cut-out (only once)", "Installa lo scontorno IA (una volta sola)",
+     "Instalar el recorte IA (una sola vez)"),
+    ("Nouveau fond", "New background", "Nuovo sfondo", "Nuevo fondo"),
+    ("transparent", "transparent", "trasparente", "transparente"),
+    ("image ou vidéo", "image or video", "immagine o video", "imagen o vídeo"),
+    ("transparent : WebM (vidéo) ou PNG (photo), à utiliser comme calque · flou : détourage IA seulement",
+     "transparent: WebM (video) or PNG (photo), to use as a layer · blur: AI cut-out only",
+     "trasparente: WebM (video) o PNG (foto), da usare come livello · sfocato: solo scontorno IA",
+     "transparente: WebM (vídeo) o PNG (foto), para usar como capa · desenfoque: solo recorte IA"),
+    ("Couleur du nouveau fond", "New background colour", "Colore del nuovo sfondo", "Color del nuevo fondo"),
+    ("Image ou vidéo du nouveau fond", "Image or video for the new background", "Immagine o video del nuovo sfondo",
+     "Imagen o vídeo del nuevo fondo"),
+    ("Aperçu et résultat", "Preview and result", "Anteprima e risultato", "Vista previa y resultado"),
+    ("Aperçu (damier = transparent)", "Preview (checkerboard = transparent)", "Anteprima (scacchiera = trasparente)",
+     "Vista previa (damero = transparente)"),
+    ("Retirer le fond", "Remove the background", "Togli lo sfondo", "Quitar el fondo"),
+    ("Retrait du fond", "Removing the background", "Rimozione dello sfondo", "Quitando el fondo"),
+    ("Fond retiré en {s} s.", "Background removed in {s} s.", "Sfondo tolto in {s} s.", "Fondo quitado en {s} s."),
+    ("Fond transparent : ajoute le fichier à la médiathèque, puis utilise-le comme calque (Montage → ② Calques et "
+     "effets).",
+     "Transparent background: add the file to the media library, then use it as a layer (Editor → ② Layers and "
+     "effects).",
+     "Sfondo trasparente: aggiungi il file alla mediateca, poi usalo come livello (Montaggio → ② Livelli ed effetti).",
+     "Fondo transparente: añade el archivo a la mediateca y úsalo como capa (Edición → ② Capas y efectos)."),
+    ("Détourage IA installé (RobustVideoMatting, sur ton PC).", "AI cut-out installed (RobustVideoMatting, on your PC).",
+     "Scontorno IA installato (RobustVideoMatting, sul tuo PC).", "Recorte IA instalado (RobustVideoMatting, en tu PC)."),
+    ("Installation du détourage IA (quelques minutes)", "Installing AI cut-out (a few minutes)",
+     "Installazione dello scontorno IA (qualche minuto)", "Instalando el recorte IA (unos minutos)"),
+    ("Détourage IA installé.", "AI cut-out installed.", "Scontorno IA installato.", "Recorte IA instalado."),
+    ("Le détourage IA n'est pas encore installé : clique sur « Installer le détourage IA » ({size} à télécharger, une "
+     "seule fois, puis ≈ 15 Mo au premier détourage).",
+     "AI cut-out is not installed yet: click “Install AI cut-out” ({size} to download, only once, then ≈ 15 MB on "
+     "the first cut-out).",
+     "Lo scontorno IA non è ancora installato: clicca su «Installa lo scontorno IA» ({size} da scaricare, una volta "
+     "sola, poi ≈ 15 MB al primo scontorno).",
+     "El recorte IA aún no está instalado: haz clic en «Instalar el recorte IA» ({size} para descargar, una sola vez, "
+     "y luego ≈ 15 MB en el primer recorte)."),
+    ("Installation du détourage IA impossible : {err}", "AI cut-out could not be installed: {err}",
+     "Impossibile installare lo scontorno IA: {err}", "No se pudo instalar el recorte IA: {err}"),
+    ("Couleur invalide : {c}", "Invalid colour: {c}", "Colore non valido: {c}", "Color no válido: {c}"),
+    ("Choisis l'image ou la vidéo du nouveau fond.", "Choose the image or video for the new background.",
+     "Scegli l'immagine o il video del nuovo sfondo.", "Elige la imagen o el vídeo del nuevo fondo."),
+    ("Le nouveau fond doit être une image ou une vidéo.", "The new background must be an image or a video.",
+     "Il nuovo sfondo deve essere un'immagine o un video.", "El nuevo fondo debe ser una imagen o un vídeo."),
+    ("Méthode inconnue : {m}", "Unknown method: {m}", "Metodo sconosciuto: {m}", "Método desconocido: {m}"),
+    ("Fond inconnu : {b}", "Unknown background: {b}", "Sfondo sconosciuto: {b}", "Fondo desconocido: {b}"),
+    ("Le fond flou garde l'image d'origine : il ne marche qu'avec le détourage IA (avec un fond vert, le flou "
+     "resterait vert).",
+     "The blurred background keeps the original picture: it only works with AI cut-out (with a green screen, the "
+     "blur would stay green).",
+     "Lo sfondo sfocato tiene l'immagine originale: funziona solo con lo scontorno IA (con un green screen, la "
+     "sfocatura resterebbe verde).",
+     "El fondo desenfocado conserva la imagen original: solo funciona con el recorte IA (con un croma, el desenfoque "
+     "seguiría verde)."),
+    ("Le détourage IA a échoué : {err}", "AI cut-out failed: {err}", "Lo scontorno IA non è riuscito: {err}",
+     "El recorte IA ha fallado: {err}"),
+    # ---- Stabilisation (core/stabilize.py)
+    ("Stabiliser", "Stabilise", "Stabilizza", "Estabilizar"),
+    ("Pour une vidéo filmée à la main qui tremble : MSV mesure les secousses de la caméra puis les lisse (vid.stab, "
+     "sur ton PC).",
+     "For a shaky hand-held video: MSV measures the camera shake and then smooths it out (vid.stab, on your PC).",
+     "Per un video girato a mano che trema: MSV misura le scosse della videocamera e poi le leviga (vid.stab, sul "
+     "tuo PC).",
+     "Para un vídeo grabado a mano que tiembla: MSV mide las sacudidas de la cámara y luego las suaviza (vid.stab, "
+     "en tu PC)."),
+    ("Vidéo tremblée", "Shaky video", "Video mosso", "Vídeo tembloroso"),
+    ("Force", "Strength", "Intensità", "Intensidad"),
+    ("forte", "strong", "forte", "fuerte"),
+    ("forte : mouvement très lissé, comme sur un pied ; légère : garde le mouvement voulu de la caméra",
+     "strong: very smooth movement, as if on a tripod; light: keeps the intended camera movement",
+     "forte: movimento molto levigato, come su un treppiede; leggera: tiene il movimento voluto della videocamera",
+     "fuerte: movimiento muy suavizado, como en un trípode; ligera: conserva el movimiento deseado de la cámara"),
+    ("Bords", "Edges", "Bordi", "Bordes"),
+    ("zoom (sans bords noirs)", "zoom (no black edges)", "zoom (senza bordi neri)", "zoom (sin bordes negros)"),
+    ("bords noirs", "black edges", "bordi neri", "bordes negros"),
+    ("zoom : léger agrandissement, jamais de bord noir", "zoom: slight enlargement, never a black edge",
+     "zoom: leggero ingrandimento, mai un bordo nero", "zoom: ligera ampliación, nunca un borde negro"),
+    ("Créer aussi une vidéo avant / après", "Also create a before / after video", "Crea anche un video prima / dopo",
+     "Crear también un vídeo antes / después"),
+    ("Stabiliser la vidéo", "Stabilise the video", "Stabilizza il video", "Estabilizar el vídeo"),
+    ("Vidéo stabilisée", "Stabilised video", "Video stabilizzato", "Vídeo estabilizado"),
+    ("Avant / après", "Before / after", "Prima / dopo", "Antes / después"),
+    ("Stabilisation", "Stabilising", "Stabilizzazione", "Estabilizando"),
+    ("Vidéo stabilisée en {s} s.", "Video stabilised in {s} s.", "Video stabilizzato in {s} s.",
+     "Vídeo estabilizado en {s} s."),
+    ("Force inconnue : {l}", "Unknown strength: {l}", "Intensità sconosciuta: {l}", "Intensidad desconocida: {l}"),
+    ("Choix des bords inconnu : {e}", "Unknown edge option: {e}", "Scelta dei bordi sconosciuta: {e}",
+     "Opción de bordes desconocida: {e}"),
+    # ---- Timeline visuelle (core/timeline.py)
+    ("Timeline visuelle", "Visual timeline", "Timeline visiva", "Línea de tiempo visual"),
+    ("Ajoute des extraits à la timeline (étape ①) : ils apparaissent ici. Glisse-les pour changer l'ordre, tire "
+     "leurs bords pour les raccourcir, clique pour placer le curseur.",
+     "Add clips to the timeline (step ①): they appear here. Drag them to change the order, pull their edges to "
+     "shorten them, click to place the playhead.",
+     "Aggiungi clip alla timeline (passaggio ①): appaiono qui. Trascinale per cambiare l'ordine, tira i bordi per "
+     "accorciarle, clicca per posizionare il cursore.",
+     "Añade clips a la línea de tiempo (paso ①): aparecen aquí. Arrástralos para cambiar el orden, tira de sus "
+     "bordes para acortarlos, haz clic para colocar el cursor."),
+    ("Dézoomer (touche -)", "Zoom out (- key)", "Riduci lo zoom (tasto -)", "Alejar (tecla -)"),
+    ("Zoomer (touche +)", "Zoom in (+ key)", "Aumenta lo zoom (tasto +)", "Acercar (tecla +)"),
+    ("Toute la vidéo", "Whole video", "Tutto il video", "Todo el vídeo"),
+    ("Couper l'extrait au curseur (touche S)", "Split the clip at the playhead (S key)",
+     "Taglia la clip al cursore (tasto S)", "Cortar el clip en el cursor (tecla S)"),
+    ("Dupliquer", "Duplicate", "Duplica", "Duplicar"),
+    ("Dupliquer l'extrait choisi", "Duplicate the selected clip", "Duplica la clip scelta", "Duplicar el clip elegido"),
+    ("Supprimer l'élément choisi (touche Suppr)", "Delete the selected item (Delete key)",
+     "Elimina l'elemento scelto (tasto Canc)", "Eliminar el elemento elegido (tecla Supr)"),
+    ("Glisse un extrait pour changer l'ordre · tire un bord pour raccourcir · clic = curseur et aperçu · flèches = "
+     "déplacer le curseur · S = couper · Suppr = supprimer",
+     "Drag a clip to change the order · pull an edge to shorten · click = playhead and preview · arrows = move the "
+     "playhead · S = split · Delete = delete",
+     "Trascina una clip per cambiare l'ordine · tira un bordo per accorciare · clic = cursore e anteprima · frecce = "
+     "sposta il cursore · S = taglia · Canc = elimina",
+     "Arrastra un clip para cambiar el orden · tira de un borde para acortar · clic = cursor y vista previa · "
+     "flechas = mover el cursor · S = cortar · Supr = eliminar"),
+    ("Effets sonores", "Sound effects", "Effetti sonori", "Efectos de sonido"),
+    ("Musique", "Music", "Musica", "Música"),
+    # ---- Montage en 4 étapes
+    ("Médias et timeline", "Media and timeline", "Media e timeline", "Medios y línea de tiempo"),
+    ("Calques et effets", "Layers and effects", "Livelli ed effetti", "Capas y efectos"),
+    ("Textes", "Texts", "Testi", "Textos"),
+    ("Son et rythme", "Sound and rhythm", "Suono e ritmo", "Sonido y ritmo"),
+    ("Étape précédente", "Previous step", "Passaggio precedente", "Paso anterior"),
+    ("Fichiers et journal", "Files and log", "File e registro", "Archivos y registro"),
+    ("Étape suivante", "Next step", "Passaggio successivo", "Paso siguiente"),
+    ("durée et mouvement des photos", "length and motion of photos", "durata e movimento delle foto",
+     "duración y movimiento de las fotos"),
+    ("texte en grand par-dessus la vidéo", "large text over the video", "testo grande sopra il video",
+     "texto grande sobre el vídeo"),
+    ("script, .srt, Whisper ou ceux de la vidéo", "script, .srt, Whisper or the video's own",
+     "script, .srt, Whisper o quelli del video", "guion, .srt, Whisper o los del vídeo"),
+    ("Voix off et musique", "Voice-over and music", "Voce fuori campo e musica", "Voz en off y música"),
+    ("volumes, bruit, silences", "volumes, noise, silences", "volumi, rumore, silenzi", "volúmenes, ruido, silencios"),
+    ("Passer en mode simple", "Switch to simple mode", "Passa alla modalità semplice", "Pasar al modo sencillo"),
 ]
 
 HELP = {
     "fr": """
+### Où trouver quoi
+Le menu (à gauche, ou en haut sur téléphone) range tout en 6 espaces :
+- **🎬 Montage** : ton projet vidéo (médiathèque, timeline, calques, effets, réglages et export).
+- **✨ Créer** : scènes animées, classement « Top N », écran partagé, miniature YouTube, Shorts en série.
+- **🎚️ Audio** : voix off et clonage de ta voix, enchaîner, découper, superposer, platine DJ, effets micro,
+  doublage (séparer la voix et le fond), réduire le bruit, extraire l'audio d'une vidéo.
+- **🎥 Vidéo** : enregistrer l'écran, découper en scènes, fond vert et détourage, stabiliser, vidéo → Short 9:16, sous-titres (Whisper), effacer un logo,
+  logo MSV.
+- **📁 Mes fichiers** : tout ce que MSV a créé (dossier `sorties`), du plus récent au plus ancien. Filtre par type,
+  dossier ou nom, regarde ou écoute, ouvre le dossier, ajoute le fichier à la médiathèque du Montage, ou utilise un
+  son comme musique ou voix off du projet.
+- **❓ Aide** : cette page.
+
+**🏠 Accueil** (ouvert au démarrage) : choisis une activité (Short viral, voix off, enregistrer l'écran, doubler
+une vidéo…) et MSV ouvre le bon outil ; tes dernières créations s'ouvrent d'un clic dans « Mes fichiers ».
+**Mode simple / avancé** (bouton 🌱 / 🧩 en haut à droite) : en mode simple, seuls les réglages essentiels sont
+affichés ; le mode avancé montre tout (effets spéciaux, rythme, bus d'effets, encodeur, réglages fins des
+voix…). Les réglages cachés gardent leur valeur.
+
 ### Démarrage rapide
 1. **Médiathèque** : importe tes vidéos et images (ou indique un dossier de ton PC).
 2. **Inspecteur** : choisis un média, déplace le curseur, fixe le début et la fin, puis ajoute l'extrait à la timeline.
@@ -2455,8 +3001,14 @@ HELP = {
 3. **Timeline** : modifie directement les cellules (ordre, vitesse 0,5 à 4, volume 0 à 2, cadrage_x 0 = gauche, 1 = droite).
 4. **Réglages** à droite, puis **Aperçu rapide** (demi-résolution, très rapide) et **Exporter la vidéo**.
 
+Le Montage se fait en **4 étapes** (① Médias et timeline, ② Calques et effets, ③ Textes, ④ Son et rythme) : le
+bouton « Étape suivante » en bas de chaque étape passe à la suivante. Sur ordinateur, la colonne de droite (mode
+viral, format, aperçu, « Exporter la vidéo ») reste à l'écran pendant que tu fais défiler.
+
+**Timeline visuelle** (au-dessus des étapes) : chaque extrait est un bloc avec ses images, sur une piste ; les textes, calques, effets, sons, la voix off et la musique ont leur propre piste. Glisse un extrait pour changer l'ordre, tire un bord pour le raccourcir, clique pour placer le curseur (l'aperçu montre ce moment), « ✂ Couper » ou la touche S le coupe au curseur, Suppr le retire. Glisse un texte, un calque ou un son pour changer son moment, tire ses bords pour sa durée. − / + zooment, ⤢ montre toute la vidéo. Le tableau de l'étape ① suit chaque geste (et inversement).
+
 ### Shorts en série
-Prépare un modèle (onglet Montage → « Enregistrer comme modèle », ou un des modèles fournis), puis un tableau CSV
+**Créer → Shorts en série**. Prépare un modèle (onglet Montage → « Enregistrer comme modèle », ou un des modèles fournis), puis un tableau CSV
 où **une ligne = une vidéo**. Colonnes : `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` et `outro` : « Titre | sous-titre » d'une scène animée d'ouverture et de fin (style du modèle) ; `musique` : un fichier, ou `auto` / `auto:suspense` pour une musique générée.
 Dans `medias`, sépare les fichiers par `|`, indique un dossier entier, ou un motif comme `images/*.jpg`.
 Si la ligne contient des images et une voix off, les images sont réparties automatiquement sur la durée de la voix.
@@ -2470,7 +3022,7 @@ Si la ligne contient des images et une voix off, les images sont réparties auto
 Un fichier `.srt` est toujours créé à côté de la vidéo : tu peux l'envoyer sur YouTube.
 
 ### Scènes animées
-Onglet **Scènes animées** : **carte titre**, **téléphone** (ta vidéo dans un téléphone), **écran final** (bouton
+**Créer → Scènes animées** : **carte titre**, **téléphone** (ta vidéo dans un téléphone), **écran final** (bouton
 « S'abonner » qui se fait cliquer), **liste** à cocher, **chiffres clés** qui défilent, **avant / après** avec balayage
 et **question choc** mot par mot. Remplis les textes (un mot entre \\*étoiles\\* prend la couleur d'accent), regarde
 l'aperçu, puis « Créer la scène » et « Ajouter à la timeline ». Avec « Utiliser comme intro / fin du projet », la
@@ -2506,9 +3058,9 @@ PC à la durée exacte de la vidéo, avec la musique qui baisse quand on parle. 
   précise.
 
 ### Studio audio
-Onglet **🎚️ Studio audio** (fond noir). Chaque outil range ses fichiers dans son dossier : `sorties/audio/enchainements`,
+Espace **🎚️ Audio** (fond noir). Chaque outil range ses fichiers dans son dossier : `sorties/audio/enchainements`,
 `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` et `sorties/audio/effets_micro` ;
-le sous-onglet **Sorties** les liste, les fait écouter et ouvre chaque dossier.
+**📁 Mes fichiers** les liste (filtre « Dossier »), les fait écouter et ouvre chaque dossier.
 - **Enchaîner** : autant de morceaux que tu veux (« Ajouter des morceaux » en prend plusieurs d'un coup, ou les sons
   de la médiathèque). Dans le tableau : début et fin (remplis tout seuls avec le morceau entier, à modifier pour
   couper), volume et **transition** vers le morceau suivant. Pads :
@@ -2542,28 +3094,36 @@ le sous-onglet **Sorties** les liste, les fait écouter et ouvre chaque dossier.
   projet** envoie le résultat dans l'onglet Montage.
 
 ### Classement
-Onglet **Classement** : un Short 9:16 « Top N ». Importe 2 à 10 clips (le n° 1 est la première ligne), donne un titre à chaque rang et, si tu veux, le crédit de la source. Écris le titre et coche les mots à surligner, puis choisis un préréglage (Néon sombre, Clair, Brut rouge, Podium), une mise en page (liste à gauche, liste en haut, plein écran, bandeau) et l'ordre (décroissant : compte à rebours, le n° 1 passe en dernier). Entrée dans le titre passe à la ligne. « Police, tailles et couleurs » règle aussi une deuxième couleur de surlignage, la position du badge (coin du clip, à côté du titre, aucun), le panneau derrière la liste, les numéros colorés (or, argent, bronze) et les libellés (taille, majuscules, italique). Le curseur « Rang affiché » montre chaque étape ; « Aperçu rapide » fait une vidéo légère, « Exporter » la version finale dans `sorties/classements`. Enregistre le classement (`.json`) pour le reprendre plus tard, ou pour le rendre en ligne de commande : `python cli.py classement fichier.json`.
+**Créer → Classement** : un Short 9:16 « Top N ». Importe 2 à 10 clips (le n° 1 est la première ligne), donne un titre à chaque rang et, si tu veux, le crédit de la source. Écris le titre et coche les mots à surligner, puis choisis un préréglage (Néon sombre, Clair, Brut rouge, Podium), une mise en page (liste à gauche, liste en haut, plein écran, bandeau) et l'ordre (décroissant : compte à rebours, le n° 1 passe en dernier). Entrée dans le titre passe à la ligne. « Police, tailles et couleurs » règle aussi une deuxième couleur de surlignage, la position du badge (coin du clip, à côté du titre, aucun), le panneau derrière la liste, les numéros colorés (or, argent, bronze) et les libellés (taille, majuscules, italique). Le curseur « Rang affiché » montre chaque étape ; « Aperçu rapide » fait une vidéo légère, « Exporter » la version finale dans `sorties/classements`. Enregistre le classement (`.json`) pour le reprendre plus tard, ou pour le rendre en ligne de commande : `python cli.py classement fichier.json`.
 **Droits** : n'utilise que des clips dont tu as les droits ou l'autorisation, et crédite toujours la source.
 
 ### Voix off
-Onglet **Voix off** : écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou
+**Audio → Voix off** : écris le texte (scènes séparées par `---`), choisis **Piper** (gratuit, hors ligne) ou
 **ElevenLabs** (ta clé API, voix très naturelles et minutage exact des sous-titres), puis « Utiliser dans l'onglet Montage ».
 En série, coche « Créer la voix off à partir de la colonne texte ». Une scène générée avec la mauvaise voix se corrige
-avec « Remplacer la voix d'un clip existant ».
+dans **Audio → Doublage**.
+**Audio → Doublage** : ① « Séparer la voix et le fond » (Demucs, sur ton PC : la voix seule d'un côté, la musique et l'ambiance de l'autre, plus la vidéo sans la voix) ; « Transcrire la voix » donne le texte, que tu corriges ou traduis avant de l'envoyer dans Voix off. ② « Poser la nouvelle voix » : la vidéo est déjà remplie, la nouvelle voix est posée sur le fond au moment choisi. La première séparation installe Demucs (≈ 100 Mo si le clonage de voix est installé, sinon ≈ 3 Go). N'utilise que des vidéos dont tu as les droits.
 **Ma voix (clonage local)** : enregistre 30 à 60 s de ta voix (pièce calme, ton naturel), crée la voix une fois, puis choisis-la comme n'importe quelle autre. Tout reste sur ton PC ; la première utilisation installe environ 5 Go. Ne clone que ta voix, ou avec l'accord de la personne.
 **Voix plus naturelles** : chaque phrase est lue séparément avec une pause adaptée à sa ponctuation ; `[pause 1s]` force une pause. Nombres, heures, prix et sigles sont lus en lettres, et le **dictionnaire de prononciation** (« Pauses et prononciation ») corrige un mot mal dit (`MSV = èm-èss-vé`). « Son studio » donne à toutes les voix un son plus chaud et plus net. Pour Ma voix, choisis un **style de lecture** (Narration calme, Conversation, Promo énergique) ; avec **2 ou 3 prises par phrase**, chaque phrase est réécoutée par une transcription automatique et refaite si un mot manque ou si un mot inventé s'ajoute. Le modèle imite le ton de ton enregistrement : pour une promo, enregistre-toi avec le ton d'une promo. Écris pour l'oreille : phrases courtes, ponctuation soignée.
 
 ### Scènes et écran partagé
-**Découper en scènes** : ajoute une vidéo, choisis « changements de plan » (l'image change), « pauses dans la parole » (tutoriel, podcast, discours filmé d'un seul plan) ou « toutes les N secondes » (morceaux de durée fixe, chaque coupure placée sur la pause la plus proche), puis « Trouver les scènes ». « Unir les scènes plus courtes que » ne découpe pas : il regroupe les scènes trop courtes. Clique sur une scène pour la garder (✓) ou l'exclure ; ▶ la lit. **Clic droit** (ou ⋯, ou Maj + F10 au clavier) ouvre toutes les options : garder seulement celle-ci, fusionner avec la précédente ou la suivante, couper en deux, exporter cette scène seule, tout garder, inverser, annuler. « Créer la vidéo » met bout à bout les scènes gardées.
-**Écran partagé** : 2 à 4 vidéos dans la même image (côte à côte, haut / bas, grille, une grande + petites), en 16:9, 9:16 ou 1:1. L'aperçu se met à jour à chaque réglage. Choisis la durée (la plus courte, ou la plus longue : les autres se figent) et le son (mélange ou une seule vidéo).
+**Vidéo → Découper en scènes** : ajoute une vidéo, choisis « changements de plan » (l'image change), « pauses dans la parole » (tutoriel, podcast, discours filmé d'un seul plan) ou « toutes les N secondes » (morceaux de durée fixe, chaque coupure placée sur la pause la plus proche), puis « Trouver les scènes ». « Unir les scènes plus courtes que » ne découpe pas : il regroupe les scènes trop courtes. Clique sur une scène pour la garder (✓) ou l'exclure ; ▶ la lit. **Clic droit** (ou ⋯, ou Maj + F10 au clavier) ouvre toutes les options : garder seulement celle-ci, fusionner avec la précédente ou la suivante, couper en deux, exporter cette scène seule, tout garder, inverser, annuler. « Créer la vidéo » met bout à bout les scènes gardées.
+**Créer → Écran partagé** : 2 à 4 vidéos dans la même image (côte à côte, haut / bas, grille, une grande + petites), en 16:9, 9:16 ou 1:1. L'aperçu se met à jour à chaque réglage. Choisis la durée (la plus courte, ou la plus longue : les autres se figent) et le son (mélange ou une seule vidéo).
 
-### Outils rapides
-- **Convertisseur de temps** (Inspecteur) : tape `90`, `1:30`, `1h 2m 3s` ou `2,5 min`, puis « → Début » / « → Fin ».
-- **Effacer un logo** : choisis la zone (coin rapide + curseurs), vérifie avec « Aperçu », puis efface sur toute la vidéo.
-- **Logo MSV** : ajoute le logo Montage Studio ; sa position est mémorisée dans la vidéo pour l'enlever ensuite exactement.
-- **Réduire le bruit** : choisis le niveau, écoute 10 s avant / après, puis nettoie le fichier (l'image d'une vidéo est copiée sans perte). Dans un montage : Réglages → Audio → « Réduction du bruit ».
+### Petits outils
+- **Convertisseur de temps** (Montage → Inspecteur) : tape `90`, `1:30`, `1h 2m 3s` ou `2,5 min`, puis « → Début » / « → Fin ».
+- **Vidéo → Vidéo → Short** : transforme une vidéo en Short 9:16 (fond flou, rognée ou bandes), silences coupés.
+- **Vidéo → Sous-titres** : transcrit un audio ou une vidéo en `.srt` et en texte, avec Whisper.
+- **Vidéo → Fond vert et détourage** : retire le fond vert (ou bleu, ou une couleur choisie) avec FFmpeg, ou détoure une personne sans fond vert (détourage IA, RobustVideoMatting sur ton PC). Nouveau fond : transparent (WebM ou PNG, à ajouter à la médiathèque puis à utiliser comme calque), couleur, image, vidéo, ou flou (détourage IA). « Aperçu » montre le résultat au moment choisi (damier = transparent).
+- **Vidéo → Stabiliser** : pour une vidéo filmée à la main qui tremble ; force légère, moyenne ou forte (comme sur un pied), bords sans noir grâce à un léger zoom, et une vidéo « avant / après » pour comparer.
+- **Vidéo → Effacer un logo** : choisis la zone (coin rapide + curseurs), vérifie avec « Aperçu », puis efface sur toute la vidéo.
+- **Vidéo → Logo MSV** : ajoute le logo Montage Studio ; sa position est mémorisée dans la vidéo pour l'enlever ensuite exactement.
+- **Créer → Miniature YouTube** : une image de la vidéo avec un grand texte, en 16:9 ou 9:16.
+- **Audio → Réduire le bruit** : choisis le niveau, écoute 10 s avant / après, puis nettoie le fichier (l'image d'une vidéo est copiée sans perte). Dans un montage : Réglages → Audio → « Réduction du bruit ».
+- **Audio → Extraire l'audio** : la bande son d'une vidéo en MP3.
 
 ### Screen Record (Windows, Linux X11, Mac)
+**Vidéo → Enregistrer l'écran**.
 1. Choisis un écran ou une fenêtre, le micro (et sa **réduction du bruit**), le son de l'ordinateur et, si tu veux,
    la webcam.
 2. « Démarrer l'enregistrement » : tu as 3 secondes pour afficher la page à filmer.
@@ -2584,6 +3144,24 @@ Les rendus « aperçu » sont 3 à 5 fois plus rapides. Si tu as une carte NVIDI
 En cas d'échec de l'encodeur GPU, le logiciel repasse automatiquement sur le CPU.
 """,
     "en": """
+### Where to find what
+The menu (on the left, or at the top on a phone) groups everything into 6 spaces:
+- **🎬 Editor**: your video project (media library, timeline, layers, effects, settings and export).
+- **✨ Create**: animated scenes, “Top N” ranking, split screen, YouTube thumbnail, Batch Shorts.
+- **🎚️ Audio**: voice-over and cloning of your voice, chain, cut, layer, DJ deck, mic effects, dubbing (separate
+  voice and background), reduce noise, extract the audio of a video.
+- **🎥 Video**: screen recording, split into scenes, green screen and cut-out, stabilise, video → 9:16 Short, subtitles (Whisper), remove a logo, MSV logo.
+- **📁 My files**: everything MSV has created (`sorties` folder), newest first. Filter by type, folder or name, watch
+  or listen, open the folder, add the file to the Editor media library, or use a sound as the project's music or
+  voice-over.
+- **❓ Help**: this page.
+
+**🏠 Home** (opened at start-up): pick an activity (viral Short, voice-over, screen recording, dubbing a
+video…) and MSV opens the right tool; your latest creations open in “My files” with one click.
+**Simple / advanced mode** (🌱 / 🧩 button at the top right): simple mode shows only the essential settings;
+advanced mode shows everything (special effects, rhythm, effect buses, encoder, fine voice settings…).
+Hidden settings keep their value.
+
 ### Quick start
 1. **Media library**: import your videos and images (or enter a folder on your PC).
 2. **Inspector**: choose a file, move the cursor, set the start and end, then add the clip to the timeline.
@@ -2591,8 +3169,14 @@ En cas d'échec de l'encodeur GPU, le logiciel repasse automatiquement sur le CP
 3. **Timeline**: edit the cells directly (order, speed 0.5 to 4, volume 0 to 2, crop_x 0 = left, 1 = right).
 4. **Settings** on the right, then **Quick preview** (half resolution, very fast) and **Export video**.
 
+Editing happens in **4 steps** (① Media and timeline, ② Layers and effects, ③ Texts, ④ Sound and rhythm): the
+“Next step” button at the bottom of each step moves on. On a computer, the right-hand column (viral mode, format,
+preview, “Export video”) stays on screen while you scroll.
+
+**Visual timeline** (above the steps): each clip is a block with its frames on a track; texts, layers, effects, sounds, the voice-over and the music have their own tracks. Drag a clip to change the order, pull an edge to shorten it, click to place the playhead (the preview shows that moment), “✂ Split” or the S key splits at the playhead, Delete removes it. Drag a text, layer or sound to change its time, pull its edges for its length. − / + zoom, ⤢ shows the whole video. The step ① table follows every change (and vice versa).
+
 ### Batch Shorts
-Prepare a template (Editor tab → “Save settings as batch template”, or one of the bundled templates), then a CSV table
+**Create → Batch Shorts**. Prepare a template (Editor tab → “Save settings as batch template”, or one of the bundled templates), then a CSV table
 where **one row = one video**. Columns: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` and `outro`: “Title | subtitle” of an opening and closing animated scene (template style); `musique`: a file, or `auto` / `auto:suspense` for generated music
 (column names stay in French). In `medias`, separate files with `|`, give a whole folder, or a pattern like `images/*.jpg`.
 If a row contains images and a voice-over, the images are spread automatically over the length of the voice.
@@ -2606,7 +3190,7 @@ If a row contains images and a voice-over, the images are spread automatically o
 A `.srt` file is always created next to the video: you can upload it to YouTube.
 
 ### Animated scenes
-**Animated scenes** tab: **title card**, **phone** (your video inside a phone), **end screen** (a “Subscribe” button
+**Create → Animated scenes**: **title card**, **phone** (your video inside a phone), **end screen** (a “Subscribe” button
 that gets clicked), check **list**, counting **key figures**, **before / after** with a wipe and a word-by-word **hook
 question**. Fill in the texts (a word between \\*asterisks\\* takes the accent color), check the preview, then
 “Create the scene” and “Add to timeline”. With “Use as project intro / ending”, the scene is added automatically to
@@ -2640,9 +3224,9 @@ the exact length of the video, and lowered while someone speaks. “Listen 12 s�
   different path for each photo). The timeline's “motion” column sets the motion of a single photo.
 
 ### Audio studio
-**🎚️ Audio studio** tab (black background). Each tool saves its files in its own folder: `sorties/audio/enchainements`,
+**🎚️ Audio** space (black background). Each tool saves its files in its own folder: `sorties/audio/enchainements`,
 `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj` and `sorties/audio/effets_micro`;
-the **Outputs** sub-tab lists them, plays them and opens each folder.
+**📁 My files** lists them (“Folder” filter), plays them and opens each folder.
 - **Chain**: as many tracks as you like (“Add tracks” takes several at once, or use the media library sounds). In the
   table: start and end (filled in automatically with the whole track, edit them to trim), volume and **transition** to
   the next track. Pads: **fade**, **hard cut**, **isolator (bass
@@ -2674,28 +3258,36 @@ the **Outputs** sub-tab lists them, plays them and opens each folder.
   to the Editor tab.
 
 ### Ranking
-**Ranking** tab: a 9:16 “Top N” Short. Import 2 to 10 clips (No. 1 is the first row), give each rank a title and, if you like, the source credit. Write the title and tick the words to highlight, then pick a preset (Dark neon, Light, Raw red, Podium), a layout (list on the left, list at the top, full screen, banner) and the order (descending: countdown, No. 1 comes last). Enter in the title starts a new line. “Font, sizes and colours” also sets a second highlight colour, the badge position (clip corner, next to the title, none), the panel behind the list, coloured numbers (gold, silver, bronze) and the labels (size, capitals, italics). The “Rank shown” slider previews each step; “Quick preview” makes a light video, “Export” the final version in `sorties/classements`. Save the ranking (`.json`) to resume it later, or to render it from the command line: `python cli.py classement file.json`.
+**Create → Ranking**: a 9:16 “Top N” Short. Import 2 to 10 clips (No. 1 is the first row), give each rank a title and, if you like, the source credit. Write the title and tick the words to highlight, then pick a preset (Dark neon, Light, Raw red, Podium), a layout (list on the left, list at the top, full screen, banner) and the order (descending: countdown, No. 1 comes last). Enter in the title starts a new line. “Font, sizes and colours” also sets a second highlight colour, the badge position (clip corner, next to the title, none), the panel behind the list, coloured numbers (gold, silver, bronze) and the labels (size, capitals, italics). The “Rank shown” slider previews each step; “Quick preview” makes a light video, “Export” the final version in `sorties/classements`. Save the ranking (`.json`) to resume it later, or to render it from the command line: `python cli.py classement file.json`.
 **Rights**: only use clips you have the rights or permission to use, and always credit the source.
 
 ### Voice-over
-**Voice-over** tab: write the text (scenes separated by `---`), choose **Piper** (free, offline) or
+**Audio → Voice-over**: write the text (scenes separated by `---`), choose **Piper** (free, offline) or
 **ElevenLabs** (your API key, very natural voices and exact subtitle timing), then “Use in the Editor tab”.
 In batch mode, tick “Create the voice-over from the texte column”. A scene generated with the wrong voice can be fixed
-with “Replace the voice of an existing clip”.
+in **Audio → Dubbing**.
+**Audio → Dubbing**: ① “Separate voice and background” (Demucs, on your PC: the voice alone on one side, the music and ambience on the other, plus the video without the voice); “Transcribe the voice” gives the text, which you correct or translate before sending it to Voice-over. ② “Lay down the new voice”: the video is already filled in, the new voice is laid over the background at the chosen time. The first separation installs Demucs (≈ 100 MB if voice cloning is installed, otherwise ≈ 3 GB). Only use videos you have the rights to.
 **My voice (local cloning)**: record 30 to 60 s of your voice (quiet room, natural tone), create the voice once, then pick it like any other. Everything stays on your PC; first use installs about 5 GB. Only clone your own voice, or with the person's consent.
 **More natural voices**: each sentence is read separately with a pause that matches its punctuation; `[pause 1s]` forces a pause. Numbers, times, prices and acronyms are read out in full, and the **pronunciation dictionary** ("Pauses and pronunciation") fixes a mispronounced word (`MSV = em-ess-vee`). "Studio sound" gives every voice a warmer, cleaner sound. For My voice, pick a **reading style** (Calm narration, Conversation, Energetic promo); with **2 or 3 takes per sentence**, each sentence is checked by automatic transcription and redone if a word is missing or an invented word is added. The model copies the tone of your recording: for a promo, record yourself in a promo tone. Write for the ear: short sentences, careful punctuation.
 
 ### Scenes & split screen
-**Split into scenes**: add a video, choose “shot changes” (the picture changes), “pauses in speech” (tutorial, podcast, speech filmed in a single shot) or “every N seconds” (fixed-length pieces, each cut moved to the nearest pause), then “Find the scenes”. “Merge scenes shorter than” does not split: it groups scenes that are too short. Click a scene to keep it (✓) or exclude it; ▶ plays it. **Right-click** (or ⋯, or Shift + F10 on the keyboard) opens all options: keep only this one, merge with the previous or next one, split in two, export this scene only, keep all, invert, undo. “Create the video” joins the kept scenes.
-**Split screen**: 2 to 4 videos in the same frame (side by side, top / bottom, grid, one large + small ones), in 16:9, 9:16 or 1:1. The preview updates with every setting. Choose the length (shortest, or longest: the others freeze) and the sound (mixed or a single video).
+**Video → Split into scenes**: add a video, choose “shot changes” (the picture changes), “pauses in speech” (tutorial, podcast, speech filmed in a single shot) or “every N seconds” (fixed-length pieces, each cut moved to the nearest pause), then “Find the scenes”. “Merge scenes shorter than” does not split: it groups scenes that are too short. Click a scene to keep it (✓) or exclude it; ▶ plays it. **Right-click** (or ⋯, or Shift + F10 on the keyboard) opens all options: keep only this one, merge with the previous or next one, split in two, export this scene only, keep all, invert, undo. “Create the video” joins the kept scenes.
+**Create → Split screen**: 2 to 4 videos in the same frame (side by side, top / bottom, grid, one large + small ones), in 16:9, 9:16 or 1:1. The preview updates with every setting. Choose the length (shortest, or longest: the others freeze) and the sound (mixed or a single video).
 
-### Quick tools
-- **Time converter** (Inspector): type `90`, `1:30`, `1h 2m 3s` or `2.5 min`, then “→ Start” / “→ End”.
-- **Remove a logo**: choose the area (quick corner + sliders), check with “Preview”, then remove it from the whole video.
-- **MSV logo**: add the Montage Studio logo; its position is stored in the video so it can be removed exactly later.
-- **Reduce noise**: choose the level, listen to 10 s before / after, then clean the file (a video's picture is copied losslessly). In an edit: Settings → Audio → “Noise reduction”.
+### Small tools
+- **Time converter** (Editor → Inspector): type `90`, `1:30`, `1h 2m 3s` or `2.5 min`, then “→ Start” / “→ End”.
+- **Video → Video → Short**: turns a video into a 9:16 Short (blurred background, cropped or bars), silences removed.
+- **Video → Subtitles**: transcribes an audio or video file to `.srt` and to text, with Whisper.
+- **Video → Green screen and cut-out**: removes a green (or blue, or chosen colour) screen with FFmpeg, or cuts out a person without a green screen (AI cut-out, RobustVideoMatting on your PC). New background: transparent (WebM or PNG, to add to the media library and use as a layer), colour, image, video, or blur (AI cut-out). “Preview” shows the result at the chosen time (checkerboard = transparent).
+- **Video → Stabilise**: for a shaky hand-held video; light, medium or strong (as if on a tripod), no black edges thanks to a slight zoom, and a “before / after” video to compare.
+- **Video → Remove a logo**: choose the area (quick corner + sliders), check with “Preview”, then remove it from the whole video.
+- **Video → MSV logo**: add the Montage Studio logo; its position is stored in the video so it can be removed exactly later.
+- **Create → YouTube thumbnail**: a frame of the video with large text, in 16:9 or 9:16.
+- **Audio → Reduce noise**: choose the level, listen to 10 s before / after, then clean the file (a video's picture is copied losslessly). In an edit: Settings → Audio → “Noise reduction”.
+- **Audio → Extract audio**: the soundtrack of a video as an MP3.
 
 ### Screen Record (Windows, Linux X11, Mac)
+**Video → Screen Record**.
 1. Choose a screen or a window, the microphone (and its **noise reduction**), the computer audio and, if you like,
    the webcam.
 2. “Start recording”: you have 3 seconds to bring up the page you want to record.
@@ -2716,6 +3308,24 @@ Linux: X11 (Xorg) session, whole screens; microphone and computer audio through 
 If the GPU encoder fails, the software automatically falls back to the CPU.
 """,
     "it": """
+### Dove trovare cosa
+Il menu (a sinistra, oppure in alto sul telefono) raccoglie tutto in 6 spazi:
+- **🎬 Montaggio**: il tuo progetto video (libreria media, timeline, livelli, effetti, impostazioni ed esportazione).
+- **✨ Crea**: scene animate, classifica «Top N», schermo diviso, miniatura YouTube, Shorts in serie.
+- **🎚️ Audio**: voce fuori campo e clonazione della tua voce, concatena, taglia, sovrapponi, console DJ, effetti
+  microfono, doppiaggio (separare voce e sfondo), riduci il rumore, estrai l'audio di un video.
+- **🎥 Video**: registra schermo, dividi in scene, green screen e scontorno, stabilizza, video → Short 9:16, sottotitoli (Whisper), rimuovi un logo, logo MSV.
+- **📁 I miei file**: tutto ciò che MSV ha creato (cartella `sorties`), dal più recente al più vecchio. Filtra per tipo,
+  cartella o nome, guarda o ascolta, apri la cartella, aggiungi il file alla libreria media del Montaggio, oppure usa
+  un suono come musica o voce fuori campo del progetto.
+- **❓ Aiuto**: questa pagina.
+
+**🏠 Home** (aperta all'avvio): scegli un'attività (Short virale, voce fuori campo, registrare lo schermo,
+doppiare un video…) e MSV apre lo strumento giusto; le ultime creazioni si aprono con un clic in «I miei file».
+**Modalità semplice / avanzata** (pulsante 🌱 / 🧩 in alto a destra): la modalità semplice mostra solo le
+impostazioni essenziali; quella avanzata mostra tutto (effetti speciali, ritmo, bus effetti, encoder,
+regolazioni fini delle voci…). Le impostazioni nascoste mantengono il loro valore.
+
 ### Avvio rapido
 1. **Libreria media**: importa i tuoi video e immagini (oppure indica una cartella del tuo PC).
 2. **Ispettore**: scegli un file, sposta il cursore, imposta inizio e fine, poi aggiungi la clip alla timeline.
@@ -2723,8 +3333,14 @@ If the GPU encoder fails, the software automatically falls back to the CPU.
 3. **Timeline**: modifica direttamente le celle (ordine, velocità da 0,5 a 4, volume da 0 a 2, inquadratura_x 0 = sinistra, 1 = destra).
 4. **Impostazioni** a destra, poi **Anteprima rapida** (metà risoluzione, molto veloce) ed **Esporta il video**.
 
+Il montaggio si fa in **4 passaggi** (① Media e timeline, ② Livelli ed effetti, ③ Testi, ④ Suono e ritmo): il
+pulsante «Passaggio successivo» in fondo a ogni passaggio va avanti. Sul computer, la colonna di destra (modalità
+virale, formato, anteprima, «Esporta il video») resta sullo schermo mentre scorri.
+
+**Timeline visiva** (sopra i passaggi): ogni clip è un blocco con le sue immagini su una traccia; testi, livelli, effetti, suoni, voce fuori campo e musica hanno la propria traccia. Trascina una clip per cambiare l'ordine, tira un bordo per accorciarla, clicca per posizionare il cursore (l'anteprima mostra quel momento), «✂ Taglia» o il tasto S la taglia al cursore, Canc la elimina. Trascina un testo, un livello o un suono per cambiarne il momento, tira i bordi per la durata. − / + fanno zoom, ⤢ mostra tutto il video. La tabella del passaggio ① segue ogni modifica (e viceversa).
+
 ### Shorts in serie
-Prepara un modello (scheda Montaggio → «Salva le impostazioni come modello di serie», oppure uno dei modelli forniti),
+**Crea → Shorts in serie**. Prepara un modello (scheda Montaggio → «Salva le impostazioni come modello di serie», oppure uno dei modelli forniti),
 poi una tabella CSV in cui **una riga = un video**. Colonne: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` e `outro`: « Titolo | sottotitolo » di una scena animata di apertura e di chiusura (stile del modello); `musique`: un file, oppure `auto` / `auto:suspense` per una musica generata
 (i nomi delle colonne restano in francese). In `medias`, separa i file con `|`, indica un'intera cartella o un motivo come `images/*.jpg`.
 Se la riga contiene immagini e una voce fuori campo, le immagini vengono distribuite automaticamente sulla durata della voce.
@@ -2738,7 +3354,7 @@ Se la riga contiene immagini e una voce fuori campo, le immagini vengono distrib
 Accanto al video viene sempre creato un file `.srt`: puoi caricarlo su YouTube.
 
 ### Scene animate
-Scheda **Scene animate**: **scheda titolo**, **telefono** (il tuo video dentro un telefono), **schermata finale**
+**Crea → Scene animate**: **scheda titolo**, **telefono** (il tuo video dentro un telefono), **schermata finale**
 (pulsante « Iscriviti » che viene cliccato), **elenco** con spunte, **numeri chiave** che scorrono, **prima / dopo** con
 tendina e **domanda shock** parola per parola. Compila i testi (una parola tra \\*asterischi\\* prende il colore
 d'accento), guarda l'anteprima, poi « Crea la scena » e « Aggiungi alla timeline ». Con « Usa come intro / finale del
@@ -2776,9 +3392,9 @@ alla durata esatta del video, e abbassata quando qualcuno parla. « Ascolta 12 s
   una sola foto.
 
 ### Studio audio
-Scheda **🎚️ Studio audio** (sfondo nero). Ogni strumento salva i suoi file nella propria cartella:
+Spazio **🎚️ Audio** (sfondo nero). Ogni strumento salva i suoi file nella propria cartella:
 `sorties/audio/enchainements`, `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj`
-e `sorties/audio/effets_micro`; la sotto-scheda **File creati** li elenca, li fa ascoltare e apre ogni cartella.
+e `sorties/audio/effets_micro`; **📁 I miei file** li elenca (filtro «Cartella»), li fa ascoltare e apre ogni cartella.
 - **Concatena**: quanti brani vuoi (« Aggiungi brani » ne prende diversi insieme, oppure i suoni della libreria).
   Nella tabella: inizio e fine (compilati da soli con il brano intero, da modificare per tagliare), volume e
   **transizione** verso il brano successivo. Pad: **dissolvenza**, **taglio
@@ -2813,28 +3429,36 @@ e `sorties/audio/effets_micro`; la sotto-scheda **File creati** li elenca, li fa
   campo del progetto** invia il risultato alla scheda Montaggio.
 
 ### Classifica
-Scheda **Classifica**: uno Short 9:16 «Top N». Importa da 2 a 10 clip (il n. 1 è la prima riga), dai un titolo a ogni posizione e, se vuoi, i crediti della fonte. Scrivi il titolo e spunta le parole da evidenziare, poi scegli una preimpostazione (Neon scuro, Chiaro, Rosso crudo, Podio), un'impaginazione (lista a sinistra, lista in alto, schermo intero, banda) e l'ordine (decrescente: conto alla rovescia, il n. 1 arriva per ultimo). Invio nel titolo va a capo. «Carattere, dimensioni e colori» regola anche un secondo colore di evidenziazione, la posizione del badge (angolo della clip, accanto al titolo, nessuno), il pannello dietro la lista, i numeri colorati (oro, argento, bronzo) e le etichette (dimensione, maiuscolo, corsivo). Il cursore «Posizione mostrata» mostra ogni passaggio; «Anteprima rapida» crea un video leggero, «Esporta» la versione finale in `sorties/classements`. Salva la classifica (`.json`) per riprenderla più tardi o per crearla da riga di comando: `python cli.py classement file.json`.
+**Crea → Classifica**: uno Short 9:16 «Top N». Importa da 2 a 10 clip (il n. 1 è la prima riga), dai un titolo a ogni posizione e, se vuoi, i crediti della fonte. Scrivi il titolo e spunta le parole da evidenziare, poi scegli una preimpostazione (Neon scuro, Chiaro, Rosso crudo, Podio), un'impaginazione (lista a sinistra, lista in alto, schermo intero, banda) e l'ordine (decrescente: conto alla rovescia, il n. 1 arriva per ultimo). Invio nel titolo va a capo. «Carattere, dimensioni e colori» regola anche un secondo colore di evidenziazione, la posizione del badge (angolo della clip, accanto al titolo, nessuno), il pannello dietro la lista, i numeri colorati (oro, argento, bronzo) e le etichette (dimensione, maiuscolo, corsivo). Il cursore «Posizione mostrata» mostra ogni passaggio; «Anteprima rapida» crea un video leggero, «Esporta» la versione finale in `sorties/classements`. Salva la classifica (`.json`) per riprenderla più tardi o per crearla da riga di comando: `python cli.py classement file.json`.
 **Diritti**: usa solo clip di cui hai i diritti o l'autorizzazione, e cita sempre la fonte.
 
 ### Voce fuori campo
-Scheda **Voce fuori campo**: scrivi il testo (scene separate da `---`), scegli **Piper** (gratuito, offline) o
+**Audio → Voce fuori campo**: scrivi il testo (scene separate da `---`), scegli **Piper** (gratuito, offline) o
 **ElevenLabs** (la tua chiave API, voci molto naturali e sottotitoli con tempi esatti), poi «Usa nella scheda Montaggio».
 In serie, spunta «Crea la voce fuori campo dalla colonna texte». Una scena generata con la voce sbagliata si corregge
-con «Sostituisci la voce di una clip esistente».
+in **Audio → Doppiaggio**.
+**Audio → Doppiaggio**: ① «Separa voce e sfondo» (Demucs, sul tuo PC: la voce da sola da una parte, la musica e l'ambiente dall'altra, più il video senza la voce); «Trascrivi la voce» dà il testo, che correggi o traduci prima di inviarlo a Voce fuori campo. ② «Posa la nuova voce»: il video è già compilato, la nuova voce viene posata sullo sfondo al momento scelto. La prima separazione installa Demucs (≈ 100 MB se la clonazione della voce è installata, altrimenti ≈ 3 GB). Usa solo video di cui hai i diritti.
 **La mia voce (clonazione locale)**: registra da 30 a 60 s della tua voce (stanza silenziosa, tono naturale), crea la voce una volta, poi sceglila come le altre. Tutto resta sul tuo PC; il primo utilizzo installa circa 5 GB. Clona solo la tua voce, o con il consenso della persona.
 **Voci più naturali**: ogni frase viene letta separatamente con una pausa adatta alla punteggiatura; `[pause 1s]` forza una pausa. Numeri, orari, prezzi e sigle vengono letti per esteso, e il **dizionario di pronuncia** («Pause e pronuncia») corregge una parola pronunciata male (`MSV = emme-esse-vu`). «Suono da studio» dà a tutte le voci un suono più caldo e pulito. Per La mia voce, scegli uno **stile di lettura** (Narrazione calma, Conversazione, Promo energica); con **2 o 3 riprese per frase**, ogni frase viene verificata da una trascrizione automatica e rifatta se manca una parola o se ne viene aggiunta una inventata. Il modello imita il tono della tua registrazione: per una promo, registrati con un tono da promo. Scrivi per l'orecchio: frasi brevi, punteggiatura curata.
 
 ### Scene e schermo diviso
-**Dividi in scene**: aggiungi un video, scegli «cambi di inquadratura» (l'immagine cambia), «pause nel parlato» (tutorial, podcast, discorso ripreso con un'unica inquadratura) o «ogni N secondi» (pezzi di durata fissa, ogni taglio spostato sulla pausa più vicina), poi «Trova le scene». «Unisci le scene più corte di» non divide: raggruppa le scene troppo corte. Clicca su una scena per tenerla (✓) o escluderla; ▶ la riproduce. Il **clic destro** (o ⋯, o Maiusc + F10 da tastiera) apre tutte le opzioni: tieni solo questa, unisci alla precedente o alla successiva, dividi in due, esporta solo questa scena, tieni tutte, inverti, annulla. «Crea il video» mette in fila le scene tenute.
-**Schermo diviso**: da 2 a 4 video nella stessa immagine (affiancati, sopra / sotto, griglia, uno grande + piccoli), in 16:9, 9:16 o 1:1. L'anteprima si aggiorna a ogni impostazione. Scegli la durata (più corto, oppure più lungo: gli altri restano fermi) e l'audio (mix o un solo video).
+**Video → Dividi in scene**: aggiungi un video, scegli «cambi di inquadratura» (l'immagine cambia), «pause nel parlato» (tutorial, podcast, discorso ripreso con un'unica inquadratura) o «ogni N secondi» (pezzi di durata fissa, ogni taglio spostato sulla pausa più vicina), poi «Trova le scene». «Unisci le scene più corte di» non divide: raggruppa le scene troppo corte. Clicca su una scena per tenerla (✓) o escluderla; ▶ la riproduce. Il **clic destro** (o ⋯, o Maiusc + F10 da tastiera) apre tutte le opzioni: tieni solo questa, unisci alla precedente o alla successiva, dividi in due, esporta solo questa scena, tieni tutte, inverti, annulla. «Crea il video» mette in fila le scene tenute.
+**Crea → Schermo diviso**: da 2 a 4 video nella stessa immagine (affiancati, sopra / sotto, griglia, uno grande + piccoli), in 16:9, 9:16 o 1:1. L'anteprima si aggiorna a ogni impostazione. Scegli la durata (più corto, oppure più lungo: gli altri restano fermi) e l'audio (mix o un solo video).
 
-### Strumenti rapidi
-- **Convertitore di tempo** (Ispettore): scrivi `90`, `1:30`, `1h 2m 3s` o `2,5 min`, poi «→ Inizio» / «→ Fine».
-- **Rimuovi un logo**: scegli la zona (angolo rapido + cursori), controlla con «Anteprima», poi rimuovilo da tutto il video.
-- **Logo MSV**: aggiungi il logo Montage Studio; la posizione resta memorizzata nel video per poterlo togliere con precisione.
-- **Riduci il rumore**: scegli il livello, ascolta 10 s prima / dopo, poi pulisci il file (l'immagine di un video viene copiata senza perdita). In un montaggio: Impostazioni → Audio → «Riduzione del rumore».
+### Piccoli strumenti
+- **Convertitore di tempo** (Montaggio → Ispettore): scrivi `90`, `1:30`, `1h 2m 3s` o `2,5 min`, poi «→ Inizio» / «→ Fine».
+- **Video → Video → Short**: trasforma un video in uno Short 9:16 (sfondo sfocato, ritagliato o bande), silenzi tagliati.
+- **Video → Sottotitoli**: trascrive un audio o un video in `.srt` e in testo, con Whisper.
+- **Video → Green screen e scontorno**: toglie il green screen (o blu, o un colore scelto) con FFmpeg, oppure scontorna una persona senza green screen (scontorno IA, RobustVideoMatting sul tuo PC). Nuovo sfondo: trasparente (WebM o PNG, da aggiungere alla mediateca e usare come livello), colore, immagine, video o sfocato (scontorno IA). «Anteprima» mostra il risultato al momento scelto (scacchiera = trasparente).
+- **Video → Stabilizza**: per un video girato a mano che trema; intensità leggera, media o forte (come su un treppiede), bordi mai neri grazie a un leggero zoom, e un video «prima / dopo» per confrontare.
+- **Video → Rimuovi un logo**: scegli la zona (angolo rapido + cursori), controlla con «Anteprima», poi rimuovilo da tutto il video.
+- **Video → Logo MSV**: aggiungi il logo Montage Studio; la posizione resta memorizzata nel video per poterlo togliere con precisione.
+- **Crea → Miniatura YouTube**: un fotogramma del video con un grande testo, in 16:9 o 9:16.
+- **Audio → Riduci il rumore**: scegli il livello, ascolta 10 s prima / dopo, poi pulisci il file (l'immagine di un video viene copiata senza perdita). In un montaggio: Impostazioni → Audio → «Riduzione del rumore».
+- **Audio → Estrai l'audio**: la colonna sonora di un video in MP3.
 
 ### Screen Record (Windows, Linux X11, Mac)
+**Video → Registra schermo**.
 1. Scegli uno schermo o una finestra, il microfono (e la sua **riduzione del rumore**), l'audio del computer e, se
    vuoi, la webcam.
 2. «Avvia la registrazione»: hai 3 secondi per mostrare la pagina da registrare.
@@ -2855,6 +3479,24 @@ I rendering «anteprima» sono da 3 a 5 volte più veloci. Se hai una scheda NVI
 Se l'encoder GPU non funziona, il programma torna automaticamente alla CPU.
 """,
     "es": """
+### Dónde encontrar cada cosa
+El menú (a la izquierda, o arriba en el teléfono) reúne todo en 6 espacios:
+- **🎬 Edición**: tu proyecto de vídeo (biblioteca de medios, línea de tiempo, capas, efectos, ajustes y exportación).
+- **✨ Crear**: escenas animadas, clasificación «Top N», pantalla dividida, miniatura de YouTube, Shorts en serie.
+- **🎚️ Audio**: voz en off y clonación de tu voz, encadenar, cortar, superponer, mesa de DJ, efectos de micro,
+  doblaje (separar voz y fondo), reducir el ruido, extraer el audio de un vídeo.
+- **🎥 Vídeo**: grabar pantalla, dividir en escenas, croma y recorte, estabilizar, vídeo → Short 9:16, subtítulos (Whisper), quitar un logo, logo MSV.
+- **📁 Mis archivos**: todo lo que MSV ha creado (carpeta `sorties`), del más reciente al más antiguo. Filtra por tipo,
+  carpeta o nombre, mira o escucha, abre la carpeta, añade el archivo a la biblioteca de Edición, o usa un sonido como
+  música o voz en off del proyecto.
+- **❓ Ayuda**: esta página.
+
+**🏠 Inicio** (se abre al arrancar): elige una actividad (Short viral, voz en off, grabar la pantalla, doblar
+un vídeo…) y MSV abre la herramienta adecuada; tus últimas creaciones se abren con un clic en «Mis archivos».
+**Modo sencillo / avanzado** (botón 🌱 / 🧩 arriba a la derecha): el modo sencillo muestra solo los ajustes
+esenciales; el avanzado lo muestra todo (efectos especiales, ritmo, buses de efectos, codificador, ajustes
+finos de las voces…). Los ajustes ocultos conservan su valor.
+
 ### Inicio rápido
 1. **Biblioteca de medios**: importa tus vídeos e imágenes (o indica una carpeta de tu PC).
 2. **Inspector**: elige un archivo, mueve el cursor, fija el inicio y el final, y añade el fragmento a la línea de tiempo.
@@ -2862,8 +3504,14 @@ Se l'encoder GPU non funziona, il programma torna automaticamente alla CPU.
 3. **Línea de tiempo**: edita las celdas directamente (orden, velocidad de 0,5 a 4, volumen de 0 a 2, encuadre_x 0 = izquierda, 1 = derecha).
 4. **Ajustes** a la derecha, luego **Vista previa rápida** (media resolución, muy rápida) y **Exportar el vídeo**.
 
+La edición se hace en **4 pasos** (① Medios y línea de tiempo, ② Capas y efectos, ③ Textos, ④ Sonido y ritmo): el
+botón «Paso siguiente» al final de cada paso pasa al siguiente. En el ordenador, la columna de la derecha (modo
+viral, formato, vista previa, «Exportar el vídeo») se queda en pantalla mientras te desplazas.
+
+**Línea de tiempo visual** (encima de los pasos): cada clip es un bloque con sus imágenes en una pista; textos, capas, efectos, sonidos, la voz en off y la música tienen su propia pista. Arrastra un clip para cambiar el orden, tira de un borde para acortarlo, haz clic para colocar el cursor (la vista previa muestra ese momento), «✂ Cortar» o la tecla S lo corta en el cursor, Supr lo elimina. Arrastra un texto, una capa o un sonido para cambiar su momento y tira de sus bordes para su duración. − / + hacen zoom, ⤢ muestra todo el vídeo. La tabla del paso ① sigue cada cambio (y al revés).
+
 ### Shorts en serie
-Prepara una plantilla (pestaña Edición → «Guardar los ajustes como plantilla de serie», o una de las plantillas incluidas),
+**Crear → Shorts en serie**. Prepara una plantilla (pestaña Edición → «Guardar los ajustes como plantilla de serie», o una de las plantillas incluidas),
 y luego una tabla CSV donde **una fila = un vídeo**. Columnas: `id; medias; titre; texte; srt; voix_off; musique; debut; fin; recadrage; intro; outro`. `intro` y `outro`: «Título | subtítulo» de una escena animada de apertura y de cierre (estilo de la plantilla); `musique`: un archivo, o `auto` / `auto:suspense` para una música generada
 (los nombres de las columnas se quedan en francés). En `medias`, separa los archivos con `|`, indica una carpeta entera o un patrón como `images/*.jpg`.
 Si la fila contiene imágenes y una voz en off, las imágenes se reparten automáticamente durante la voz.
@@ -2877,7 +3525,7 @@ Si la fila contiene imágenes y una voz en off, las imágenes se reparten autom�
 Siempre se crea un archivo `.srt` junto al vídeo: puedes subirlo a YouTube.
 
 ### Escenas animadas
-Pestaña **Escenas animadas**: **tarjeta de título**, **teléfono** (tu vídeo dentro de un teléfono), **pantalla final**
+**Crear → Escenas animadas**: **tarjeta de título**, **teléfono** (tu vídeo dentro de un teléfono), **pantalla final**
 (botón «Suscribirse» que se pulsa), **lista** con marcas, **cifras clave** que van contando, **antes / después** con
 barrido y **pregunta impactante** palabra por palabra. Rellena los textos (una palabra entre \\*asteriscos\\* toma el
 color de acento), mira la vista previa y luego «Crear la escena» y «Añadir a la línea de tiempo». Con «Usar como
@@ -2914,9 +3562,9 @@ PC a la duración exacta del vídeo y bajada cuando alguien habla. «Escuchar 12
   una sola foto.
 
 ### Estudio de audio
-Pestaña **🎚️ Estudio de audio** (fondo negro). Cada herramienta guarda sus archivos en su carpeta:
+Espacio **🎚️ Audio** (fondo negro). Cada herramienta guarda sus archivos en su carpeta:
 `sorties/audio/enchainements`, `sorties/audio/decoupes`, `sorties/audio/superpositions`, `sorties/audio/platine_dj`
-y `sorties/audio/effets_micro`; la subpestaña **Salidas** los lista, los reproduce y abre cada carpeta.
+y `sorties/audio/effets_micro`; **📁 Mis archivos** los lista (filtro «Carpeta»), los reproduce y abre cada carpeta.
 - **Encadenar**: tantas pistas como quieras («Añadir pistas» acepta varias a la vez, o los sonidos de la
   biblioteca). En la tabla: inicio y fin (se rellenan solos con la pista entera, cámbialos para recortar), volumen y
   **transición** a la pista siguiente. Pads: **fundido**, **corte
@@ -2950,28 +3598,36 @@ y `sorties/audio/effets_micro`; la subpestaña **Salidas** los lista, los reprod
   proyecto** envía el resultado a la pestaña Edición.
 
 ### Clasificación
-Pestaña **Clasificación**: un Short 9:16 «Top N». Importa de 2 a 10 clips (el n.º 1 es la primera fila), da un título a cada puesto y, si quieres, el crédito de la fuente. Escribe el título y marca las palabras a resaltar; luego elige un preajuste (Neón oscuro, Claro, Rojo crudo, Podio), un diseño (lista a la izquierda, lista arriba, pantalla completa, banda superior) y el orden (descendente: cuenta atrás, el n.º 1 sale el último). Intro en el título hace un salto de línea. «Fuente, tamaños y colores» también ajusta un segundo color de resaltado, la posición de la insignia (esquina del clip, junto al título, ninguno), el panel detrás de la lista, los números de colores (oro, plata, bronce) y las etiquetas (tamaño, mayúsculas, cursiva). El cursor «Puesto mostrado» muestra cada paso; «Vista previa rápida» crea un vídeo ligero y «Exportar» la versión final en `sorties/classements`. Guarda la clasificación (`.json`) para retomarla más tarde o para crearla desde la línea de comandos: `python cli.py classement archivo.json`.
+**Crear → Clasificación**: un Short 9:16 «Top N». Importa de 2 a 10 clips (el n.º 1 es la primera fila), da un título a cada puesto y, si quieres, el crédito de la fuente. Escribe el título y marca las palabras a resaltar; luego elige un preajuste (Neón oscuro, Claro, Rojo crudo, Podio), un diseño (lista a la izquierda, lista arriba, pantalla completa, banda superior) y el orden (descendente: cuenta atrás, el n.º 1 sale el último). Intro en el título hace un salto de línea. «Fuente, tamaños y colores» también ajusta un segundo color de resaltado, la posición de la insignia (esquina del clip, junto al título, ninguno), el panel detrás de la lista, los números de colores (oro, plata, bronce) y las etiquetas (tamaño, mayúsculas, cursiva). El cursor «Puesto mostrado» muestra cada paso; «Vista previa rápida» crea un vídeo ligero y «Exportar» la versión final en `sorties/classements`. Guarda la clasificación (`.json`) para retomarla más tarde o para crearla desde la línea de comandos: `python cli.py classement archivo.json`.
 **Derechos**: usa solo clips de los que tengas los derechos o la autorización, y cita siempre la fuente.
 
 ### Voz en off
-Pestaña **Voz en off**: escribe el texto (escenas separadas por `---`), elige **Piper** (gratis, sin conexión) o
+**Audio → Voz en off**: escribe el texto (escenas separadas por `---`), elige **Piper** (gratis, sin conexión) o
 **ElevenLabs** (tu clave API, voces muy naturales y subtítulos con tiempos exactos), y luego «Usar en la pestaña Edición».
 En serie, marca «Crear la voz en off a partir de la columna texte». Una escena generada con la voz equivocada se corrige
-con «Reemplazar la voz de un clip existente».
+en **Audio → Doblaje**.
+**Audio → Doblaje**: ① «Separar voz y fondo» (Demucs, en tu PC: la voz sola por un lado, la música y el ambiente por otro, más el vídeo sin la voz); «Transcribir la voz» da el texto, que corriges o traduces antes de enviarlo a Voz en off. ② «Colocar la voz nueva»: el vídeo ya está rellenado y la voz nueva se coloca sobre el fondo en el momento elegido. La primera separación instala Demucs (≈ 100 MB si la clonación de voz está instalada, si no ≈ 3 GB). Usa solo vídeos de los que tengas los derechos.
 **Mi voz (clonación local)**: graba de 30 a 60 s de tu voz (habitación tranquila, tono natural), crea la voz una vez y elígela como cualquier otra. Todo se queda en tu PC; el primer uso instala unos 5 GB. Clona solo tu voz, o con el consentimiento de la persona.
 **Voces más naturales**: cada frase se lee por separado con una pausa adaptada a su puntuación; `[pause 1s]` fuerza una pausa. Números, horas, precios y siglas se leen en letras, y el **diccionario de pronunciación** («Pausas y pronunciación») corrige una palabra mal dicha (`MSV = eme-ese-uve`). «Sonido de estudio» da a todas las voces un sonido más cálido y limpio. Para Mi voz, elige un **estilo de lectura** (Narración tranquila, Conversación, Promo enérgica); con **2 o 3 tomas por frase**, cada frase se verifica con una transcripción automática y se rehace si falta una palabra o se añade una inventada. El modelo imita el tono de tu grabación: para una promo, grábate con tono de promo. Escribe para el oído: frases cortas, puntuación cuidada.
 
 ### Escenas y pantalla dividida
-**Dividir en escenas**: añade un vídeo, elige «cambios de plano» (la imagen cambia), «pausas al hablar» (tutorial, pódcast, discurso grabado en un solo plano) o «cada N segundos» (trozos de duración fija, cada corte movido a la pausa más cercana) y luego «Buscar las escenas». «Unir las escenas más cortas que» no divide: agrupa las escenas demasiado cortas. Haz clic en una escena para conservarla (✓) o excluirla; ▶ la reproduce. El **clic derecho** (o ⋯, o Mayús + F10 con el teclado) abre todas las opciones: conservar solo esta, unir con la anterior o la siguiente, cortar en dos, exportar solo esta escena, conservar todas, invertir, deshacer. «Crear el vídeo» une las escenas conservadas.
-**Pantalla dividida**: de 2 a 4 vídeos en la misma imagen (lado a lado, arriba / abajo, cuadrícula, una grande + pequeñas), en 16:9, 9:16 o 1:1. La vista previa se actualiza con cada ajuste. Elige la duración (el más corto, o el más largo: los demás se congelan) y el sonido (mezcla o un solo vídeo).
+**Vídeo → Dividir en escenas**: añade un vídeo, elige «cambios de plano» (la imagen cambia), «pausas al hablar» (tutorial, pódcast, discurso grabado en un solo plano) o «cada N segundos» (trozos de duración fija, cada corte movido a la pausa más cercana) y luego «Buscar las escenas». «Unir las escenas más cortas que» no divide: agrupa las escenas demasiado cortas. Haz clic en una escena para conservarla (✓) o excluirla; ▶ la reproduce. El **clic derecho** (o ⋯, o Mayús + F10 con el teclado) abre todas las opciones: conservar solo esta, unir con la anterior o la siguiente, cortar en dos, exportar solo esta escena, conservar todas, invertir, deshacer. «Crear el vídeo» une las escenas conservadas.
+**Crear → Pantalla dividida**: de 2 a 4 vídeos en la misma imagen (lado a lado, arriba / abajo, cuadrícula, una grande + pequeñas), en 16:9, 9:16 o 1:1. La vista previa se actualiza con cada ajuste. Elige la duración (el más corto, o el más largo: los demás se congelan) y el sonido (mezcla o un solo vídeo).
 
-### Herramientas rápidas
-- **Conversor de tiempo** (Inspector): escribe `90`, `1:30`, `1h 2m 3s` o `2,5 min`, y luego «→ Inicio» / «→ Fin».
-- **Quitar un logo**: elige la zona (esquina rápida + controles), compruébalo con «Vista previa» y quítalo de todo el vídeo.
-- **Logo MSV**: añade el logo de Montage Studio; su posición se guarda en el vídeo para poder quitarlo con precisión.
-- **Reducir el ruido**: elige el nivel, escucha 10 s antes / después y limpia el archivo (la imagen de un vídeo se copia sin pérdida). En un montaje: Ajustes → Audio → «Reducción de ruido».
+### Pequeñas herramientas
+- **Conversor de tiempo** (Edición → Inspector): escribe `90`, `1:30`, `1h 2m 3s` o `2,5 min`, y luego «→ Inicio» / «→ Fin».
+- **Vídeo → Vídeo → Short**: convierte un vídeo en un Short 9:16 (fondo desenfocado, recortado o bandas), sin silencios.
+- **Vídeo → Subtítulos**: transcribe un audio o un vídeo a `.srt` y a texto, con Whisper.
+- **Vídeo → Croma y recorte**: quita el croma verde (o azul, o un color elegido) con FFmpeg, o recorta a una persona sin croma (recorte IA, RobustVideoMatting en tu PC). Nuevo fondo: transparente (WebM o PNG, para añadir a la mediateca y usar como capa), color, imagen, vídeo o desenfoque (recorte IA). «Vista previa» muestra el resultado en el momento elegido (damero = transparente).
+- **Vídeo → Estabilizar**: para un vídeo grabado a mano que tiembla; intensidad ligera, media o fuerte (como en un trípode), sin bordes negros gracias a un ligero zoom, y un vídeo «antes / después» para comparar.
+- **Vídeo → Quitar un logo**: elige la zona (esquina rápida + controles), compruébalo con «Vista previa» y quítalo de todo el vídeo.
+- **Vídeo → Logo MSV**: añade el logo de Montage Studio; su posición se guarda en el vídeo para poder quitarlo con precisión.
+- **Crear → Miniatura de YouTube**: un fotograma del vídeo con un texto grande, en 16:9 o 9:16.
+- **Audio → Reducir el ruido**: elige el nivel, escucha 10 s antes / después y limpia el archivo (la imagen de un vídeo se copia sin pérdida). En un montaje: Ajustes → Audio → «Reducción de ruido».
+- **Audio → Extraer el audio**: la banda sonora de un vídeo en MP3.
 
 ### Screen Record (Windows, Linux X11, Mac)
+**Vídeo → Grabar pantalla**.
 1. Elige una pantalla o una ventana, el micrófono (y su **reducción de ruido**), el audio del ordenador y, si
    quieres, la webcam.
 2. «Iniciar la grabación»: tienes 3 segundos para mostrar la página que quieres grabar.

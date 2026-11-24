@@ -1,6 +1,6 @@
 """Réduction du bruit de fond (souffle, ventilateur, clavier, climatisation), 100 % local, avec les filtres de FFmpeg.
 
-Trois niveaux, utilisés partout dans MSV (Screen Record, onglet Montage, Outils rapides) :
+Trois niveaux, utilisés partout dans MSV (Screen Record, onglet Montage, Audio → Réduire le bruit) :
   * aucune       : seulement un filtre coupe-bas (bourdonnement grave) là où il y avait déjà ;
   * légère       : afftdn, réduction du souffle constant (rapide, sans effet sur la voix) ;
   * forte (voix) : RNNoise (arnndn), réseau de neurones qui garde la voix et retire le reste.
