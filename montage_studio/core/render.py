@@ -20,9 +20,11 @@ import time
 from pathlib import Path
 from typing import Callable, Optional
 
-from . import denoise, effects, ff, layers, rhythm, sfx, subs
+from . import speedcurve  # noqa: E402  (courbes de vitesse des clips)
+from . import denoise, effects, ff, keyframes, layers, luts, reframe, rhythm, sfx, subanim, subs
 from .i18n import _
 from .textimg import DEFAULT_STYLE, blank, render_text
+import numpy as np
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 from .tools import detect_speech_ranges, extract_audio
 
@@ -55,7 +57,11 @@ QUALITY = {
                  "final": ["-preset", "fast", "-crf", "21"], "abr": "160k"},
     "haute": {"scale": 1.0, "inter": ["-preset", "veryfast", "-crf", "16"],
               "final": ["-preset", "medium", "-crf", "18"], "abr": "192k"},
+    # MSV Pro avec licence active (core/licence.py) : 2160 px sur le petit côté (3840 × 2160 en 16:9)
+    "4K": {"scale": 2.0, "inter": ["-preset", "veryfast", "-crf", "16"],
+           "final": ["-preset", "medium", "-crf", "18"], "abr": "192k"},
 }
+PRO_QUALITY = {"4K": "4k"}      # qualité -> extra de la version pro qu'elle demande
 
 # Mouvement des images fixes. « Ken Burns » alterne quatre trajets (zoom + déplacement) d'une image à l'autre.
 MOTIONS = ["aucun", "zoom avant", "zoom arrière", "panoramique vers la droite", "panoramique vers la gauche",
@@ -75,7 +81,8 @@ ENCODERS = {
     "intel (quicksync)": ["-c:v", "h264_qsv", "-global_quality", "21"],
 }
 
-FITS = ["flou", "rogner", "bandes", "cadre"]   # « cadre » : le clip dans un rectangle, voir parse_frame
+FACE = "suivre le visage"   # rogner, en gardant le visage principal dans le cadre (voir core/reframe.py)
+FITS = ["flou", "rogner", "bandes", "cadre", FACE]   # « cadre » : le clip dans un rectangle, voir parse_frame
 
 DEFAULT_PROJECT = {
     "name": "projet",
@@ -103,9 +110,10 @@ DEFAULT_PROJECT = {
     "title": {"text": "", "start": 0.0, "end": 3.0,
               "style": {"size": 96, "position": 0.18, "box": True, "uppercase": True}},
     "subtitles": {"source": "aucun", "script": "", "srt_path": "", "max_words": 3,
-                  "karaoke": True, "language": "fr", "whisper_model": "small",
+                  "karaoke": True, "animation": "aucune", "language": "fr", "whisper_model": "small",
                   "style": {}},
     "logo": {"path": "", "position": "haut droite", "size": 0.14, "opacity": 0.9},
+    "lut": {"name": "aucun", "intensity": 1.0},   # filtre couleur LUT sur toute la vidéo (voir core/luts.py)
     "overlays": [],                    # incrustations image/vidéo, voir core/layers.py
     "texts": [],                       # textes animés, voir core/layers.py
     "effects": [],                     # effets spéciaux sur un passage (secousse, zoom, flash…), voir core/effects.py
@@ -211,7 +219,7 @@ def _ffmpeg_color(color: str) -> str:
 
 def _fit(inp: str, out: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float = 0.5,
          frame=None, background: str = "#000000") -> str:
-    if mode == "rogner":
+    if mode in ("rogner", FACE):          # suivre le visage sans visage trouvé : rogner au centre
         return (f"[{inp}]scale={W}:{H}:force_original_aspect_ratio=increase,"
                 f"crop={W}:{H}:(iw-{W})*{cx:.3f}:(ih-{H})*{cy:.3f}[{out}]")
     if mode == "bandes":
@@ -224,9 +232,18 @@ def _fit(inp: str, out: str, W: int, H: int, mode: str, cx: float = 0.5, cy: flo
     w4, h4 = _even(W / 4), _even(H / 4)
     return (f"[{inp}]split=2[{out}b0][{out}f0];"
             f"[{out}b0]scale={w4}:{h4}:force_original_aspect_ratio=increase,crop={w4}:{h4},"
-            f"gblur=sigma=10,eq=brightness=-0.06,scale={W}:{H}[{out}bg];"
+            f"gblur=sigma=10,lutyuv=y='clip(val-15,minval,maxval)',scale={W}:{H}[{out}bg];"
             f"[{out}f0]scale={W}:{H}:force_original_aspect_ratio=decrease:force_divisible_by=2[{out}fg];"
             f"[{out}bg][{out}fg]overlay=(W-w)/2:(H-h)/2[{out}]")
+
+
+def _centering(face: tuple[float, float], iw: int, ih: int, W: int, H: int) -> tuple[float, float]:
+    """Réglage « centering » de ImageOps.fit qui place le visage (fractions de l'image) au centre du cadre."""
+    k = max(W / iw, H / ih)
+    cw, ch = W / k, H / k                    # taille du cadre dans l'image d'origine
+    cx = 0.5 if iw - cw < 1 else (face[0] * iw - cw / 2) / (iw - cw)
+    cy = 0.5 if ih - ch < 1 else (face[1] * ih - ch / 2) / (ih - ch)
+    return min(1.0, max(0.0, cx)), min(1.0, max(0.0, cy))
 
 
 MAX_CROP = 0.45   # on ne retire jamais plus de 45 % d'un côté (il reste toujours au moins 10 % de l'image)
@@ -283,7 +300,11 @@ def fit_image(path: str, W: int, H: int, mode: str, cx: float = 0.5, cy: float =
         l, t, r, b = fr
         img = img.crop((round(img.width * l), round(img.height * t),
                         round(img.width * (1 - r)), round(img.height * (1 - b))))
-    if mode == "rogner":
+    if mode == FACE and not fr and not reframe.problem():
+        face = reframe.detect_image(np.asarray(img)[:, :, ::-1])     # BGR
+        if face:
+            cx, cy = _centering(face, img.width, img.height, W, H)
+    if mode in ("rogner", FACE):
         return ImageOps.fit(img, (W, H), Image.LANCZOS, centering=(cx, cy))
     if mode == "cadre":
         x, y, w, h = _frame_box(frame, W, H)
@@ -318,7 +339,8 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
             continue
         info = ff.probe(path)
         # cadrage propre au clip (sinon celui du projet) et rectangle du mode « cadre »
-        own = {"fit": layers.norm_choice(c.get("fit"), FITS, ""), "frame": parse_frame(c.get("frame"))}
+        own = {"fit": layers.norm_choice(c.get("fit"), FITS, ""), "frame": parse_frame(c.get("frame")),
+               "keyframes": keyframes.norm_text(c.get("keyframes"))}
         if info.kind == "image":
             segs.append({"type": "image", "path": path, **own,
                          "dur": _f(c.get("duration")) or _f(p["image_duration"]) or 3.0,
@@ -338,19 +360,24 @@ def _expand_clips(p: dict, log: list) -> list[dict]:
             speed = _f(c.get("speed")) or 1.0
             mute = bool(c.get("mute"))
             ranges = [(s, e)]
-            if rs.get("enabled") and info.has_audio and not mute and not c.get("scene"):
+            curve = speedcurve.parse(c.get("speed_curve"))     # vitesse qui change au cours du clip
+            if rs.get("enabled") and info.has_audio and not mute and not c.get("scene") and not curve:
                 ranges = detect_speech_ranges(path, s, e, rs["threshold_db"], rs["min_silence"], rs["padding"])
                 gain = (e - s) - sum(b - a for a, b in ranges)
                 if gain > 0.05:
                     log.append(_("✂ {name} : {n} morceaux, {gain:.1f} s de silence retirés",
                                  name=Path(path).name, n=len(ranges), gain=gain))
             for a, b in ranges:
-                segs.append({"type": "video", "path": path, "start": a, "end": b, "speed": speed, **own,
+                pcs = speedcurve.pieces(a, b, speed, c.get("speed_curve")) if curve else None
+                d_out = sum((y - x) / v for x, y, v in pcs) if pcs else (b - a) / speed
+                segs.append({"type": "video", "path": path, "start": a, "end": b, **own,
+                             "speed": (b - a) / d_out if pcs else speed, "curve": pcs,
                              "volume": _f(c.get("volume", 1.0)) if c.get("volume") is not None else 1.0,
                              "mute": mute, "has_audio": info.has_audio,
                              "crop_x": _f(c.get("crop_x", 0.5)), "crop_y": _f(c.get("crop_y", 0.5)),
                              "crop": parse_crop(c.get("crop")), "scene": c.get("scene"),
-                             "dur": (b - a) / speed})
+                             "dur": d_out,
+                             "kf_offset": (a - s) / speed})   # images clés : temps depuis le début du clip
         else:
             log.append(_("⚠ Fichier ignoré dans la timeline (audio ou inconnu) : {name}", name=Path(path).name))
 
@@ -391,10 +418,55 @@ def _motion(zoom: str, frames: int, kb: int = 0) -> Optional[tuple[str, str, str
     return f"{z0}+{z1 - z0:.3f}*{e}", f"(iw-iw/zoom)*{fx}", f"(ih-ih/zoom)*{fy}"
 
 
+def _face_filter(seg: dict, crop: str, fr, W: int, H: int, fps: int, out: Path, log: list) -> Optional[str]:
+    """Filtre « suivre le visage » d'un extrait vidéo, ou None (pas de visage, OpenCV absent : rogner au centre)."""
+    err = reframe.problem()
+    name = Path(seg["path"]).name
+    if err:
+        log.append(f"⚠ {err}")
+        return None
+    info = ff.probe(seg["path"])
+    sw, sh = info.width, info.height
+    if fr:                                   # recadrage manuel d'abord (mêmes arrondis que le filtre crop)
+        l, t, r, b = fr
+        sw, sh = int(sw * (1 - l - r) / 2) * 2, int(sh * (1 - t - b) / 2) * 2
+    try:
+        tr = reframe.track(seg["path"], seg["start"], seg["end"], seg["speed"], W, H, fps, pre_vf=crop,
+                           src_size=(sw, sh))
+    except Exception as e:                   # détection impossible : on rogne au centre plutôt que d'échouer
+        log.append(f"⚠ {name} : {str(e)[:200]}")
+        return None
+    if tr is None:
+        log.append(_("🙂 {name} : aucun visage trouvé, cadrage au centre", name=name))
+        return None
+    log.append(_("🙂 {name} : cadrage qui suit le visage", name=name))
+    return reframe.crop_filter(tr, out.with_suffix(".visage.cmd"), fps, W, H)
+
+
+def _keyframe_zoom(seg: dict, W: int, H: int, fps: int, log: list) -> str:
+    """Images clés d'un clip (zoom et point visé) -> filtres FFmpeg terminés par une virgule, ou "".
+    L'image est d'abord agrandie deux fois : un zoom lent reste fluide (zoompan travaille au pixel près)."""
+    if not seg.get("keyframes"):
+        return ""
+    try:
+        kf = keyframes.parse(seg["keyframes"])
+    except ValueError as err:
+        log.append(f"⚠ {Path(seg['path']).name} : {err}")
+        return ""
+    if not kf:
+        return ""
+    t = f"({_f(seg.get('kf_offset')):.4f}+on/{fps})"
+    z = f"max(1,{keyframes.expr(kf, 'scale', t)})"
+    x = f"clip(({keyframes.expr(kf, 'x', t)})/100*iw-iw/zoom/2,0,iw-iw/zoom)"
+    y = f"clip(({keyframes.expr(kf, 'y', t)})/100*ih-ih/zoom/2,0,ih-ih/zoom)"
+    return (f"scale={2 * W}:{2 * H}:flags=bicubic,"
+            f"zoompan=z='{z}':x='{x}':y='{y}':d=1:s={W}x{H}:fps={fps},")
+
+
 def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit: str, log: list,
                     background: str = "#000000"):
     dur = seg["dur"]
-    common_out = ["-t", f"{dur:.3f}", "-r", str(fps), "-c:v", "libx264", *q["inter"], "-pix_fmt", "yuv420p",
+    common_out = ["-t", f"{dur:.3f}", "-r", str(fps), *ff.x264_args(q["inter"]), "-pix_fmt", "yuv420p",
                   "-c:a", "pcm_s16le", "-ar", "48000", "-ac", "2", str(out)]
     silent = ["-f", "lavfi", "-t", f"{dur:.3f}", "-i", "anullsrc=r=48000:cl=stereo"]
 
@@ -403,7 +475,9 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
         # que de recalculer le cadrage à chaque image.
         frames = max(1, int(round(dur * fps)))
         # en mode cadre, l'image reste immobile : un zoom agrandirait aussi le cadre et le fond
-        motion = None if fit == "cadre" else _motion(seg.get("zoom", "aucun"), frames, seg.get("kb", 0))
+        kz = _keyframe_zoom(seg, W, H, fps, log)
+        # images clés : elles remplacent le mouvement automatique (Ken Burns…)
+        motion = None if (fit == "cadre" or kz) else _motion(seg.get("zoom", "aucun"), frames, seg.get("kb", 0))
         k = 2 if motion else 1   # image deux fois plus grande : mouvement plus fluide (moins de « tremblement »)
         still = out.with_suffix(".png")
         fit_image(seg["path"], W * k, H * k, fit, seg["crop_x"], seg["crop_y"], seg.get("crop"),
@@ -414,7 +488,7 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
             fc = (f"[0:v]zoompan=z='{z}':x='{x}':y='{y}':d={frames}:"
                   f"s={W}x{H}:fps={fps},format=yuv420p,setsar=1[v]")
         else:
-            fc = f"[0:v]loop=loop={frames}:size=1:start=0,setpts=N/{fps}/TB,format=yuv420p,setsar=1[v]"
+            fc = f"[0:v]loop=loop={frames}:size=1:start=0,setpts=N/{fps}/TB,{kz}format=yuv420p,setsar=1[v]"
         fc += ";[1:a]anull[a]"
     else:
         src_dur = seg["end"] - seg["start"]
@@ -427,11 +501,36 @@ def _render_segment(seg: dict, out: Path, W: int, H: int, fps: int, q: dict, fit
             # dimensions paires (exigées par H.264), positions arrondies au pixel
             crop = (f",crop=trunc(iw*{1 - l - r:.4f}/2)*2:trunc(ih*{1 - t - b:.4f}/2)*2"
                     f":trunc(iw*{l:.4f}):trunc(ih*{t:.4f})")
-        fc = (f"[0:v]setpts=(PTS-STARTPTS)/{sp:.4f},fps={fps}{crop}[pre];"
-              + _fit("pre", "fit", W, H, fit, seg["crop_x"], seg["crop_y"], seg.get("frame"), background)
-              + ";[fit]format=yuv420p,setsar=1[v]")
+        pcs = seg.get("curve")
+        if pcs and fit == FACE:              # le suivi du visage suppose une vitesse fixe : cadrage rogné à la place
+            log.append(_("⚠ Courbe de vitesse : cadrage « rogner » au lieu de « suivre le visage » pour ce clip"))
+            fit = "rogner"
+        face = _face_filter(seg, crop, fr, W, H, fps, out, log) if fit == FACE else None
+        kz = _keyframe_zoom(seg, W, H, fps, log)
+        if pcs:                              # morceaux de vitesse constante, recollés : [0:v] -> [spd]
+            s0, n = seg["start"], len(pcs)
+            vin = (f"[0:v]split={n}" + "".join(f"[cv{i}]" for i in range(n)) + ";"
+                   + ";".join(f"[cv{i}]trim=start={a - s0:.4f}:end={b - s0:.4f},setpts=(PTS-STARTPTS)/{v:.4f}[pv{i}]"
+                              for i, (a, b, v) in enumerate(pcs))
+                   + ";" + "".join(f"[pv{i}]" for i in range(n)) + f"concat=n={n}:v=1:a=0[spd];[spd]")
+        else:
+            vin = f"[0:v]setpts=(PTS-STARTPTS)/{sp:.4f},"
+        if face:
+            fc = f"{vin}fps={fps}{crop},{face},{kz}format=yuv420p,setsar=1[v]"
+        else:
+            fc = (f"{vin}fps={fps}{crop}[pre];"
+                  + _fit("pre", "fit", W, H, fit, seg["crop_x"], seg["crop_y"], seg.get("frame"), background)
+                  + f";[fit]{kz}format=yuv420p,setsar=1[v]")
         if seg["has_audio"] and not seg["mute"]:
-            fc += (f";[0:a]asetpts=PTS-STARTPTS,{_atempo_chain(sp)},volume={seg['volume']:.3f},"
+            if pcs:
+                n = len(pcs)
+                ain = (f";[0:a]asplit={n}" + "".join(f"[ca{i}]" for i in range(n)) + ";"
+                       + ";".join(f"[ca{i}]atrim=start={a - s0:.4f}:end={b - s0:.4f},asetpts=PTS-STARTPTS,"
+                                  f"{_atempo_chain(v)}[pa{i}]" for i, (a, b, v) in enumerate(pcs))
+                       + ";" + "".join(f"[pa{i}]" for i in range(n)) + f"concat=n={n}:v=0:a=1[spa];[spa]")
+            else:
+                ain = f";[0:a]asetpts=PTS-STARTPTS,{_atempo_chain(sp)},"
+            fc += (f"{ain}volume={seg['volume']:.3f},"
                    f"aresample=48000,aformat=sample_fmts=fltp:channel_layouts=stereo,apad,"
                    # micro-fondus de 15-25 ms : évitent les « clics » audibles aux raccords
                    f"atrim=0:{dur:.3f},afade=t=in:d=0.015,afade=t=out:st={max(0, dur - 0.025):.3f}:d=0.025[a]")
@@ -492,7 +591,7 @@ def _assemble(parts: list[Path], durs: list[float], out: Path, tr_name: str, td:
         fc = ";".join(fc_parts)
         total = acc
     ff.run_ffmpeg([*args, "-filter_complex", fc, "-map", "[v]", "-map", "[a]",
-                   "-c:v", "libx264", *q["inter"], "-pix_fmt", "yuv420p", "-r", str(fps),
+                   *ff.x264_args(q["inter"]), "-pix_fmt", "yuv420p", "-r", str(fps),
                    "-c:a", "pcm_s16le", "-ar", "48000", str(out)],
                   duration=total, on_progress=on_p, log=log)
     return total
@@ -565,16 +664,28 @@ def _build_cues(p: dict, assembled: Path, T: float, work: Path, log: list,
     return []
 
 
-def _subtitle_track(cues: list[dict], p: dict, W: int, H: int, T: float, work: Path) -> Optional[Path]:
+def _subtitle_track(cues: list[dict], p: dict, W: int, H: int, T: float, work: Path,
+                    fps: float = 30) -> Optional[Path]:
     st = p["subtitles"]
     style = {**DEFAULT_STYLE, **(st.get("style") or {})}
     karaoke = bool(st.get("karaoke"))
+    kind = st.get("animation") if st.get("animation") in subanim.ANIMATIONS else "aucune"
     events = []  # (début, fin, png)
     n = 0
     for c in cues:
         if c["start"] >= T:
             continue
-        if karaoke and c.get("words"):
+        if kind != "aucune":           # sous-titres animés : quelques images au début de chaque phrase ou mot
+            if not c.get("words") and kind in ("machine à écrire", "mot par mot"):
+                c = {**c, "words": subs.estimate_word_times(c["text"], c["start"], c["end"])}
+            for s, e, text, opts in subanim.events(c, kind, karaoke, H, fps):
+                png = work / f"sub_{n:05d}.png"
+                sty = {**style, "size": style["size"] * opts["size"]} if opts.get("size") else style
+                render_text(text, W, H, sty, png, highlight_index=opts["highlight_index"],
+                            anim=opts["anim"] or None)
+                events.append((s, e, png))
+                n += 1
+        elif karaoke and c.get("words"):
             text = " ".join(w for w, _, _ in c["words"])
             ws = c["words"]
             for j, (w, s, e) in enumerate(ws):
@@ -624,6 +735,13 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
     idx = 1
     vf, af = [], []
     cur_v, cur_a = "0:v", "0:a"
+
+    # Filtre couleur LUT : sur l'image seulement (calques, titre et sous-titres gardent leurs couleurs)
+    grade = luts.filter_graph(p.get("lut"), cur_v, "lut")
+    if grade:
+        vf.append(grade)
+        cur_v = "lut"
+        log.append(_("🎨 Filtre couleur : {name}", name=_(p["lut"]["name"])))
 
     # Effets spéciaux sur la vidéo (sous les calques : stickers et textes restent nets et immobiles)
     e_args, e_vf, cur_v, idx = effects.build(p, W, H, fps, T, assembled, idx, cur_v, log)
@@ -725,8 +843,8 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
     af.append(f"[{cur_a}]{','.join(achain)}[aout]")
 
     fc = ";".join(vf + af)
-    enc = ENCODERS.get(p.get("encoder", "cpu (x264)"))
-    venc = enc if (enc and p.get("quality") != "aperçu") else ["-c:v", "libx264", *q["final"], "-profile:v", "high"]
+    enc = None if ff.is_pro() else ENCODERS.get(p.get("encoder", "cpu (x264)"))   # pro : choix automatique
+    venc = enc if (enc and p.get("quality") != "aperçu") else _final_encoder(q)
     tail = ["-filter_complex", fc, "-map", "[vout]", "-map", "[aout]", "-t", f"{T:.3f}", "-r", str(fps),
             "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", q["abr"], "-ar", "48000",
             "-movflags", "+faststart", str(out)]
@@ -735,9 +853,19 @@ def _finalize(p: dict, assembled: Path, T: float, W: int, H: int, fps: int, q: d
     except ff.FFmpegError:
         if enc and venc is enc:
             log.append(_("⚠ Encodeur GPU indisponible, nouvel essai avec le CPU (x264)"))
-            ff.run_ffmpeg([*args, "-c:v", "libx264", *q["final"], *tail], duration=T, on_progress=on_p, log=log)
+            ff.run_ffmpeg([*args, *ff.x264_args(q["final"]), *tail], duration=T, on_progress=on_p, log=log)
+        elif ff.is_pro() and venc[1] in ff._PRO_GPU:
+            log.append(_("⚠ Encodeur de la carte graphique indisponible, nouvel essai avec le processeur"))
+            ff.run_ffmpeg([*args, *ff.x264_args(q["final"], cpu=True), *tail], duration=T, on_progress=on_p,
+                          log=log)
         else:
             raise
+
+
+def _final_encoder(q: dict) -> list[str]:
+    """Encodeur du fichier final : x264 (profil High) en édition libre, choix automatique sans GPL en pro."""
+    venc = ff.x264_args(q["final"])
+    return venc if ff.is_pro() else [*venc, "-profile:v", "high"]
 
 
 # --------------------------------------------------------------------------- intro et fin
@@ -783,6 +911,9 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
     p = merge_defaults(project)
     if quality:
         p["quality"] = quality
+    if p["quality"] in PRO_QUALITY:              # 4K : édition pro avec une licence active
+        from .licence import require
+        require(PRO_QUALITY[p["quality"]])
     q = QUALITY.get(p["quality"], QUALITY["haute"])
     W0, H0 = FORMATS.get(p["format"], (1080, 1920))
     W, H = _even(W0 * q["scale"]), _even(H0 * q["scale"])
@@ -834,7 +965,7 @@ def render_project(project: dict, out_path: str | Path, progress: Progress = Non
 
         prog(0.61, _("Sous-titres"))
         cues = _build_cues(p, assembled, T, work, log, segs, starts)
-        sub_track = _subtitle_track(cues, p, W, H, T, work) if cues else None
+        sub_track = _subtitle_track(cues, p, W, H, T, work, fps) if cues else None
         srt_out = None
         if cues:
             srt_out = subs.write_srt(cues, out_path.with_suffix(".srt"))

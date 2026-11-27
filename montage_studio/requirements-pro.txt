@@ -1,0 +1,22 @@
+# Édition pro (aucun composant GPL, voir core/edition.py et TIERS.md) : mêmes paquets que requirements.txt, sauf
+#   - imageio-ffmpeg : son FFmpeg est compilé en GPL (x264) ; l'édition pro utilise un FFmpeg LGPL (MONTAGE_FFMPEG) ;
+#   - sherpa-onnx : il contient la phonétisation espeak-ng (GPL-3.0) ; voix Piper / Kokoro = module à installer à part.
+# Versions figées avec empreintes : requirements-pro.lock (outils/maj_securite.py --pro).
+gradio>=6.0,<7
+pillow>=10.1   # forcé en 13.0+ par overrides.txt (correctifs de sécurité)
+pandas>=2.0
+numpy>=1.24
+
+# Hauteur de la voix sans changer le timbre (vocodeur WORLD), à la place de Rubber Band (GPL)
+pyworld==0.3.5
+
+# Cadrage « suivre le visage » (détection des visages YuNet)
+opencv-python-headless==4.14.0.94   # version testée
+
+# Détourage IA sans GPL (modèle MODNet, Apache-2.0) : moteur ONNX Runtime de Microsoft (licence MIT)
+onnxruntime==1.30.0   # version testée
+
+# Sous-titres automatiques et « Long → Shorts » (transcription au mot près) : faster-whisper et CTranslate2 (MIT),
+# SANS PyAV (son FFmpeg inclut x264 / x265, GPL) : MSV donne à Whisper le son décodé par son FFmpeg LGPL.
+faster-whisper==1.2.1   # version testée
+tokenizers==0.23.2      # compilée pour Python 3.12 (la 0.13 devrait l'être depuis les sources) ; voir overrides.txt

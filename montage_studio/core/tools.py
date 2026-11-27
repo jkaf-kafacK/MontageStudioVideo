@@ -139,7 +139,9 @@ ASSETS = Path(__file__).resolve().parent.parent / "assets"
 MSV_LOGOS = {"icône": "logo_icon.png", "logo complet": "logo_dark.png"}   # logo_dark : texte clair, lisible sur vidéo
 MSV_TAG = "MSV-logo="   # métadonnée « comment » écrite dans la vidéo : zone exacte du logo ajouté
 LOGO_POSITIONS = ["haut gauche", "haut droite", "bas gauche", "bas droite", "centre"]
-_ENC = ["-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
+def _enc() -> list[str]:
+    """H.264 haute qualité (x264 en édition libre, encodeur sans GPL en édition pro)."""
+    return [*ff.video_args(18, "fast"), "-pix_fmt", "yuv420p"]
 
 
 def logo_place(W: int, H: int, w: int, h: int, position: str) -> tuple[int, int]:
@@ -156,22 +158,29 @@ def box_from_percent(W: int, H: int, x: float, y: float, w: float, h: float) -> 
 
 
 def _clamp_box(W: int, H: int, box) -> tuple[int, int, int, int]:
-    """Garde la zone à au moins 1 px des bords (exigé par le filtre delogo de FFmpeg)."""
+    """Garde la zone à au moins 1 px des bords (il faut une bordure pour reconstruire la zone)."""
     x, y, w, h = (int(round(v)) for v in box)
     x, y = min(max(1, x), W - 5), min(max(1, y), H - 5)
     return x, y, max(4, min(w, W - 1 - x)), max(4, min(h, H - 1 - y))
 
 
 def removal_filter(W: int, H: int, box, mode: str = "effacer") -> str:
-    """Filtre FFmpeg qui fait disparaître la zone : « effacer » (reconstruite à partir de ses bords, delogo)
-    ou « flouter » (flou fort limité à la zone)."""
+    """Filtre FFmpeg qui fait disparaître la zone : « effacer » (reconstruite à partir de ses bords : delogo en
+    édition libre, dégradé entre les 4 bords en édition pro) ou « flouter » (flou fort limité à la zone)."""
     x, y, w, h = _clamp_box(W, H, box)
     if mode == "flouter":
         # la couleur (chroma) est à demi-résolution en yuv420 : le rayon doit tenir dans un quart de la zone
         r = max(1, min(20, min(w, h) // 4 - 1))
-        return (f"split[base][zone];[zone]crop={w}:{h}:{x}:{y},boxblur={r}:2[flou];"
+        return (f"split[base][zone];[zone]crop={w}:{h}:{x}:{y},avgblur=sizeX={r},avgblur=sizeX={r}[flou];"
                 f"[base][flou]overlay={x}:{y}")
-    return f"delogo=x={x}:y={y}:w={w}:h={h}"
+    if not ff.is_pro():
+        return f"delogo=x={x}:y={y}:w={w}:h={h}"
+    # sans GPL : les lignes de pixels qui bordent la zone, étirées puis fondues (haut -> bas, gauche -> droite)
+    return (f"format=yuv444p,split=5[base][t][b][l][r];"
+            f"[t]crop={w}:1:{x}:{y - 1},scale={w}:{h}[T];[b]crop={w}:1:{x}:{y + h},scale={w}:{h}[B];"
+            f"[l]crop=1:{h}:{x - 1}:{y},scale={w}:{h}[L];[r]crop=1:{h}:{x + w}:{y},scale={w}:{h}[R];"
+            "[T][B]blend=all_expr='A*(1-Y/H)+B*Y/H'[tb];[L][R]blend=all_expr='A*(1-X/W)+B*X/W'[lr];"
+            f"[tb][lr]blend=all_mode=average,gblur=sigma=2[patch];[base][patch]overlay={x}:{y},format=yuv420p")
 
 
 def _video_size(path: str) -> tuple[int, int]:
@@ -195,7 +204,7 @@ def remove_logo(path: str, out_path: str, box, mode: str = "effacer", on_progres
     """Efface une zone (logo, filigrane) sur toute la vidéo. Le son est copié sans perte."""
     W, H = _video_size(path)
     ff.run_ffmpeg(["-i", path, "-map", "0:v:0", "-map", "0:a?", "-vf", removal_filter(W, H, box, mode),
-                   *_ENC, "-c:a", "copy", "-movflags", "+faststart", str(out_path)],
+                   *_enc(), "-c:a", "copy", "-movflags", "+faststart", str(out_path)],
                   duration=ff.probe(path).duration, on_progress=on_progress)
     return str(out_path)
 
@@ -218,7 +227,7 @@ def add_msv_logo(path: str, out_path: str, position: str = "bas droite", size: f
     ff.run_ffmpeg(["-i", path, "-i", file,
                    "-filter_complex", f"[1:v]format=rgba,scale={lw}:{lh},colorchannelmixer=aa={op:.2f}[lg];"
                                       f"[0:v][lg]overlay={x}:{y}[v]",
-                   "-map", "[v]", "-map", "0:a?", *_ENC, "-c:a", "copy",
+                   "-map", "[v]", "-map", "0:a?", *_enc(), "-c:a", "copy",
                    "-metadata", f"comment={MSV_TAG}{x},{y},{lw},{lh}", "-movflags", "+faststart", str(out_path)],
                   duration=ff.probe(path).duration, on_progress=on_progress)
     return str(out_path)

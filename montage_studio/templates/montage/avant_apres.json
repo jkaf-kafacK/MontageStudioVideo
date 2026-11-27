@@ -1,0 +1,54 @@
+{
+  "title": "Avant / Après",
+  "ico": "↔",
+  "format": "9:16",
+  "description": "Deux plans de 3 s, étiquettes AVANT et APRÈS, transition balayage.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "balayage",
+      "duration": 0.4
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "AVANT",
+          "duration": 3.0
+        }
+      },
+      {
+        "slot": {
+          "label": "APRÈS",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "AVANT",
+        "start": 0.0,
+        "end": 3.0,
+        "x": 50,
+        "y": 12,
+        "size": 110,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "rebond",
+        "keyframes": ""
+      },
+      {
+        "text": "APRÈS",
+        "start": 3.0,
+        "end": 6.0,
+        "x": 50,
+        "y": 12,
+        "size": 110,
+        "color": "#B2FF59",
+        "box": true,
+        "animation": "rebond",
+        "keyframes": ""
+      }
+    ]
+  }
+}

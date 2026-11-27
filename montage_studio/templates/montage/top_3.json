@@ -1,0 +1,92 @@
+{
+  "title": "Classement · Top 3",
+  "ico": "🏆",
+  "format": "9:16",
+  "description": "Un plan d'introduction puis trois plans numérotés #3, #2, #1, transitions glissement.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "glissement haut",
+      "duration": 0.3
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Introduction",
+          "duration": 2.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Numéro 3",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "Numéro 2",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "Numéro 1",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "TOP 3 : TON SUJET",
+        "start": 0.0,
+        "end": 2.0,
+        "x": 50,
+        "y": 40,
+        "size": 100,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "zoom",
+        "keyframes": ""
+      },
+      {
+        "text": "#3",
+        "start": 2.0,
+        "end": 5.0,
+        "x": 50,
+        "y": 14,
+        "size": 180,
+        "color": "#FFD60A",
+        "box": false,
+        "animation": "rebond",
+        "keyframes": ""
+      },
+      {
+        "text": "#2",
+        "start": 5.0,
+        "end": 8.0,
+        "x": 50,
+        "y": 14,
+        "size": 180,
+        "color": "#FFD60A",
+        "box": false,
+        "animation": "rebond",
+        "keyframes": ""
+      },
+      {
+        "text": "#1",
+        "start": 8.0,
+        "end": 11.0,
+        "x": 50,
+        "y": 14,
+        "size": 180,
+        "color": "#FFD60A",
+        "box": false,
+        "animation": "rebond",
+        "keyframes": ""
+      }
+    ]
+  }
+}

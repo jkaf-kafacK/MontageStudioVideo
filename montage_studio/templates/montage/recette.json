@@ -1,0 +1,99 @@
+{
+  "title": "Recette express",
+  "ico": "🍳",
+  "format": "9:16",
+  "description": "Quatre plans : ingrédients, préparation, cuisson, le plat. Tons chauds, musique douce.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "dissolution",
+      "duration": 0.35
+    },
+    "lut": {
+      "name": "film chaud",
+      "intensity": 0.5
+    },
+    "music": {
+      "path": "",
+      "volume": 0.25,
+      "ducking": true
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Les ingrédients",
+          "duration": 2.5
+        }
+      },
+      {
+        "slot": {
+          "label": "La préparation",
+          "duration": 3.0
+        }
+      },
+      {
+        "slot": {
+          "label": "La cuisson",
+          "duration": 2.5
+        }
+      },
+      {
+        "slot": {
+          "label": "Le plat servi",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "INGRÉDIENTS",
+        "start": 0.0,
+        "end": 2.5,
+        "x": 50,
+        "y": 14,
+        "size": 96,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "PRÉPARATION",
+        "start": 2.5,
+        "end": 5.5,
+        "x": 50,
+        "y": 14,
+        "size": 96,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "CUISSON",
+        "start": 5.5,
+        "end": 8.0,
+        "x": 50,
+        "y": 14,
+        "size": 96,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "BON APPÉTIT !",
+        "start": 8.0,
+        "end": 11.0,
+        "x": 50,
+        "y": 80,
+        "size": 110,
+        "color": "#FFD60A",
+        "box": false,
+        "animation": "rebond",
+        "keyframes": ""
+      }
+    ]
+  }
+}

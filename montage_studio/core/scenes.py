@@ -683,7 +683,7 @@ def render_scene(spec: dict, out_path: str | Path, progress: Progress = None) ->
         cmd = [ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgb24",
                "-s", f"{sc.W}x{sc.H}", "-r", str(sc.fps), "-i", "-",
                "-f", "lavfi", "-t", f"{sc.D:.3f}", "-i", "anullsrc=r=48000:cl=stereo",
-               "-c:v", "libx264", "-preset", "medium", "-crf", "18", "-pix_fmt", "yuv420p",
+               *ff.video_args(18, "medium"), "-pix_fmt", "yuv420p",
                "-c:a", "aac", "-shortest", "-movflags", "+faststart", str(out_path)]
         proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stderr=subprocess.PIPE)
         try:

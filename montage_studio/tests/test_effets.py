@@ -168,6 +168,18 @@ def test_animations_continues(fond_vert, tmp_path, anim):
     assert a.tobytes() != b.tobytes(), "le sticker doit bouger après son entrée"
 
 
+def test_animation_like_abonne_dans_montage(tmp_path, monkeypatch):
+    """Onglet Montage : le bouton « Animation Like · Abonne-toi » prépare l'animation au clic (rien au démarrage)
+    et règle le sticker sur presque toute la largeur, sous les sous-titres, sans animation ajoutée."""
+    import app
+    from core import layers
+    monkeypatch.setattr(stickers, "STICKER_DIR", tmp_path)
+    assert not list(tmp_path.glob("*.webp"))
+    path, apercu, note, anim, largeur, x, y = app.pick_cta()
+    assert Path(path).suffix == ".webp" and Path(path).parent == tmp_path and apercu == path
+    assert layers.layer_kind(path) == "animated" and (anim, largeur, x, y) == ("aucune", 88, 50, 86)
+
+
 def test_bibliotheque_et_emoji(tmp_path, monkeypatch):
     from core.i18n import LANG
 

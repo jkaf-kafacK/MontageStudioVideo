@@ -3,6 +3,7 @@
 Usage (depuis la racine du dépôt) :
     python outils/maj_securite.py            # audit + correction + nouvel audit
     python outils/maj_securite.py --audit    # audit seulement
+    python outils/maj_securite.py --pro      # refaire seulement requirements-pro.lock (édition pro)
 
 Prérequis : uv (https://astral.sh/uv) et pip-audit (pip install pip-audit).
 
@@ -26,6 +27,7 @@ from pathlib import Path
 RACINE = Path(__file__).resolve().parent.parent
 APP = RACINE / "montage_studio"
 LOCK = APP / "requirements.lock"
+LOCK_PRO = APP / "requirements-pro.lock"       # édition pro (sans GPL), suit requirements.lock
 CONFIG = APP / "securite.json"
 
 
@@ -91,6 +93,31 @@ def compiler(cfg: dict, a_mettre_a_jour: list[str]) -> None:
     LOCK.write_text(entete(cfg) + "\n".join(lignes) + "\n", encoding="utf-8")
 
 
+def compiler_pro(cfg: dict) -> None:
+    """requirements-pro.lock (édition pro, sans GPL) : mêmes versions que requirements.lock pour les paquets
+    communs (contrainte -c), mêmes règles de date et d'exceptions."""
+    uv = shutil.which("uv")
+    if not uv:
+        sys.exit("uv est introuvable. Installe-le : https://docs.astral.sh/uv/getting-started/installation/")
+    cmd = [uv, "pip", "compile", "requirements-pro.txt", "--override", "overrides.txt", "-c", "requirements.lock",
+           "--universal", "--python-version", "3.12", "--exclude-newer", cfg["exclude_newer"], "--generate-hashes",
+           "--no-header", "-q", "-o", "requirements-pro.lock",
+           # PyAV (dépendance de faster-whisper) contient x264 / x265 (GPL) : jamais installé dans l'édition pro.
+           # MSV donne à Whisper le son déjà décodé par son FFmpeg LGPL (core/subs.py remplace « av » par un module vide).
+           "--no-emit-package", "av"]
+    for p, d in cfg["exceptions"].items():
+        cmd += ["--exclude-newer-package", f"{p}={d}"]
+    res = subprocess.run(cmd, cwd=APP, capture_output=True, text=True)
+    if res.returncode != 0:
+        sys.exit(f"uv n'a pas pu figer requirements-pro.lock :\n{res.stderr[-1500:]}")
+    lignes = [l for l in LOCK_PRO.read_text(encoding="utf-8").splitlines() if not l.startswith("#")]
+    gpl = [l.split("==")[0] for l in lignes if l.startswith(("imageio-ffmpeg==", "sherpa-onnx==", "av=="))]
+    if gpl:
+        sys.exit(f"❌ requirements-pro.lock contient des paquets GPL : {', '.join(gpl)}")
+    LOCK_PRO.write_text(entete(cfg).replace("l'installateur Windows", "l'installateur Windows (édition pro)")
+                        + "\n".join(lignes) + "\n", encoding="utf-8")
+
+
 def versions() -> dict[str, str]:
     out = {}
     for l in LOCK.read_text(encoding="utf-8").splitlines():
@@ -103,7 +130,13 @@ def versions() -> dict[str, str]:
 def main() -> None:
     ap = argparse.ArgumentParser(description="Corrige les failles de sécurité de requirements.lock")
     ap.add_argument("--audit", action="store_true", help="vérifier seulement, sans rien modifier")
+    ap.add_argument("--pro", action="store_true", help="refaire seulement requirements-pro.lock (édition pro)")
     args = ap.parse_args()
+    cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
+    if args.pro:
+        compiler_pro(cfg)
+        print("✅ requirements-pro.lock refait (mêmes versions que requirements.lock, sans paquet GPL)")
+        return
 
     vuln = audit()
     if not vuln:
@@ -115,7 +148,6 @@ def main() -> None:
     if args.audit:
         sys.exit(1)
 
-    cfg = json.loads(CONFIG.read_text(encoding="utf-8"))
     sans_correctif = [p for p, lst in vuln.items() if any(not fix for _, fix in lst)]
     if sans_correctif:
         print(f"⚠ Aucune version corrective publiée pour : {', '.join(sans_correctif)}. "
@@ -127,6 +159,7 @@ def main() -> None:
         print(f"  -> {p} : version corrective minimale {cible}")
     avant = versions()
     compiler(cfg, a_corriger)
+    compiler_pro(cfg)
     apres = versions()
     CONFIG.write_text(json.dumps(cfg, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
@@ -138,7 +171,7 @@ def main() -> None:
     if reste:
         sys.exit(f"❌ Il reste des failles : {', '.join(reste)}")
     print("\n✅ Plus aucune faille connue. Lance les tests, puis commit et push :")
-    print("   git add montage_studio/requirements.lock montage_studio/securite.json")
+    print("   git add montage_studio/requirements.lock montage_studio/requirements-pro.lock montage_studio/securite.json")
     print('   git commit -m "Sécurité : mise à jour des dépendances vulnérables"')
     print("   git push")
 

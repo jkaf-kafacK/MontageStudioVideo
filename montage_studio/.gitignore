@@ -1,6 +1,7 @@
 # Environnement Python (recréé par les lanceurs)
 .venv/
 .venv_clonage/
+.venv_pro/
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -15,8 +16,13 @@ journal_erreurs*.log
 
 # Voix off : clé API ElevenLabs et voix Piper téléchargées (ne jamais publier)
 voix_config.json
+# Licence MSV Pro activée sur cet ordinateur (ne jamais publier)
+licence_pro.txt
 modeles_voix/
 *.mp3
 *.mp4
 # Voix clonées (références de voix personnelles : ne jamais publier)
 voix_clonees/
+
+# Modèles d'IA téléchargés au premier usage (YuNet, MODNet) : vérifiés par empreinte, jamais dans le dépôt
+modeles_vision/

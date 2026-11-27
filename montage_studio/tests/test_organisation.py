@@ -24,7 +24,7 @@ ESPACES = {
     "Créer": ["cr-scenes", "cr-classement", "cr-ecran", "cr-miniature", "cr-serie"],
     "Audio": ["au-voix", "sa-concat", "sa-cut", "sa-mix", "sa-dj", "sa-mic", "au-remplacer", "au-bruit",
               "au-extraire"],
-    "Vidéo": ["vi-ecran", "vi-scenes", "vi-detourage", "vi-stab", "vi-short", "vi-srt", "vi-logo", "vi-msv"],
+    "Vidéo": ["vi-ecran", "vi-scenes", "vi-detourage", "vi-stab", "vi-short", "vi-longshorts", "vi-srt", "vi-logo", "vi-msv"],
 }
 
 

@@ -58,7 +58,7 @@ def clean_file(path: str, out_dir: Path, level: str, on_progress: Optional[Calla
         try:
             ff.run_ffmpeg(base[:6] + ["-c:v", "copy"] + base[6:], duration=info.duration, on_progress=on_progress)
         except ff.FFmpegError:     # image impossible à copier dans un MP4 (ProRes, VP8…) : réencodée
-            ff.run_ffmpeg(base[:6] + ["-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
+            ff.run_ffmpeg(base[:6] + [*ff.video_args(18, "fast"), "-pix_fmt", "yuv420p"]
                           + base[6:], duration=info.duration, on_progress=on_progress)
     else:
         out = out_dir / f"{stem}_son_propre.wav"

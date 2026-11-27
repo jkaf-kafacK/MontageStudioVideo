@@ -33,7 +33,7 @@ import urllib.request
 import wave
 from pathlib import Path
 
-from . import ff, speech, subs
+from . import ff, pitch, speech, subs
 from .errors import PIPER_CMD, PIPER_FIX, UserError
 from .i18n import _
 
@@ -88,6 +88,8 @@ KOKORO_VOICES = {
 }
 KOKORO_LANG = {30: "fr", 35: "it", 36: "it", 28: "es", 29: "es", 3: "en-us", 16: "en-us", 21: "en-gb", 26: "en-gb"}
 PIPER_VOICES = {**KOKORO_VOICES, **PIPER_VOICES}   # voix locales : Kokoro en tête de liste (meilleure qualité)
+if ff.is_pro():   # édition pro : aucune voix sous licence GPL / AGPL (Tom)
+    PIPER_VOICES = {k: v for k, v in PIPER_VOICES.items() if "GPL" not in v[2]}
 # Un peu plus de variation que les réglages d'origine (0,667 / 0,8) : intonation et rythme moins monotones.
 PIPER_NOISE, PIPER_NOISE_W = 0.72, 0.9
 
@@ -392,9 +394,14 @@ def piper_tts(text: str, voice_label: str, out_wav: str | Path, speed: float = 1
         pieces.append((np.array(audio.samples, dtype=np.float32), seg.pause / speed))
     samples, spans = speech.assemble(pieces, sr)
     raw = Path(out_wav).with_suffix(".brut.wav")
+    pre = ""
+    if pitch_semitones:
+        ratio = 2 ** (pitch_semitones / 12)
+        if ff.is_pro() and pitch.available():   # sans GPL : vocodeur WORLD, garde aussi le timbre
+            samples = pitch.shift(samples, sr, ratio)
+        else:   # Rubber Band (édition libre) : hauteur changée sans changer la durée ni le timbre (formants)
+            pre = ff.pitch_filter(ratio, formant=True)
     _write_wav(raw, samples, sr)
-    # rubberband change la hauteur sans changer la durée ni le timbre (formants) : pas de son métallique
-    pre = f"rubberband=pitch={2 ** (pitch_semitones / 12):.5f}:formant=preserved" if pitch_semitones else ""
     finish_audio(raw, out_wav, pre, studio)
     raw.unlink(missing_ok=True)
     return timed_words(segs, spans, lang)

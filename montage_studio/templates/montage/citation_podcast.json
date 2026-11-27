@@ -1,0 +1,47 @@
+{
+  "title": "Citation · podcast",
+  "ico": "🎙",
+  "format": "9:16",
+  "description": "Un long plan (15 s) sur fond flou, la citation en titre, sous-titres mot par mot.",
+  "project": {
+    "fit": "flou",
+    "transition": {
+      "type": "aucune",
+      "duration": 0.3
+    },
+    "subtitles": {
+      "source": "whisper",
+      "max_words": 3,
+      "karaoke": true,
+      "animation": "mot par mot",
+      "language": "fr",
+      "whisper_model": "small",
+      "style": {
+        "position": 0.72,
+        "size": 80
+      }
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "L'extrait du podcast ou de l'interview",
+          "duration": 15.0
+        }
+      }
+    ],
+    "texts": [
+      {
+        "text": "« TA CITATION ICI »",
+        "start": 0.0,
+        "end": 3.5,
+        "x": 50,
+        "y": 16,
+        "size": 84,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "fondu",
+        "keyframes": ""
+      }
+    ]
+  }
+}

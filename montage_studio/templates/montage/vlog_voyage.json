@@ -1,0 +1,70 @@
+{
+  "title": "Vlog · voyage",
+  "ico": "📍",
+  "format": "16:9",
+  "description": "Cinq plans de 2 s, titre du lieu, transitions glissement, filtre film chaud.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "glissement gauche",
+      "duration": 0.35
+    },
+    "lut": {
+      "name": "film chaud",
+      "intensity": 0.6
+    },
+    "music": {
+      "path": "",
+      "volume": 0.3,
+      "ducking": false
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Arrivée, vue d'ensemble",
+          "duration": 2.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "Une rue, un marché",
+          "duration": 2.0
+        }
+      },
+      {
+        "slot": {
+          "label": "À table",
+          "duration": 2.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Une activité",
+          "duration": 2.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Coucher de soleil",
+          "duration": 2.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "24H À …",
+        "start": 0.0,
+        "end": 3.0,
+        "x": 50,
+        "y": 50,
+        "size": 120,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "zoom",
+        "keyframes": ""
+      }
+    ]
+  }
+}

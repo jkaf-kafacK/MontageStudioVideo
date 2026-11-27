@@ -2,8 +2,11 @@
 « picture-in-picture ») et textes animés, chacun avec sa position, sa taille, ses heures et son entrée animée.
 
 Format dans le projet :
-  "overlays": [{"path", "start", "end", "x", "y", "width", "opacity", "animation"}]
-  "texts":    [{"text", "start", "end", "x", "y", "size", "color", "box", "animation"}]
+  "overlays": [{"path", "start", "end", "x", "y", "width", "opacity", "animation", "rotation", "keyframes"}]
+  "texts":    [{"text", "start", "end", "x", "y", "size", "color", "box", "animation", "rotation", "keyframes"}]
+rotation = angle en degrés (sens des aiguilles d'une montre), autour du centre du calque.
+keyframes = images clés libres (position, taille, opacité, angle au cours du temps, voir core/keyframes.py) ;
+elles remplacent l'animation d'entrée.
 x et y = centre du calque en % de l'image ; width = largeur en % ; end vide = jusqu'à la fin.
 start négatif = secondes avant la fin de la vidéo (-3 : les 3 dernières secondes), utile quand la durée finale
 n'est connue qu'au rendu (silences coupés).
@@ -24,13 +27,14 @@ from typing import Optional
 
 from PIL import Image, ImageColor, ImageDraw, ImageOps
 
-from . import ff
+from . import ff, keyframes
 from .i18n import _, translations
 from .textimg import DEFAULT_STYLE, render_text
 
 ANIMATIONS = ["aucune", "fondu", "montée", "zoom", "pulsation", "rebond", "balancement"]
 ANIM_EXT = {".gif", ".webp", ".png", ".apng"}   # formats d'image qui peuvent être animés
 MAX_FRAMES = 600                                 # images gardées au plus d'un sticker animé
+ANIM_RATE = 25.0                                 # cadence du rendu d'un sticker animé aux durées inégales
 POSITIONS = {   # centre du calque (x %, y %)
     "haut gauche": (22, 12), "haut": (50, 12), "haut droite": (78, 12),
     "centre": (50, 50),
@@ -95,6 +99,17 @@ def active(layer: dict, at: Optional[float]) -> bool:
     return 0 <= layer["start"] <= at < (layer["end"] or float("inf"))
 
 
+def _angle(value) -> float:
+    """Angle en degrés ramené entre -180 et 180 (0 = droit)."""
+    a = _f(value) % 360
+    return round(a - 360 if a > 180 else a, 2)
+
+
+def _rotated(img: Image.Image, angle: float) -> Image.Image:
+    """Calque tourné de `angle` degrés dans le sens des aiguilles d'une montre (image agrandie pour tout garder)."""
+    return img if not angle else img.rotate(-angle, resample=Image.BICUBIC, expand=True)
+
+
 def norm_overlay(o: dict) -> Optional[dict]:
     path = str(o.get("path") or "").strip()
     if not path or path == "nan":
@@ -103,7 +118,8 @@ def norm_overlay(o: dict) -> Optional[dict]:
             "x": min(100.0, max(0.0, _f(o.get("x"), 50))), "y": min(100.0, max(0.0, _f(o.get("y"), 50))),
             "width": min(100.0, max(2.0, _f(o.get("width"), 30))),
             "opacity": min(1.0, max(0.05, _f(o.get("opacity"), 1.0))),
-            "animation": norm_choice(o.get("animation"), ANIMATIONS, "fondu")}
+            "animation": norm_choice(o.get("animation"), ANIMATIONS, "fondu"),
+            "rotation": _angle(o.get("rotation")), "keyframes": keyframes.norm_text(o.get("keyframes"))}
 
 
 def norm_text(t: dict) -> Optional[dict]:
@@ -114,7 +130,8 @@ def norm_text(t: dict) -> Optional[dict]:
     return {"text": text, "start": max(-3600.0, _f(t.get("start"))), "end": _f(t.get("end")) or None,
             "x": min(100.0, max(0.0, _f(t.get("x"), 50))), "y": min(100.0, max(0.0, _f(t.get("y"), 50))),
             "size": min(300.0, max(16.0, _f(t.get("size"), 80))), "color": color, "box": truthy(t.get("box")),
-            "animation": norm_choice(t.get("animation"), ANIMATIONS, "montée")}
+            "animation": norm_choice(t.get("animation"), ANIMATIONS, "montée"),
+            "rotation": _angle(t.get("rotation")), "keyframes": keyframes.norm_text(t.get("keyframes"))}
 
 
 # --------------------------------------------------------------------------- dessin des calques fixes
@@ -151,22 +168,63 @@ def layer_kind(path: str | Path) -> str:
     return ff.media_kind(path)
 
 
-def _animated_frames(L: dict, W: int, H: int, out_dir: Path) -> tuple[float, int, int]:
-    """Découpe un sticker animé en PNG (à la taille du calque). Renvoie (images par seconde, largeur, hauteur)."""
-    out_dir.mkdir(parents=True, exist_ok=True)
-    with Image.open(L["path"]) as im:
-        n = min(getattr(im, "n_frames", 1), MAX_FRAMES)
-        size = _box_size(im.width, im.height, L["width"], W, H)
-        total_ms = 0.0
-        for i in range(n):
+def frame_durations(path: str | Path) -> list[float]:
+    """Durée (ms) de chaque image d'un sticker animé. Elles ne sont pas toutes égales : à l'enregistrement, les
+    images identiques qui se suivent sont fusionnées en une seule, plus longue (GIF, WebP, APNG)."""
+    with Image.open(path) as im:
+        out = []
+        for i in range(min(getattr(im, "n_frames", 1), MAX_FRAMES)):
             im.seek(i)
-            total_ms += float(im.info.get("duration") or 100)
+            im.load()                            # WebP : la durée n'est connue qu'une fois l'image lue
+            d = float(im.info.get("duration") or 0)
+            out.append(d if d > 10 else 100.0)   # 0 ou 10 ms (GIF mal réglé) : 100 ms, comme les navigateurs
+        return out
+
+
+def frame_at(durations: list[float], t: float) -> int:
+    """Indice de l'image affichée au temps t (s) d'un sticker animé qui tourne en boucle."""
+    ms = (t * 1000.0) % sum(durations)
+    acc = 0.0
+    for i, d in enumerate(durations):
+        acc += d
+        if ms < acc:
+            return i
+    return len(durations) - 1
+
+
+def animated_frame(path: str | Path, t: float) -> Image.Image:
+    """Image d'un sticker animé au temps t (s) depuis le début du calque."""
+    with Image.open(path) as im:
+        im.seek(frame_at(frame_durations(path), t))
+        return im.convert("RGBA")
+
+
+def _animated_frames(L: dict, W: int, H: int, out_dir: Path) -> tuple[float, int, int]:
+    """Découpe un sticker animé en PNG à cadence fixe, à la taille du calque : chaque image est répétée selon sa
+    durée (le rendu lit ensuite les PNG à cette cadence). Renvoie (images par seconde, largeur, hauteur)."""
+    import shutil
+    out_dir.mkdir(parents=True, exist_ok=True)
+    durations = frame_durations(L["path"])
+    rate = min(60.0, max(1.0, 1000.0 / durations[0])) if len(set(durations)) == 1 else ANIM_RATE
+    n_out = max(1, round(sum(durations) * rate / 1000))
+    if n_out > MAX_FRAMES:
+        rate, n_out = rate * MAX_FRAMES / n_out, MAX_FRAMES
+    with Image.open(L["path"]) as im:
+        size = _box_size(im.width, im.height, L["width"], W, H)
+        last = -1
+        for k in range(n_out):
+            out = out_dir / f"{k:04d}.png"
+            i = frame_at(durations, (k + 0.5) / rate)     # image visible au milieu de l'image de sortie
+            if i == last:                                 # image tenue : copie du PNG déjà écrit
+                shutil.copyfile(out_dir / f"{k - 1:04d}.png", out)
+                continue
+            im.seek(i)
             fr = im.convert("RGBA").resize(size, Image.LANCZOS)
             if L["opacity"] < 1:
                 fr.putalpha(fr.getchannel("A").point(lambda a: int(a * L["opacity"])))
-            fr.save(out_dir / f"{i:04d}.png", compress_level=1)
-    fps = min(60.0, max(1.0, 1000.0 * n / max(1.0, total_ms)))
-    return fps, size[0], size[1]
+            fr.save(out, compress_level=1)
+            last = i
+    return rate, size[0], size[1]
 
 
 def _box_size(src_w: int, src_h: int, width_pct: float, W: int, H: int) -> tuple[int, int]:
@@ -189,9 +247,11 @@ def text_image(t: dict, W: int, H: int) -> Image.Image:
     return img.crop((0, 0, img.width // 2 * 2 or 2, img.height // 2 * 2 or 2))
 
 
-def overlay_image(o: dict, W: int, H: int, frame_of_video: Optional[str] = None) -> Image.Image:
-    """Image (ou première image d'une vidéo, pour l'aperçu) à la taille du calque, coins arrondis si opaque."""
-    img = ImageOps.exif_transpose(Image.open(frame_of_video or o["path"]))
+def overlay_image(o: dict, W: int, H: int, frame_of_video: "Optional[str | Image.Image]" = None) -> Image.Image:
+    """Image (ou une image d'une vidéo ou d'un sticker animé, pour l'aperçu) à la taille du calque, coins arrondis
+    si opaque."""
+    src = frame_of_video if isinstance(frame_of_video, Image.Image) else Image.open(frame_of_video or o["path"])
+    img = ImageOps.exif_transpose(src)
     img.load()
     transparent = _has_transparency(img.convert("RGBA")) if img.mode in ("RGBA", "LA", "P", "PA") else False
     img = img.convert("RGBA").resize(_box_size(img.width, img.height, o["width"], W, H), Image.LANCZOS)
@@ -225,16 +285,19 @@ def draw_layers(base: Image.Image, overlays: list[dict], texts: list[dict], at: 
             if kind == "video" and at is not None:   # image de la vidéo incrustée à ce moment (elle boucle)
                 t = (at - o["start"]) % max(0.1, ff.probe(o["path"]).duration or 0.1)
             frame = grab_frame(o["path"], t, height=0) if kind == "video" else None
-            if kind not in ("video", "image", "animated"):   # sticker animé : sa première image
+            if kind == "animated":   # l'image de ce moment ; sans moment, une image avancée (souvent la plus complète)
+                frame = animated_frame(o["path"], at - o["start"] if at is not None
+                                       else sum(frame_durations(o["path"])) * 0.0006)
+            if kind not in ("video", "image", "animated"):
                 continue
-            lay = overlay_image(o, W, H, frame)
+            lay = _rotated(overlay_image(o, W, H, frame), o["rotation"])
         except Exception:
             continue
         img.alpha_composite(lay, _place(o["x"], o["y"], lay.width, lay.height, W, H))
     for t in filter(None, map(norm_text, texts or [])):
         if not active(t, at):
             continue
-        lay = text_image(t, W, H)
+        lay = _rotated(text_image(t, W, H), t["rotation"])
         img.alpha_composite(lay, _place(t["x"], t["y"], lay.width, lay.height, W, H))
     return img
 
@@ -265,7 +328,15 @@ def _anim_filters(anim: str, s: float, e: float, w: int) -> tuple[str, float]:
     return fl, d_in
 
 
-def _overlay_xy(anim: str, x: int, y: int, w: int, h: int, s: float, d_in: float, H: int) -> str:
+def _overlay_xy(anim: str, x: int, y: int, w: int, h: int, s: float, d_in: float, H: int,
+                rotated: bool = False) -> str:
+    if rotated:             # calque tourné : sa taille change, il est posé par son centre (montée, rebond gardés)
+        cy = f"{y + h / 2:.1f}-h/2"
+        if anim == "rebond":
+            cy += f"-{int(H * BOUNCE)}*abs(sin(PI*1.6*(t-{s:.3f})))"
+        elif anim == "montée":
+            cy += f"+{int(H * RISE)}*pow(1-clip((t-{s:.3f})/{d_in:.3f},0,1),3)"
+        return f"x='{x + w / 2:.1f}-w/2':y='{cy}'"
     if anim in CENTERED:    # posé par son centre (sa taille change à chaque image)
         return f"x='{x + w / 2:.1f}-w/2':y='{y + h / 2:.1f}-h/2'"
     if anim == "rebond":    # sauts successifs, comme une balle
@@ -274,6 +345,22 @@ def _overlay_xy(anim: str, x: int, y: int, w: int, h: int, s: float, d_in: float
         rise = int(H * RISE)
         return f"x={x}:y='{y}+{rise}*pow(1-clip((t-{s:.3f})/{d_in:.3f},0,1),3)'"
     return f"x={x}:y={y}"
+
+
+def _keyframe_filters(kf: list[dict], s: float, w: int) -> tuple[str, str]:
+    """Images clés d'un calque -> (filtres taille / angle / opacité, position pour overlay)."""
+    fl = ""
+    if keyframes.varies(kf, "scale", 1.0):
+        fl += f",scale=w='max(2,trunc({w}*({keyframes.expr(kf, 'scale', 't', s)})/2)*2)':h=-2:eval=frame"
+    if keyframes.varies(kf, "rotation", 0.0):
+        fl += (f",rotate=a='({keyframes.expr(kf, 'rotation', 't', s)})*PI/180':c=none"
+               ":ow='hypot(iw,ih)':oh=ow")
+    if keyframes.varies(kf, "opacity", 1.0):
+        fl += (",geq=r='r(X,Y)':g='g(X,Y)':b='b(X,Y)'"
+               f":a='alpha(X,Y)*({keyframes.expr(kf, 'opacity', 'T', s)})'")
+    xy = (f"x='({keyframes.expr(kf, 'x', 't', s)})*W/100-w/2'"
+          f":y='({keyframes.expr(kf, 'y', 't', s)})*H/100-h/2'")
+    return fl, xy
 
 
 def build(p: dict, W: int, H: int, fps: int, T: float, work: Path, idx: int, cur_v: str,
@@ -339,8 +426,21 @@ def build(p: dict, W: int, H: int, fps: int, T: float, work: Path, idx: int, cur
             args += ["-loop", "1", "-framerate", str(fps), "-t", f"{e:.3f}", "-i", str(png)]
             src, idx = f"{idx}:v", idx + 1
         x, y = _place(L["x"], L["y"], w, h, W, H)
-        fl, d_in = _anim_filters(anim, s, e, w)
-        vf.append(f"[{src}]format=rgba{fl}[ca{n}];[{cur_v}][ca{n}]overlay={_overlay_xy(anim, x, y, w, h, s, d_in, H)}"
+        kf = []
+        if L.get("keyframes"):
+            try:
+                kf = keyframes.parse(L["keyframes"], {"x": L["x"], "y": L["y"], "rotation": L["rotation"]})
+            except ValueError as err:
+                log.append(f"⚠ {err}")
+        if kf:              # images clés : elles remplacent l'animation d'entrée
+            fl, xy = _keyframe_filters(kf, s, w)
+        else:
+            fl, d_in = _anim_filters(anim, s, e, w)
+            rot = L["rotation"]
+            if rot:         # angle fixe : image agrandie juste assez pour ne rien couper
+                fl += f",rotate=a={rot:.3f}*PI/180:c=none:ow='rotw({rot:.3f}*PI/180)':oh='roth({rot:.3f}*PI/180)'"
+            xy = _overlay_xy(anim, x, y, w, h, s, d_in, H, rotated=bool(rot))
+        vf.append(f"[{src}]format=rgba{fl}[ca{n}];[{cur_v}][ca{n}]overlay={xy}"
                   f":enable='between(t,{s:.3f},{e:.3f})':eof_action=pass[cl{n}]")
         cur_v = f"cl{n}"
     return args, vf, cur_v, idx

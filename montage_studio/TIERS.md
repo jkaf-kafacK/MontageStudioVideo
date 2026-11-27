@@ -4,6 +4,37 @@ Montage Studio Video (MSV) est distribué sous **GPL-3.0-or-later** (voir `LICEN
 Ce choix est imposé par FFmpeg : le binaire fourni par `imageio-ffmpeg` est compilé avec
 `--enable-gpl --enable-version3` (il inclut l'encodeur x264), il est donc sous GPL version 3.
 
+## Deux éditions : libre et pro
+
+MSV existe en deux éditions, choisies par la variable `MSV_EDITION` (ou le fichier `EDITION` écrit par
+l'installateur) : `libre` par défaut, ou `pro`. Voir `core/edition.py`.
+
+- **Libre** (GPL-3.0-or-later) : tout ce qui est décrit dans ce fichier.
+- **Pro** : aucun composant GPL n'est fourni ni utilisé. MSV refuse de démarrer FFmpeg s'il est compilé avec
+  `--enable-gpl` (il faut une build LGPL, indiquée par `MONTAGE_FFMPEG`), et refuse toute commande qui utiliserait
+  un encodeur ou un filtre GPL (`core/ff.py`, `check_edition`).
+
+| Fonction | Édition libre | Édition pro (sans GPL) |
+|---|---|---|
+| Encodage H.264 | x264 (GPL) | Carte graphique (NVENC, Quick Sync, AMF, VideoToolbox), sinon encodeur de Windows (Media Foundation) ou OpenH264 (BSD-2) |
+| Stabilisation | vid.stab (GPL) | Mesure du tremblement par MSV (numpy, corrélation de phase) et recadrage par FFmpeg (`sendcmd` + `crop`, LGPL) ; corrige les déplacements, pas les rotations |
+| Changer la hauteur de la voix off | Rubber Band (GPL), garde le timbre | Vocodeur WORLD (pyworld, MIT ; WORLD, BSD modifiée), garde le timbre |
+| Effets micro « voix grave », « monstre »… | Rubber Band (GPL) | Rééchantillonnage + `atempo` (LGPL), le timbre suit la hauteur |
+| Effacer un logo | Filtre `delogo` (GPL) | Zone reconstruite à partir de ses 4 bords (`blend`, LGPL) |
+| Flou, luminosité, saturation | `avgblur`, `lutyuv`, `hue` (LGPL), dans les deux éditions | idem |
+| Détourage IA | RobustVideoMatting (GPL-3.0), récurrent, carte graphique possible | MODNet (Apache-2.0) avec ONNX Runtime (MIT), sur le processeur ; personnes seulement, image par image avec lissage dans le temps |
+| Voix Piper « Tom » | AGPL-3.0 | Non proposée |
+| Voix Piper et Kokoro | sherpa-onnx (inclut espeak-ng, GPL-3.0) | Non installées : module à installer à part par l'utilisateur |
+
+Installation de l'édition pro : `installer\MontageStudioVideo.iss` compilé avec `/DPro`. Il installe le fichier
+`EDITION`, les paquets de `requirements-pro.lock` (sans imageio-ffmpeg ni sherpa-onnx, dans un environnement à part)
+et un FFmpeg LGPL (build BtbN, préparé et vérifié par `outils/ffmpeg_lgpl.py`) avec sa licence et l'adresse de son
+code source. Il faut fournir `installer\pro\LICENCE-PRO.txt` (conditions de licence de la version pro).
+
+Points à vérifier avant de vendre : pykakasi (GPL-3.0), une dépendance de Chatterbox, est installé à la demande de
+l'utilisateur dans `.venv_clonage` (clonage de voix) ; licences de brevets pour H.264, H.265 et AAC dans un produit
+payant (OpenH264 de Cisco et l'encodeur de Windows couvrent H.264).
+
 ## Bibliothèques installées par `requirements.txt`
 
 | Composant | Licence | Rôle |
@@ -14,8 +45,12 @@ Ce choix est imposé par FFmpeg : le binaire fourni par `imageio-ffmpeg` est com
 | FastAPI / Uvicorn | MIT / BSD-3-Clause | Serveur local de l'interface |
 | Pillow | MIT-CMU (HPND) | Rendu du texte et des images |
 | pandas, NumPy | BSD-3-Clause | Timeline, calculs audio |
+| OpenCV (opencv-python-headless) | Apache-2.0 (inclut FFmpeg en LGPL) | Détection des visages (cadrage « suivre le visage ») |
+| Modèle YuNet de détection des visages (Shiqi Yu, OpenCV Zoo), téléchargé au premier usage et vérifié par empreinte SHA-256 | MIT | Cadrage « suivre le visage », cadrage des miniatures |
+| ONNX Runtime (Microsoft), avec flatbuffers (Apache-2.0) et protobuf (BSD-3-Clause) ; dans `requirements-pro.txt`, à installer à part dans l'édition libre | MIT | Exécute le modèle MODNet |
+| Modèle MODNet de détourage des personnes (Zhanghan Ke et al., export ONNX de Xenova/modnet figé sur une révision), téléchargé au premier usage et vérifié par empreinte SHA-256 | Apache-2.0 | Détourage IA de l'édition pro, « Détourer la personne » des miniatures |
 | sherpa-onnx | Apache-2.0 | Voix off Piper hors ligne |
-| faster-whisper (optionnel) | MIT | Transcription automatique |
+| faster-whisper (optionnel dans l'édition libre, inclus dans la pro), CTranslate2, tokenizers ; modèles Whisper « faster-whisper » (Systran) téléchargés au premier usage | MIT / MIT / Apache-2.0 ; modèles MIT | Sous-titres automatiques, Long → Shorts. Édition pro : **sans PyAV** (son FFmpeg inclut x264 et x265, sous GPL) ; MSV donne à Whisper le son décodé par son FFmpeg LGPL et remplace « av » par un module vide (`core/subs.py`) |
 | SDK MCP `mcp`, `mcp-types` (optionnel, `requirements-mcp.txt`) | MIT | Serveur MCP (`mcp_server.py`) : une IA pilote MSV |
 | Dépendances du SDK MCP : attrs, jsonschema, PyJWT, referencing, rpds-py / cffi / cryptography / pycparser, sse-starlette / pywin32 (Windows) | MIT / MIT-0 / Apache-2.0 ou BSD-3-Clause / BSD-3-Clause / PSF | Protocole MCP |
 
@@ -25,6 +60,13 @@ Ce choix est imposé par FFmpeg : le binaire fourni par `imageio-ffmpeg` est com
 |---|---|---|
 | `fonts/Anton-Regular.ttf` | SIL Open Font License 1.1 (`fonts/OFL-Anton.txt`) | Oui |
 | `fonts/Montserrat.ttf` | SIL Open Font License 1.1 (`fonts/OFL-Montserrat.txt`) | Oui |
+
+## Application de bureau `MSV-Editeur.exe` (dossier `desktop/`, installateur de l'édition pro)
+
+| Composant | Licence | Utilisation |
+|---|---|---|
+| Tauri 2 et ses bibliothèques Rust (tao, wry, serde…) | MIT ou Apache-2.0 | Fenêtre de l'application, qui affiche l'éditeur servi par MSV |
+| Microsoft Edge WebView2 (déjà présent dans Windows 10 et 11, non fourni) | Licence Microsoft (composant du système) | Affichage de la page dans la fenêtre |
 
 ## Voix Piper (téléchargées au premier usage, non incluses dans le logiciel)
 

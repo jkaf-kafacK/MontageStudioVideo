@@ -370,8 +370,10 @@ _CAPTURE_ENCODERS = [   # (nom, réglages pour la capture, réglages pour la vid
 ]
 _MAC_ENCODER = ("Apple VideoToolbox", ["-c:v", "h264_videotoolbox", "-realtime", "1", "-b:v", "16M"],
                 ["-c:v", "h264_videotoolbox", "-b:v", "10M"])
-_CPU = ("CPU x264", ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "20"],
-        ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"])
+def _cpu_encoder() -> tuple[str, list[str], list[str]]:
+    """Encodeur du processeur : x264 en édition libre, encodeur sans GPL (Windows, OpenH264) en édition pro."""
+    name = "CPU x264" if not ff.is_pro() else _("Processeur")
+    return (name, ff.video_args(20, "ultrafast", cpu=True), ff.video_args(20, "veryfast", cpu=True))
 
 
 @functools.lru_cache(maxsize=4)
@@ -384,7 +386,7 @@ def encoders(exe: Optional[str] = None) -> tuple[str, list[str], list[str]]:
                              capture_output=True, **_NO_WINDOW)
         if res.returncode == 0:
             return enc
-    return _CPU
+    return _cpu_encoder()
 
 
 _NO_WINDOW = {"creationflags": subprocess.CREATE_NO_WINDOW} if WINDOWS else {}
@@ -784,7 +786,7 @@ class Recorder:
         if o.webcam and "cam" not in self._off:
             seg["cam"] = self._raw / f"cam_{i:03d}.mkv"
             cam_cmd = [ffexe, "-hide_banner", "-loglevel", "warning", "-y", "-thread_queue_size", "512",
-                       *cam_input(o.webcam), "-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23",
+                       *cam_input(o.webcam), "-an", *ff.video_args(23, "ultrafast", cpu=True),
                        "-pix_fmt", "yuv420p", "-f", "matroska", str(seg["cam"]), *CAM_PREVIEW_ARGS]
             self.cam_frames.clear()
             seg["procs"]["cam"] = self._spawn(cam_cmd, f"cam_{i:03d}", self.cam_frames)
@@ -1210,7 +1212,8 @@ def vertical_geometry(W: int, H: int, layout: str, has_cam: bool) -> dict:
 def _blur_compose(geo: dict) -> str:
     """Filtre : fond = l'image floutée et assombrie (calculée en petit, rapide), écran net par-dessus."""
     return ("[0:v:0]split=2[fg][bgs];[bgs]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,"
-            "boxblur=10:2,eq=brightness=-0.06,scale=1080:1920:flags=bilinear,setsar=1[bg];"
+            "avgblur=sizeX=10,avgblur=sizeX=10,lutyuv=y='clip(val-15,minval,maxval)',"
+            "scale=1080:1920:flags=bilinear,setsar=1[bg];"
             f"[bg][fg]overlay={geo['x']}:{geo['y']}[vbase]")
 
 
@@ -1426,7 +1429,7 @@ def merge_segments(raw: Path, meta: dict, events: dict) -> tuple[dict, dict]:
         else:
             first = ff.probe(next(c for c in cams if c))
             cw, ch = first.width // 2 * 2 or 640, first.height // 2 * 2 or 480
-            enc = ["-an", "-c:v", "libx264", "-preset", "ultrafast", "-crf", "23", "-pix_fmt", "yuv420p", "-r", "30"]
+            enc = ["-an", *ff.video_args(23, "ultrafast", cpu=True), "-pix_fmt", "yuv420p", "-r", "30"]
             aligned = []
             for i, ((s, d), cpath, span) in enumerate(zip(valid, cams, spans)):
                 dst = raw / f"cam_cale_{i:03d}.mkv"
@@ -1650,7 +1653,7 @@ def process(raw: Path, progress: Progress = None, out_dir: Optional[Path] = None
         prog(0.5, _("Export simple de secours…"))
         p = out_dir / f"{name}.mp4"
         sel = _select_expr(keep)
-        cmd = _encoder_cmd(["-i", str(screen)], p, fps, keep, v0, None, audios, _CPU[2],
+        cmd = _encoder_cmd(["-i", str(screen)], p, fps, keep, v0, None, audios, _cpu_encoder()[2],
                            f"[0:v:0]fps={fps},select='{sel}',setpts=N/{fps}/TB,"
                            f"scale={main_size[0]}:{main_size[1]}[vbase]")
         res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", **_NO_WINDOW)

@@ -438,7 +438,7 @@ def _chain(effect: str, i: float, period: float, t0: float, ir: str | None = Non
         return (f"highpass=f=350,lowpass=f=2600,aecho=0:1:{delays}:{decays},volume=1.6,"
                 f"asoftclip=type=tanh,volume=0.8")
     if effect in ("espace", "shimmer"):            # convolution par la salle ([ir] = réponse impulsionnelle)
-        pre = "rubberband=pitch=2.0,highpass=f=400," if effect == "shimmer" else ""
+        pre = f"{ff.pitch_filter(2.0)},highpass=f=400," if effect == "shimmer" else ""
         # irnorm=2 : réponse normalisée en énergie (la salle sonne aussi fort que l'original) ; dans afir, « dry »
         # est le gain d'ENTRÉE (0 = silence) : on ne le touche pas
         return f"{pre}highpass=f=120[{{x}}];[{{x}}][{ir}]afir=irnorm=2,volume={0.25 + 0.45 * i:.2f}"

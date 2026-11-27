@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Montage Studio Video</title>
+<style>
+  :root { --fond: #0f1115; --texte: #e8eaef; --doux: #9aa1ae; --accent: #f97316; --erreur: #fca5a5; color-scheme: dark; }
+  @media (prefers-color-scheme: light) {
+    :root { --fond: #f3f4f6; --texte: #111827; --doux: #5b6472; --erreur: #b91c1c; color-scheme: light; }
+  }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--fond); color: var(--texte); font: 15px/1.5 "Segoe UI", system-ui, sans-serif;
+    display: grid; place-items: center; }
+  main { text-align: center; max-width: 560px; padding: 24px; }
+  h1 { font-size: 26px; margin: 18px 0 6px; } h1 span { color: var(--accent); }
+  #etat { color: var(--doux); min-height: 3em; margin: 0; }
+  #etat.erreur { color: var(--erreur); }
+  #journal { text-align: left; font: 12px/1.4 Consolas, monospace; color: var(--doux); white-space: pre-wrap;
+    max-height: 30vh; overflow: auto; margin-top: 14px; }
+  .roue { width: 44px; height: 44px; margin: 0 auto; border-radius: 50%; border: 4px solid #8884;
+    border-top-color: var(--accent); animation: tour 0.9s linear infinite; }
+  .erreur ~ .roue, body.erreur .roue { display: none; }
+  @keyframes tour { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .roue { animation: none; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="roue" aria-hidden="true"></div>
+  <h1>Montage <span>Studio Video</span></h1>
+  <p id="etat" role="status" aria-live="polite">Démarrage de MSV…</p>
+  <div id="journal"></div>
+</main>
+<script>
+  // appelé par l'application (src-tauri/src/main.rs) pour donner des nouvelles du démarrage
+  window.setStatus = (text, isError, log) => {
+    const el = document.getElementById("etat");
+    el.textContent = text;
+    el.classList.toggle("erreur", !!isError);
+    document.body.classList.toggle("erreur", !!isError);
+    document.getElementById("journal").textContent = log || "";
+  };
+</script>
+</body>
+</html>

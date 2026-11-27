@@ -1,0 +1,169 @@
+﻿MONTAGE STUDIO VIDEO PRO
+CONTRAT DE LICENCE D'UTILISATION
+
+Version du [À COMPLÉTER : date]
+
+Merci de lire ce contrat avant d'installer le logiciel. En l'installant ou en l'utilisant, vous acceptez
+ce contrat. Si vous ne l'acceptez pas, n'installez pas le logiciel.
+
+
+1. QUI SOMMES-NOUS
+
+Le logiciel est édité par Jacques Kafack [À COMPLÉTER : forme juridique, adresse, numéro
+d'immatriculation], ci-après « l'Éditeur ».
+Contact : [À COMPLÉTER : adresse e-mail de contact].
+
+
+2. DÉFINITIONS
+
+« Logiciel » : Montage Studio Video Pro (MSV Pro), ses mises à jour et sa documentation.
+« Composants tiers » : les logiciels, bibliothèques, modèles et voix d'autres auteurs fournis avec le
+Logiciel ou téléchargés par lui. Ils sont listés dans le fichier TIERS.md, installé avec le Logiciel.
+« Vos contenus » : les vidéos, images, sons, textes et projets que vous importez ou créez avec le Logiciel.
+« Clé de licence » : le code reçu lors de l'achat, qui active le Logiciel, le cas échéant.
+
+
+3. CE QUE VOUS POUVEZ FAIRE
+
+L'Éditeur vous accorde une licence personnelle, non exclusive et non transférable pour :
+- installer le Logiciel sur [À COMPLÉTER : nombre, par exemple 2] ordinateurs qui vous appartiennent ou
+  que vous utilisez, pour un seul utilisateur à la fois ;
+- utiliser le Logiciel pour un usage privé ou professionnel, y compris commercial : vous pouvez vendre et
+  publier les vidéos que vous créez.
+
+Durée : [À COMPLÉTER : choisir une option]
+- Option A, licence perpétuelle : vous pouvez utiliser sans limite de durée la version achetée. Les mises
+  à jour sont incluses pendant [À COMPLÉTER : durée, par exemple 12 mois].
+- Option B, abonnement : la licence dure tant que l'abonnement est payé.
+
+
+4. CE QUE VOUS NE POUVEZ PAS FAIRE
+
+Sauf accord écrit de l'Éditeur, et sous réserve des droits que la loi vous accorde, vous ne pouvez pas :
+- vendre, louer, prêter, céder ou redistribuer le Logiciel ou votre Clé de licence ;
+- partager votre Clé de licence ou l'utiliser au-delà du nombre d'ordinateurs prévu ;
+- contourner, désactiver ou modifier la vérification de la Clé de licence ;
+- retirer les mentions de droits d'auteur ou de licence du Logiciel.
+
+Ces limites ne s'appliquent pas aux Composants tiers placés sous une licence libre (article 5).
+Elles ne limitent pas non plus les droits que la loi vous donne, notamment le droit d'étudier le
+fonctionnement du Logiciel et de le décompiler pour assurer l'interopérabilité, dans les limites prévues
+par la loi.
+
+
+5. COMPOSANTS TIERS ET LOGICIELS LIBRES
+
+Le Logiciel utilise des Composants tiers, chacun sous sa propre licence (listés dans TIERS.md). Ce contrat
+ne réduit aucun des droits que ces licences vous donnent. En particulier :
+
+- FFmpeg est fourni dans le dossier « ffmpeg » sous la licence GNU LGPL version 3 (fichier
+  ffmpeg\LICENSE.txt). L'adresse de son code source est indiquée dans ffmpeg\SOURCE.txt. Vous pouvez
+  remplacer ce FFmpeg par une autre version, modifiée ou non. Vous pouvez obtenir une copie du code source
+  utilisé en écrivant à l'Éditeur, pendant au moins trois ans après votre achat.
+- Les bibliothèques Python installées au premier lancement (Gradio, NumPy, pandas, Pillow, pyworld et
+  leurs dépendances) sont sous licences libres (Apache-2.0, BSD, MIT, HPND).
+- Les voix et modèles téléchargés au premier usage ont leur propre licence. Certaines voix demandent de
+  créditer leur auteur dans vos vidéos (par exemple « Voix : Piper, modèle Siwis, CC BY 4.0 ») : TIERS.md
+  indique lesquelles.
+- Certains modules facultatifs (voix Piper et Kokoro, clonage de voix) ne sont pas fournis avec le
+  Logiciel. Si vous choisissez de les installer, ils sont téléchargés depuis leurs sources officielles et
+  restent soumis à leurs propres licences.
+
+
+6. VOS CONTENUS
+
+Vos contenus restent les vôtres. L'Éditeur n'acquiert aucun droit sur eux et n'y a pas accès.
+
+Vous êtes seul responsable de vos contenus et de leur utilisation. Vous devez détenir les droits sur les
+musiques, images, vidéos, voix et visages que vous utilisez, et respecter les droits des personnes.
+
+Clonage de voix et voix synthétiques : vous ne pouvez cloner la voix d'une personne qu'avec son accord.
+Il est interdit d'utiliser le Logiciel pour tromper, usurper l'identité d'une personne, diffamer,
+harceler, frauder ou créer des contenus illégaux.
+
+
+7. SERVICES EXTERNES
+
+Certaines fonctions utilisent un service externe que vous choisissez d'activer, par exemple ElevenLabs
+pour les voix. Vous utilisez alors votre propre compte et votre propre clé API, sous les conditions de ce
+service. L'Éditeur n'est pas responsable de ces services, de leur disponibilité ni de leurs tarifs.
+
+
+8. DONNÉES PERSONNELLES
+
+Le Logiciel traite vos fichiers sur votre ordinateur. L'Éditeur ne collecte pas vos contenus.
+
+Au premier lancement, le Logiciel télécharge Python et ses composants. Au premier usage de certaines
+fonctions, il télécharge des modèles. Ces téléchargements ne transmettent pas vos contenus.
+
+Si vous utilisez un service externe (article 7), les données nécessaires (par exemple le texte à lire)
+sont envoyées à ce service.
+
+[À COMPLÉTER si une Clé de licence est vérifiée en ligne : données envoyées (Clé de licence, identifiant
+technique de l'ordinateur, date), finalité (vérifier la licence), durée de conservation, vos droits
+d'accès, de rectification et d'effacement, et l'adresse pour les exercer.]
+
+
+9. MISES À JOUR ET ASSISTANCE
+
+L'Éditeur peut proposer des mises à jour. Elles sont soumises à ce contrat, sauf si un nouveau contrat
+les accompagne.
+Assistance : [À COMPLÉTER : moyen de contact, délai de réponse indicatif, durée].
+
+
+10. GARANTIE
+
+Si vous êtes un consommateur, vous bénéficiez des garanties prévues par la loi, notamment la garantie
+légale de conformité des contenus et services numériques. Ce contrat ne les limite pas.
+
+Dans les limites permises par la loi, le Logiciel est fourni « en l'état ». L'Éditeur ne garantit pas
+qu'il fonctionnera sans erreur, sur tous les ordinateurs, ni qu'il conviendra à un usage particulier.
+Gardez une copie de vos fichiers originaux : le Logiciel ne modifie jamais vos originaux, mais une panne
+de votre ordinateur reste possible.
+
+
+11. RESPONSABILITÉ
+
+Dans les limites permises par la loi, l'Éditeur n'est pas responsable des dommages indirects, comme une
+perte de données, de chiffre d'affaires ou de clientèle. Sa responsabilité totale est limitée au prix
+que vous avez payé pour la licence.
+
+Ces limites ne s'appliquent pas en cas de faute lourde ou intentionnelle, de dommage corporel, ni quand
+la loi interdit de limiter la responsabilité.
+
+
+12. DROIT DE RÉTRACTATION (CONSOMMATEURS)
+
+[À COMPLÉTER selon votre mode de vente. Exemple : vous disposez de 14 jours après l'achat pour vous
+rétracter. Ce droit prend fin si vous avez demandé à utiliser le Logiciel avant la fin de ce délai et
+reconnu perdre ainsi votre droit de rétractation, au moment de l'achat.]
+
+
+13. DURÉE ET FIN DU CONTRAT
+
+Ce contrat s'applique dès l'installation, pour la durée prévue à l'article 3.
+
+Si vous ne respectez pas ce contrat, l'Éditeur peut y mettre fin, après vous en avoir informé et vous avoir
+laissé [À COMPLÉTER : par exemple 15 jours] pour corriger le problème. Vous devez alors cesser d'utiliser le
+Logiciel et le désinstaller.
+
+Les articles 5, 6, 10 et 11 restent applicables après la fin du contrat. Vos contenus restent les vôtres.
+
+
+14. DROIT APPLICABLE ET LITIGES
+
+Ce contrat est soumis au droit [À COMPLÉTER : par exemple français].
+
+En cas de litige, contactez d'abord l'Éditeur pour trouver une solution amiable. Si vous êtes un
+consommateur, vous pouvez aussi recourir gratuitement à un médiateur de la consommation :
+[À COMPLÉTER : nom et adresse du médiateur]. À défaut d'accord, les tribunaux compétents sont ceux prévus
+par la loi.
+
+
+15. DIVERS
+
+Si une clause de ce contrat est jugée non valable, les autres clauses restent applicables.
+Ce contrat est l'accord complet entre vous et l'Éditeur sur le Logiciel.
+
+© [À COMPLÉTER : année] Jacques Kafack. Montage Studio Video est une marque de son éditeur [À COMPLÉTER : à
+retirer si la marque n'est pas déposée].

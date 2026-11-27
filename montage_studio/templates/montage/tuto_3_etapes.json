@@ -1,0 +1,102 @@
+{
+  "title": "Tuto en 3 étapes",
+  "ico": "🛠",
+  "format": "16:9",
+  "description": "Trois plans de 4 s numérotés ÉTAPE 1, 2, 3, puis un plan de résultat.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "fondu enchaîné",
+      "duration": 0.3
+    },
+    "subtitles": {
+      "source": "whisper",
+      "max_words": 3,
+      "karaoke": true,
+      "animation": "pop",
+      "language": "fr",
+      "whisper_model": "small",
+      "style": {
+        "position": 0.72,
+        "size": 80
+      }
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Étape 1",
+          "duration": 4.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Étape 2",
+          "duration": 4.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Étape 3",
+          "duration": 4.0
+        }
+      },
+      {
+        "slot": {
+          "label": "Le résultat",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "ÉTAPE 1",
+        "start": 0.0,
+        "end": 4.0,
+        "x": 20,
+        "y": 12,
+        "size": 90,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "ÉTAPE 2",
+        "start": 4.0,
+        "end": 8.0,
+        "x": 20,
+        "y": 12,
+        "size": 90,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "ÉTAPE 3",
+        "start": 8.0,
+        "end": 12.0,
+        "x": 20,
+        "y": 12,
+        "size": 90,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      },
+      {
+        "text": "RÉSULTAT",
+        "start": 12.0,
+        "end": 15.0,
+        "x": 20,
+        "y": 12,
+        "size": 90,
+        "color": "#B2FF59",
+        "box": true,
+        "animation": "montée",
+        "keyframes": ""
+      }
+    ]
+  }
+}

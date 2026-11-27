@@ -65,7 +65,9 @@ FormatVideo = Annotated[Literal[tuple(render.FORMATS)], Field(description="9:16 
 FormatAuto = Annotated[Literal[("", *render.FORMATS)], Field(description="vide = format le plus proche de la vidéo")]
 Cadrage = Annotated[Literal[tuple(render.FITS)], Field(description="clip d'un autre format : flou = fond flouté, "
                                                                    "rogner = remplir l'image, bandes = bandes de "
-                                                                   "couleur, cadre = clip dans un rectangle")]
+                                                                   "couleur, cadre = clip dans un rectangle, "
+                                                                   "suivre le visage = rogner en gardant le "
+                                                                   "visage dans le cadre")]
 Transition = Literal[tuple(render.TRANSITIONS)]
 Qualite = Annotated[Literal[tuple(render.QUALITY)], Field(description="aperçu = rapide en demi-résolution")]
 Force = Literal[tuple(stabilize.LEVELS)]

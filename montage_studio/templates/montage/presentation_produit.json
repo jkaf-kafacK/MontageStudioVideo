@@ -1,0 +1,88 @@
+{
+  "title": "Présentation produit",
+  "ico": "🛍",
+  "format": "9:16",
+  "description": "Quatre plans de 2,5 s : le produit, un détail, l'utilisation, le prix et « lien en bio ».",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "fondu enchaîné",
+      "duration": 0.3
+    },
+    "lut": {
+      "name": "couleurs éclatantes",
+      "intensity": 0.5
+    },
+    "music": {
+      "path": "",
+      "volume": 0.3,
+      "ducking": false
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Le produit en entier",
+          "duration": 2.5
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "Un détail en gros plan",
+          "duration": 2.5
+        }
+      },
+      {
+        "slot": {
+          "label": "Le produit utilisé",
+          "duration": 2.5
+        }
+      },
+      {
+        "slot": {
+          "label": "Le produit, plan final",
+          "duration": 2.5
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "NOUVEAU",
+        "start": 0.0,
+        "end": 2.5,
+        "x": 50,
+        "y": 15,
+        "size": 110,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "zoom",
+        "keyframes": ""
+      },
+      {
+        "text": "PRIX : 29 €",
+        "start": 5.0,
+        "end": 7.5,
+        "x": 50,
+        "y": 80,
+        "size": 100,
+        "color": "#FFD60A",
+        "box": false,
+        "animation": "rebond",
+        "keyframes": ""
+      },
+      {
+        "text": "LIEN EN BIO",
+        "start": 7.5,
+        "end": 10.0,
+        "x": 50,
+        "y": 80,
+        "size": 100,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "pulsation",
+        "keyframes": ""
+      }
+    ]
+  }
+}

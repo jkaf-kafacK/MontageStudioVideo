@@ -34,12 +34,15 @@ from fastapi.responses import FileResponse, RedirectResponse
 import pandas as pd
 from PIL import Image, ImageDraw
 
-from core import (audiostudio, barapi, batch, beats, denoise, djdeck, effects, errors, ff, keying, layers, paths,
-                  ranking, rhythm, scenecut, scenes, screenrec, separation, sfx, share, splitscreen, stabilize, stickers,
-                  subs, timeline, tools, voice)
+from core import pro as pro_page  # noqa: E402  (page /pro : passage à l'édition pro)
+from core import miniature as miniature_page  # noqa: E402  (page /miniature : miniatures Pro)
+from core import autoshorts, licence  # noqa: E402  (Long → Shorts automatique, extras Pro)
+from core import (audiostudio, barapi, batch, beats, denoise, djdeck, editor, effects, errors, ff, keyframes, keying,
+                  layers, luts, paths, ranking, rhythm, scenecut, scenes, screenrec, separation, sfx, share, splitscreen,
+                  stabilize, stickers, subanim, subs, timeline, tools, voice)
 from core.errors import UserError
 from core.i18n import DEFAULT_LANG, LANG, LANGS, _, help_sections, opts, pick_lang
-from core.render import (DEFAULT_PROJECT, ENCODERS, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
+from core.render import (DEFAULT_PROJECT, ENCODERS, FACE, FORMATS, MAX_CROP, MOTIONS, QUALITY, TRANSITIONS,
                          crop_text, fit_image, merge_defaults, parse_crop, render_project)
 from core.music import MOODS
 from core.textimg import DEFAULT_STYLE, list_fonts, render_text
@@ -51,13 +54,17 @@ paths.ensure_dirs()
 screenrec.OUT_DIR.mkdir(parents=True, exist_ok=True)     # sorties/screen_record : vidéos de Screen Record
 
 COLS = ["ordre", "fichier", "début", "fin", "vitesse", "volume", "cadrage_x", "durée_img", "recadrage_%",
-        "mouvement"]
+        "mouvement", "images_clés"]
 # Calques : colonnes affichées et clés correspondantes dans le projet (voir core/layers.py)
 TABLES = {
-    "overlays": (["fichier", "début", "fin", "x_%", "y_%", "largeur_%", "opacité", "animation"],
-                 ["path", "start", "end", "x", "y", "width", "opacity", "animation"], layers.norm_overlay),
-    "texts": (["texte", "début", "fin", "x_%", "y_%", "taille", "couleur", "animation", "fond"],
-              ["text", "start", "end", "x", "y", "size", "color", "animation", "box"], layers.norm_text),
+    "overlays": (["fichier", "début", "fin", "x_%", "y_%", "largeur_%", "opacité", "animation", "angle_°",
+                  "images_clés"],
+                 ["path", "start", "end", "x", "y", "width", "opacity", "animation", "rotation", "keyframes"],
+                 layers.norm_overlay),
+    "texts": (["texte", "début", "fin", "x_%", "y_%", "taille", "couleur", "animation", "fond", "angle_°",
+               "images_clés"],
+              ["text", "start", "end", "x", "y", "size", "color", "animation", "box", "rotation", "keyframes"],
+              layers.norm_text),
     "effects": (["effet", "début", "fin", "intensité"], ["type", "start", "end", "intensity"], effects.norm_effect),
     "sfx": (["fichier", "début", "volume"], ["path", "start", "volume"], sfx.norm_sfx),
 }
@@ -133,6 +140,10 @@ def empty_df() -> pd.DataFrame:
 
 
 def df_from_rows(rows) -> pd.DataFrame:
+    """Lignes de la timeline -> tableau. Une ligne plus courte (écrite avant l'ajout d'une colonne, comme
+    « images_clés ») est complétée par des cases vides."""
+    n = len(COLS)
+    rows = [list(r)[:n] + [""] * (n - len(r)) for r in rows]
     return pd.DataFrame(rows, columns=cols()) if rows else empty_df()
 
 
@@ -195,6 +206,14 @@ def clips_from_df(df) -> list[dict]:
             zoom = layers.norm_choice(r[9], MOTIONS, "")   # vide = réglage « Images fixes »
             if zoom:
                 c["zoom"] = zoom
+        if len(r) > 10 and keyframes.norm_text(r[10]):   # zoom et point visé au cours du temps
+            try:
+                keyframes.parse(r[10])
+            except ValueError as e:
+                raise UserError(_("Ligne {n} de la timeline : ", n=n) + str(e),
+                                _("Écris les images clés comme : 0s ×1 ; 2s @70,40 ×1.8 (temps, point visé en %, "
+                                  "zoom), séparées par « ; ».")) from e
+            c["keyframes"] = keyframes.norm_text(r[10])
         check_clip(n, c)
         clips.append(c)
     return clips
@@ -205,7 +224,7 @@ def df_from_clips(clips: list[dict]) -> pd.DataFrame:
     for i, c in enumerate(clips, 1):
         rows.append([i, c.get("path", ""), c.get("start"), c.get("end"), c.get("speed", 1.0),
                      c.get("volume", 1.0), c.get("crop_x", 0.5), c.get("duration"), crop_text(c.get("crop")),
-                     _(c["zoom"]) if c.get("zoom") else ""])
+                     _(c["zoom"]) if c.get("zoom") else "", c.get("keyframes") or ""])
     return df_from_rows(rows)
 
 
@@ -478,6 +497,14 @@ def pick_emoji(emoji):
     return sticker_choice(str(stickers.emoji_path(emoji)))
 
 
+def pick_cta():
+    """Animation « Like, abonne-toi, commente, partage » : préparée au premier clic (quelques secondes), puis réglée
+    sur presque toute la largeur, sous les sous-titres, sans animation ajoutée (elle bouge déjà).
+    Renvoie (chemin, aperçu, légende, animation, largeur, centre X, centre Y)."""
+    path, preview, note = sticker_choice(str(stickers.builtin_path(stickers.CTA)))
+    return path, preview, note, "aucune", 88, 50, 86
+
+
 def import_sticker(file):
     if not file:
         raise gr.Error(_("Choisis un fichier."))
@@ -685,6 +712,8 @@ def style_preview(df, *values, at=None):
             if ff.media_kind(src) == "video":
                 src = tools.grab_frame(src, t or 0, height=0)
             base = fit_image(src, W, H, proj["fit"], c.get("crop_x", 0.5) or 0.5, crop=c.get("crop"))
+            lut = proj.get("lut") or {}
+            base = luts.apply_image(base, lut.get("name"), num(lut.get("intensity"), 1.0))
         except Exception:
             base = None
     if base is None:
@@ -1110,6 +1139,56 @@ def tool_quick_short(file, fit, max_dur, silence, progress=gr.Progress()):
     out = OUT_DIR / f"{slug(proj['name'])}_{time.strftime('%H%M%S')}.mp4"
     res = render_project(proj, out, progress=lambda f, m: progress(f, desc=m), quality="standard")
     return res["video"], res["video"]
+
+
+# --------------------------------------------------------------------------- Long → Shorts automatique
+
+LS_COLS = ["Garder", "Début", "Fin", "Durée (s)", "Note", "Titre", "Pourquoi"]
+LS_LANGS = {"fr": "français", "en": "anglais", "it": "italien", "es": "espagnol"}
+
+
+def ls_table(rows: list | None = None) -> pd.DataFrame:
+    return pd.DataFrame(rows or [], columns=[_(c) for c in LS_COLS])
+
+
+def ls_find(file, count, length, lang, keywords, progress=gr.Progress()):
+    """Étape 1 : les meilleurs moments de la vidéo (transcription gardée en cache)."""
+    if not file:
+        raise gr.Error(_("Ajoute une vidéo."))
+    try:
+        found = autoshorts.find_moments(file, int(count or 5), length, keywords or "", lang or "fr",
+                                        progress=lambda f, m: progress(f, desc=m))
+    except Exception as e:
+        raise fail(e)
+    rows = [[True, tools.format_time(m["start"]), tools.format_time(m["end"]), m["duration"], round(m["score"], 1),
+             m["title"], m["reasons"]] for m in found]
+    note = "✅ " + _("{n} moments trouvés : décoche ceux que tu ne veux pas, corrige les titres si besoin, puis crée "
+                    "les Shorts.", n=len(found))
+    return ls_table(rows), found, note
+
+
+def ls_make(file, df, found, fit, with_subs, animation, with_title, lang, progress=gr.Progress()):
+    """Étape 2 : un Short par moment coché (extra Pro)."""
+    if not file or not found:
+        raise gr.Error(_("Cherche d'abord les meilleurs moments (étape 1)."))
+    try:
+        licence.require("shorts")
+        chosen = []
+        for row, m in zip(to_rows(df), found):
+            if row and str(row[0]).strip().lower() in ("true", "1", "oui", "yes"):
+                title = str(row[5] if len(row) > 5 else m["title"]).strip()
+                chosen.append({**m, "title": "" if title in ("nan", "None") else title})
+        if not chosen:
+            raise UserError(_("Aucun moment coché."), _("Coche au moins une ligne dans la colonne « Garder »."))
+        made = autoshorts.make_shorts(file, chosen, fit=fit, subtitles=bool(with_subs), animation=animation,
+                                      title=bool(with_title), language=lang or "fr",
+                                      progress=lambda f, m: progress(f, desc=m))
+    except Exception as e:
+        raise fail(e)
+    files = [m["video"] for m in made]
+    done = _("{n} Shorts créés.", n=len(files)) if len(files) > 1 else _("1 Short créé.")
+    log = "✅ " + done + f"  \n📁 `{Path(files[0]).parent}`"
+    return files[0], files, log
 
 
 def tool_audio(file):
@@ -1628,7 +1707,14 @@ KD_PREVIEWS = Path(tempfile.gettempdir()) / "msv_detourage"      # aperçus (hor
 
 def kd_ai_status() -> str:
     err = keying.ai_problem()
-    return ("⚠ " + err) if err else "✅ " + _("Détourage IA installé (RobustVideoMatting, sur ton PC).")
+    if err:
+        return "⚠ " + err
+    if ff.is_pro():                                   # MODNet (sans GPL), téléchargé au premier détourage
+        from core import modnet
+        return "✅ " + (_("Détourage IA prêt (MODNet, sur ton PC).") if modnet.ready() else
+                       _("Détourage IA prêt (MODNet, sur ton PC) : le modèle ({mb} Mo) se télécharge au premier "
+                         "détourage, une seule fois.", mb=modnet.MODEL_MB))
+    return "✅ " + _("Détourage IA installé (RobustVideoMatting, sur ton PC).")
 
 
 def kd_method_changed(method):
@@ -1636,7 +1722,7 @@ def kd_method_changed(method):
     ai = method == "détourage IA"
     return (gr.update(visible=method == "couleur choisie"), gr.update(visible=not ai), gr.update(visible=not ai),
             gr.update(visible=method in keying.KEY_COLORS), gr.update(visible=ai, value=kd_ai_status()),
-            gr.update(visible=ai and bool(keying.ai_problem())))
+            gr.update(visible=ai and bool(keying.ai_problem()) and not ff.is_pro()))   # pro : rien à installer
 
 
 def kd_bg_changed(bg):
@@ -1898,6 +1984,20 @@ CSS = """
 #entete .langues a:hover {color: var(--body-text-color); background: var(--background-fill-secondary);}
 #entete .langues a.actif {color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);}
 #entete .reglages-haut {display: flex; align-items: center; gap: 8px;}
+#entete .editeur-lien {font-size: 0.8rem; font-weight: 700; padding: 5px 11px; border-radius: 9px; text-decoration: none;
+                       color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05);}
+#entete .editeur-lien:hover {filter: brightness(1.1);}
+#entete .pro-lien {font-size: 0.8rem; font-weight: 700; padding: 4px 11px; border-radius: 9px; text-decoration: none;
+                   color: #A85F05; background: #FFF4DF; border: 1.5px solid #E7B566;}
+.dark #entete .pro-lien {color: #F5C67A; background: #2A2116; border-color: #7A5420;}
+#entete .pro-lien:hover {filter: brightness(1.06);}
+.mini-pro {display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 14px; border-radius: 12px;
+           background: #FFF4DF; border: 1.5px solid #E7B566;}
+.mini-pro a {font-weight: 800; color: #fff; background: linear-gradient(135deg, #C47A12, #A85F05); padding: 7px 14px;
+             border-radius: 10px; text-decoration: none;}
+.mini-pro span {color: #6B5D50; font-size: 0.9rem;}
+.dark .mini-pro {background: #2A2116; border-color: #7A5420;}
+.dark .mini-pro span {color: #D8C7B0;}
 /* un seul bouton : en clair il propose « Sombre » (lune), en sombre « Clair » (soleil) */
 #entete .theme-btn {display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 10px;
                     cursor: pointer; font: inherit; font-size: 0.78rem; font-weight: 600; line-height: 1;
@@ -2585,6 +2685,20 @@ THEME = gr.themes.Base(
     slider_color_dark="#D9943A",
 )
 
+def quality_choices() -> list[tuple[str, str]]:
+    """Qualités d'export ; la 4K est marquée « ⭐ Pro » dans l'édition libre (elle demande MSV Pro et sa licence)."""
+    return [(_(q) + (" ⭐ Pro" if q == "4K" and not ff.is_pro() else ""), q) for q in QUALITY]
+
+
+def pro_link(lang: str) -> str:
+    """Bouton « ⭐ Passer à Pro » de l'édition libre, « 🔑 Licence Pro » de l'édition pro (page /pro)."""
+    if ff.is_pro():                                   # édition pro : page de la licence
+        return (f'<a class="pro-lien" href="/pro?lang={lang}" title="{_("État de la licence, activation d’une clé")}">'
+                f'🔑 {_("Licence Pro")}</a>')
+    tip = _("Découvrir MSV Pro, l'édition professionnelle")
+    return f'<a class="pro-lien" href="/pro?lang={lang}" title="{tip}">⭐ {_("Passer à Pro")}</a>'
+
+
 def entete(lang: str) -> str:
     langues = "".join('<a href="/langue/{0}" class="{1}" title="{2}">{3}</a>'.format(
         code, "actif" if code == lang else "", nom, code.upper()) for code, nom in LANGS.items())
@@ -2597,6 +2711,8 @@ def entete(lang: str) -> str:
   </div>
   <div class="droite">
     <div class="reglages-haut">
+      <a class="editeur-lien" href="/editeur" title="{_("Timeline, aperçu en temps réel, images clés à la souris")}">🎬 {_("Éditeur")}</a>
+      {pro_link(lang)}
       <nav class="langues" aria-label="{_("Langue de l'interface")}">{langues}</nav>
       <button type="button" id="theme-btn" class="theme-btn" aria-pressed="false"
               data-t-dark="{_("Passer au thème sombre")}" data-t-light="{_("Passer au thème clair")}"
@@ -4941,9 +5057,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                                         ov_table = reg("overlays", gr.Dataframe(
                                             value=table_df("overlays", []), headers=[_(c) for c in ov_names], interactive=True,
                                             wrap=True, column_count=(len(ov_names), "fixed"),
-                                            column_widths=["37%", "9%", "9%", "9%", "9%", "9%", "9%", "9%"],
+                                            column_widths=["24%", "7%", "7%", "7%", "7%", "8%", "7%", "10%",
+                                                           "7%", "16%"],
                                             datatype=["str", "number", "number", "number", "number", "number", "number",
-                                                      "str"]))
+                                                      "str", "number", "str"]))
                                         with gr.Row():
                                             ov_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
                                             ov_clear = gr.Button(_("Vider"), size="sm", variant="stop")
@@ -4956,10 +5073,12 @@ def _build_ui(lang: str) -> gr.Blocks:
                                                                 allow_preview=False, object_fit="contain", show_label=False,
                                                                 buttons=[], interactive=False)
                                         with gr.Row(equal_height=True):
-                                            st_emoji = gr.Dropdown(stickers.POPULAR_EMOJI, value="🔥", allow_custom_value=True,
+                                            st_emoji = gr.Dropdown(stickers.ALL_EMOJI, value="🔥", allow_custom_value=True,
                                                                    label=_("Emoji"), scale=2,
                                                                    info=_("ou colle le tien (Windows + point)"))
                                             st_emoji_btn = gr.Button(_("Utiliser cet emoji"), size="sm", scale=1)
+                                            st_cta_btn = gr.Button("▶ " + _("Animation Like · Abonne-toi"), size="sm",
+                                                                   scale=1)
                                             st_upload = gr.UploadButton("📂 " + _("Importer un sticker"), size="sm", scale=1,
                                                                         file_types=STICKER_EXT, type="filepath")
                                         st_path = gr.State("")
@@ -5008,9 +5127,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                                         tx_table = reg("texts", gr.Dataframe(
                                             value=table_df("texts", []), headers=[_(c) for c in tx_names], interactive=True,
                                             wrap=True, column_count=(len(tx_names), "fixed"),
-                                            column_widths=["28%", "8%", "8%", "8%", "8%", "9%", "11%", "11%", "9%"],
+                                            column_widths=["20%", "7%", "7%", "6%", "6%", "7%", "9%", "10%",
+                                                           "6%", "6%", "16%"],
                                             datatype=["str", "number", "number", "number", "number", "number", "str", "str",
-                                                      "bool"]))
+                                                      "bool", "number", "str"]))
                                         with gr.Row():
                                             tx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
                                             tx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
@@ -5036,6 +5156,14 @@ def _build_ui(lang: str) -> gr.Blocks:
                                 with gr.Row():
                                     fx_drop = gr.Button(_("Retirer la dernière ligne"), size="sm")
                                     fx_clear = gr.Button(_("Vider"), size="sm", variant="stop")
+                            with gr.Group():
+                                section("3", "Filtre couleur (LUT)", "l'ambiance de toute la vidéo")
+                                with gr.Row():
+                                    reg("lut.name", gr.Dropdown(opts(luts.names()), value=luts.NONE,
+                                                                label=_("Filtre couleur"), scale=2,
+                                                                info=_("Ajoute tes fichiers .cube dans le dossier "
+                                                                       "« luts » de ton dossier de travail")))
+                                    reg("lut.intensity", gr.Slider(0, 1, value=1.0, step=0.05, label=_("Intensité")))
                             with gr.Accordion(_("Intro et fin (scènes animées)"), open=False, elem_classes="avance"):
                                 io_md = gr.Markdown(intro_outro_status(DEF["intro"], DEF["outro"]))
                                 gr.Markdown(_("Choisis-les dans l'onglet « Scènes animées » (boutons « Utiliser comme "
@@ -5080,6 +5208,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                                 with gr.Row():
                                     reg("subtitles.max_words", gr.Slider(1, 10, value=3, step=1, label=_("Mots par sous-titre")))
                                     reg("subtitles.karaoke", gr.Checkbox(value=True, label=_("Surligner le mot prononcé")))
+                                reg("subtitles.animation", gr.Radio(opts(subanim.ANIMATIONS), value="aucune",
+                                                                    label=_("Animation des sous-titres"),
+                                                                    info=_("pop : le mot prononcé grossit · mot par "
+                                                                           "mot : un seul mot à l'écran, en grand")))
                                 with gr.Row(elem_classes="avance"):
                                     reg("subtitles.language", gr.Dropdown(["fr", "en", "it", "es", "de", ""], value=lang,
                                                                           label=_("Langue (Whisper, piste de la vidéo)")))
@@ -5209,13 +5341,14 @@ def _build_ui(lang: str) -> gr.Blocks:
                     outro_st = reg("outro", gr.State(DEF["outro"]))
                     with gr.Accordion(_("Format et rendu"), open=True):
                         reg("format", gr.Radio(list(FORMATS), value=DEF["format"], label=_("Format")))
-                        reg("fit", gr.Radio(opts(["flou", "rogner", "bandes"]), value=DEF["fit"], label=_("Cadrage"),
+                        reg("fit", gr.Radio(opts(["flou", "rogner", "bandes", FACE]), value=DEF["fit"], label=_("Cadrage"),
                                             info=_("flou = fond flouté, rogner = plein écran, bandes = barres noires")))
                         with gr.Row():
                             reg("fps", gr.Dropdown([24, 25, 30, 60], value=DEF["fps"], label=_("Images/s"), elem_classes="avance"))
-                            reg("quality", gr.Dropdown(opts(QUALITY), value=DEF["quality"], label=_("Qualité export")))
+                            reg("quality", gr.Dropdown(quality_choices(), value=DEF["quality"], label=_("Qualité export")))
                             reg("encoder", gr.Dropdown(list(ENCODERS), value=DEF["encoder"], label=_("Encodeur"),
-                                                       elem_classes="avance"))
+                                                       elem_classes="avance",
+                                                       visible=not ff.is_pro()))   # pro : choix automatique
                         with gr.Row():
                             reg("transition.type", gr.Dropdown(opts(TRANSITIONS), value=DEF["transition"]["type"],
                                                                label=_("Transition")))
@@ -5463,6 +5596,10 @@ def _build_ui(lang: str) -> gr.Blocks:
                             ss_vid = gr.Video(label=_("Résultat"), height=320)
                             ss_out = gr.File(label=_("Télécharger"), height=80)
                 with gr.Tab("🖼 " + _("Miniature YouTube"), id="cr-miniature"):
+                    gr.HTML(f'<div class="mini-pro"><a href="/miniature" target="_blank" rel="noopener">'
+                            f'{_("⭐ Miniatures Pro : modèles de tendance")}</a><span>'
+                            f'{_("Podcast face-à-face, réaction, avant / après, top, tuto, alerte : visages cadrés tout seuls, aperçu en direct, 3 variantes pour les tests A/B.")}'
+                            f'</span></div>')
                     with gr.Row(equal_height=False):
                         with gr.Column():
                             section("1", "Miniature YouTube")
@@ -5503,7 +5640,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                                                                            "(réglages de l'onglet Voix off)"))
                             with gr.Row():
                                 out_name = gr.Textbox(label=_("Nom du dossier de sortie"), placeholder="serie_octobre")
-                                q_series = gr.Dropdown(opts(QUALITY), value="haute", label=_("Qualité"))
+                                q_series = gr.Dropdown(quality_choices(), value="haute", label=_("Qualité"))
                             run_btn = gr.Button(_("Générer la série"), variant="primary", size="lg")
                             gr.File(value=[str(p) for p in (BASE / "exemples").glob("*.csv")], label=_("Exemples de CSV"),
                                     file_count="multiple", interactive=False)
@@ -5860,7 +5997,7 @@ def _build_ui(lang: str) -> gr.Blocks:
                             kd_method = gr.Radio(opts(keying.METHODS), value="fond vert",
                                                  label=_("Comment trouver le sujet ?"),
                                                  info=_("détourage IA : sans fond vert, pour les personnes "
-                                                        "(RobustVideoMatting, sur ton PC)"))
+                                                        "(sur ton PC)"))
                             kd_color = gr.ColorPicker(value="#00FF00", label=_("Couleur du fond à retirer"),
                                                       visible=False)
                             kd_sim = gr.Slider(0.01, 0.6, value=0.15, step=0.01, label=_("Tolérance de couleur"),
@@ -5932,6 +6069,46 @@ def _build_ui(lang: str) -> gr.Blocks:
                             section("2", "Résultat")
                             qs_vid = gr.Video(label="Short", height=360)
                             qs_out = gr.File(label=_("Télécharger"))
+                with gr.Tab("✂ " + _("Long → Shorts"), id="vi-longshorts"):
+                    gr.Markdown(_("Une vidéo longue (podcast, interview, live) devient plusieurs Shorts : MSV écoute "
+                                  "tout, choisit les passages qui accrochent, puis les recadre en 9:16 avec des "
+                                  "sous-titres animés."))
+                    with gr.Row(equal_height=False):
+                        with gr.Column():
+                            section("1", "Trouver les meilleurs moments")
+                            ls_file = gr.File(label=_("Vidéo longue"), type="filepath", height=DROP_H)
+                            with gr.Row():
+                                ls_count = gr.Slider(1, 10, value=5, step=1, label=_("Nombre de Shorts"))
+                                ls_length = gr.Radio(opts(list(autoshorts.LENGTHS)), value=autoshorts.DEFAULT_LENGTH,
+                                                     label=_("Durée de chaque Short"))
+                            with gr.Row():
+                                ls_lang = gr.Dropdown([(_(v), k) for k, v in LS_LANGS.items()],
+                                                      value=lang if lang in LS_LANGS else "fr", label=_("Langue parlée"))
+                                ls_kw = gr.Textbox(label=_("Mots-clés (facultatif)"),
+                                                   placeholder=_("argent, conseil, erreur"),
+                                                   info=_("Les passages qui en parlent passent devant."))
+                            ls_find_btn = gr.Button("🔎 " + _("Trouver les meilleurs moments"), variant="primary")
+                            ls_note = gr.Markdown()
+                        with gr.Column():
+                            section("2", "Créer les Shorts")
+                            with gr.Row():
+                                ls_fit = gr.Radio(opts([FACE, "flou", "rogner"]), value=FACE, label=_("Cadrage"))
+                                ls_anim = gr.Dropdown(opts(subanim.ANIMATIONS), value="pop",
+                                                      label=_("Animation des sous-titres"))
+                            with gr.Row():
+                                ls_subs = gr.Checkbox(value=True, label=_("Sous-titres"))
+                                ls_title = gr.Checkbox(value=True, label=_("Titre d'accroche (3 premières secondes)"))
+                            ls_make_btn = gr.Button("🎬 " + _("Créer les Shorts cochés")
+                                                    + ("" if ff.is_pro() else " ⭐ Pro"), variant="primary")
+                            ls_log = gr.Markdown()
+                            ls_vid = gr.Video(label=_("Premier Short"), height=360)
+                            ls_out = gr.File(label=_("Tous les Shorts"), file_count="multiple")
+                    ls_df = gr.Dataframe(value=ls_table(), headers=[_(c) for c in LS_COLS],
+                                         datatype=["bool", "str", "str", "number", "number", "str", "str"],
+                                         interactive=True, wrap=True, column_count=(len(LS_COLS), "fixed"),
+                                         column_widths=["7%", "8%", "8%", "8%", "7%", "30%", "32%"],
+                                         label=_("Moments trouvés"))
+                    ls_state = gr.State([])
                 with gr.Tab("💬 " + _("Sous-titres"), id="vi-srt"):
                     with gr.Row(equal_height=False):
                         with gr.Column():
@@ -6063,6 +6240,7 @@ def _build_ui(lang: str) -> gr.Blocks:
         st_choice = [st_path, st_preview, st_info]
         st_gallery.select(st_pick, None, st_choice)
         st_emoji_btn.click(L(pick_emoji), st_emoji, st_choice)
+        st_cta_btn.click(L(pick_cta), None, st_choice + [st_anim, st_width, st_x, st_y])
         st_upload.upload(L(import_sticker), st_upload, st_choice)
         st_pos.change(layer_position, st_pos, [st_x, st_y])
         st_add.click(L(add_sticker), [ov_table, st_path, st_start, st_end, st_x, st_y, st_width, st_anim],
@@ -6129,6 +6307,9 @@ def _build_ui(lang: str) -> gr.Blocks:
         th_btn.click(L(tool_thumbnail), [th_file, th_t, th_text, th_fmt, th_font, th_size, th_color, th_pos],
                      [th_img, th_out])
         qs_btn.click(L(tool_quick_short), [qs_file, qs_fit, qs_max, qs_sil], [qs_vid, qs_out])
+        ls_find_btn.click(L(ls_find), [ls_file, ls_count, ls_length, ls_lang, ls_kw], [ls_df, ls_state, ls_note])
+        ls_make_btn.click(L(ls_make), [ls_file, ls_df, ls_state, ls_fit, ls_subs, ls_anim, ls_title, ls_lang],
+                          [ls_vid, ls_out, ls_log])
         au_btn.click(L(tool_audio), au_file, au_out)
         tr_btn.click(L(tool_transcribe), [tr_file, tr_lang, tr_model, tr_words], [tr_out, tr_txt])
 
@@ -6330,6 +6511,9 @@ def build_app():
 
     app.include_router(barapi.router())        # adresses de la barre flottante (clé secrète obligatoire)
     app.include_router(barapi.webcam_router())  # aperçu de la webcam pendant l'enregistrement
+    app.include_router(editor.router())         # éditeur dans le navigateur : /editeur (timeline, aperçu temps réel)
+    app.include_router(pro_page.router())       # /pro : présentation de l'édition pro, ouverture si installée
+    app.include_router(miniature_page.router())  # /miniature : miniatures YouTube de tendance (extra Pro)
 
     if FOND_VIDEO:
         @app.get("/fond-video", include_in_schema=False)
@@ -6338,7 +6522,7 @@ def build_app():
 
     # Seuls les dossiers de travail sont téléchargeables ; le code, la configuration et .venv ne le sont pas.
     allowed = [str(d) for d in (OUT_DIR, MEDIA_DIR, PROJ_DIR, BASE / "exemples")]
-    blocked = [str(BASE / d) for d in (".venv", ".venv_clonage", "core", "assets", "cache", "templates",
+    blocked = [str(BASE / d) for d in (".venv", ".venv_clonage", ".venv_pro", "core", "assets", "cache", "templates",
                                        "voix_clonees")] + \
               [str(f) for f in BASE.glob("*") if f.is_file()]
     if paths.PRIVATE_DIR != BASE:          # clé API, voix téléchargées, cache : jamais téléchargeables
@@ -6357,9 +6541,10 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Montage Studio Video (MSV)")
     ap.add_argument("--port", type=int, default=None,
                     help=f"par défaut : {DEFAULT_PORT}, ou le premier port libre après lui s'il est occupé")
-    ap.add_argument("--no-browser", action="store_true")
+    ap.add_argument("--no-browser", action="store_true", help="ne pas ouvrir le navigateur (ou MSV_NO_BROWSER=1)")
     ap.add_argument("--version", action="version", version=f"Montage Studio Video {__version__}")
     a = ap.parse_args()
+    a.no_browser = a.no_browser or os.environ.get("MSV_NO_BROWSER") == "1"   # application de bureau, page /pro
     if a.port is None and running_instance():
         # Déjà ouvert (double-clic sur le raccourci, ou bouton « Open MSV » du site) : on réutilise cette copie.
         url = f"http://127.0.0.1:{DEFAULT_PORT}/"

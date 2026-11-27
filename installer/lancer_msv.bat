@@ -16,8 +16,14 @@ set "UV_PYTHON_PREFERENCE=only-managed"
 set "MSV_INSTALLED=1"
 set "PYTHONIOENCODING=utf-8"
 
+rem Edition pro (fichier app\EDITION = pro) : paquets sans GPL dans son propre environnement (venv-pro),
+rem FFmpeg LGPL fourni dans le dossier ffmpeg
+set "LOCK=%APP%\requirements.lock"
+findstr /i /x "pro" "%APP%\EDITION" >nul 2>&1 && (set "LOCK=%APP%\requirements-pro.lock" & set "VENV=%DATA%\venv-pro")
+if exist "%~dp0ffmpeg\ffmpeg.exe" set "MONTAGE_FFMPEG=%~dp0ffmpeg\ffmpeg.exe"
+
 if not exist "%VENV%\Scripts\python.exe" goto preparer
-fc /b "%APP%\requirements.lock" "%VENV%\requirements.lock" >nul 2>&1
+fc /b "%LOCK%" "%VENV%\requirements.lock" >nul 2>&1
 if errorlevel 1 goto preparer
 goto lancer
 
@@ -28,8 +34,8 @@ echo  Telechargement de Python et des composants... Laisse cette fenetre ouverte
 echo.
 if exist "%VENV%" rmdir /s /q "%VENV%"
 "%UV%" venv --python 3.12 "%VENV%" || goto erreur
-"%UV%" pip install --no-deps --python "%VENV%\Scripts\python.exe" -r "%APP%\requirements.lock" || goto erreur
-copy /y "%APP%\requirements.lock" "%VENV%\requirements.lock" >nul
+"%UV%" pip install --no-deps --python "%VENV%\Scripts\python.exe" -r "%LOCK%" || goto erreur
+copy /y "%LOCK%" "%VENV%\requirements.lock" >nul
 
 :lancer
 if "%MSV_PREPARER_SEULEMENT%"=="1" exit /b 0

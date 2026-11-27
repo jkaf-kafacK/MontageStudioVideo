@@ -3,7 +3,8 @@
 Deux façons de trouver le sujet :
 - par la couleur (fond vert, fond bleu ou couleur choisie) : FFmpeg seul (chromakey + despill), rapide ;
 - détourage IA, sans fond vert : RobustVideoMatting (licence GPL-3.0, comme MSV) dans l'environnement séparé du
-  clonage de voix (PyTorch). Il produit un masque de transparence (core/matting_worker.py).
+  clonage de voix (PyTorch), édition libre ; MODNet (Apache-2.0, ONNX Runtime, core/modnet.py), édition pro. Les deux
+  produisent le même masque de transparence (core/matting_worker.py, core/modnet.py).
 Puis le même montage FFmpeg pose le sujet sur le nouveau fond : transparent (WebM VP9 avec transparence, ou PNG
 pour une image : à utiliser comme calque ou sticker dans le Montage), une couleur, une image ou une vidéo, ou la
 vidéo d'origine floutée (effet « portrait », détourage IA seulement).
@@ -35,6 +36,8 @@ CHECKER = 16                                      # damier derrière l'aperçu t
 
 # --------------------------------------------------------------------------- installation du détourage IA
 
+# RobustVideoMatting est sous GPL-3.0 : l'édition pro utilise MODNet (Apache-2.0) à la place (core/modnet.py)
+
 def _installed(package: str) -> bool:
     venv = voice.CLONE_VENV
     return any(venv.glob(f"Lib/site-packages/{package}")) or any(venv.glob(f"lib/python*/site-packages/{package}"))
@@ -42,6 +45,9 @@ def _installed(package: str) -> bool:
 
 def ai_problem() -> str | None:
     """Pourquoi le détourage IA n'est pas prêt (message pour l'utilisateur), ou None."""
+    if ff.is_pro():
+        from . import modnet
+        return modnet.problem()        # le modèle (26 Mo) se télécharge tout seul au premier détourage
     if voice.clone_python().exists() and _installed("torch") and _installed("torchvision"):
         return None
     size = "≈ 10 Mo" if _installed("torch") else "≈ 3 Go"
@@ -50,6 +56,14 @@ def ai_problem() -> str | None:
 
 
 def ai_install(log=None) -> None:
+    if ff.is_pro():
+        from . import modnet
+        err = modnet.problem()
+        if err:
+            raise RuntimeError(err)
+        modnet.download()
+        return
+
     def run(cmd):
         if log:
             log(" ".join(map(str, cmd[3:6])))
@@ -104,7 +118,8 @@ def _fg_and_bg(method: str, bg: str, key: str | None, w: int, h: int, fps: float
     rate = "" if image else f"fps={fps:.3f},"
     base = f"[0:v]{rate}scale={w}:{h},setsar=1"
     if bg == "flou":         # le fond = la vidéo d'origine floutée
-        pre = f"{base},split=2[o1][o2];[o1]boxblur=luma_radius=min(h\\,w)/25:luma_power=2[bg];"
+        r = max(1, min(w, h) // 25)   # flou en boîte, deux passes (sans GPL)
+        pre = f"{base},split=2[o1][o2];[o1]avgblur=sizeX={r},avgblur=sizeX={r}[bg];"
     else:
         pre = f"{base}[o2];"
     if key is None:          # détourage IA : le masque devient la transparence
@@ -150,6 +165,10 @@ def _matte(src: str, out: Path, w: int, h: int, fps: float, frames: int, ss: flo
     err = ai_problem()
     if err:
         raise RuntimeError(err)
+    if ff.is_pro():                    # sans GPL : MODNet, dans ce processus
+        from . import modnet
+        return modnet.matte_video(src, out, w, h, fps, frames, ss=ss, max_frames=max_frames, progress=progress,
+                                  still=still)
     req = out.with_suffix(".json")
     req.write_text(json.dumps({"ffmpeg": ff.ffmpeg_exe(), "input": str(src), "output": str(out), "width": w,
                                "height": h, "fps": round(fps, 3), "frames": frames, "ss": ss,
@@ -268,7 +287,7 @@ def process(src: str, method: str, color: str | None = None, similarity: float =
                 args += ["-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "30", "-deadline", "good",
                          "-cpu-used", "4", "-row-mt", "1", "-auto-alt-ref", "0", "-c:a", "libopus", "-b:a", "128k"]
             else:
-                args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+                args += [*ff.video_args(18, "veryfast"), "-pix_fmt", "yuv420p",
                          "-c:a", "aac", "-b:a", "192k", "-movflags", "+faststart"]
             args += ["-t", f"{info.duration:.3f}", str(out)]
         done = (lambda f: progress(0.85 + 0.15 * f)) if progress and method == "détourage IA" else progress

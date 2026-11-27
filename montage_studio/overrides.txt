@@ -4,3 +4,9 @@
 # dépassements de mémoire, dénis de service). Gradio 6.x déclare encore « pillow<13 » par simple précaution :
 # toute la suite de tests passe avec Pillow 13. À retirer dès qu'une version de Gradio accepte Pillow 13.
 pillow>=13.0
+
+# huggingface-hub 2.x (déjà utilisé par Gradio) : tokenizers 0.23.2, nécessaire à faster-whisper dans l'édition pro,
+# déclare encore « huggingface-hub<2.0 » par précaution. Son code Python n'importe pas huggingface_hub (le
+# téléchargement est fait par sa partie compilée) ; tokenizers 0.23.3 a d'ailleurs levé cette limite. À retirer quand
+# une version de tokenizers acceptant huggingface-hub 2 passe la règle des deux semaines.
+huggingface-hub>=2.0

@@ -1,0 +1,14 @@
+{
+  "name": "msv-editeur-bureau",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Montage Studio Video : l'éditeur dans sa propre fenêtre (Tauri)",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build --no-bundle",
+    "icones": "tauri icon ../montage_studio/assets/logo_icon.png"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4"
+  }
+}

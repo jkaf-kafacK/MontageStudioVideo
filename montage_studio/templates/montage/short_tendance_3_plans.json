@@ -1,0 +1,71 @@
+{
+  "title": "Short tendance · 3 plans",
+  "ico": "🔥",
+  "format": "9:16",
+  "description": "Titre qui accroche, trois plans de 3 s avec un léger zoom, transitions zoom, filtre teal et orange, sous-titres automatiques.",
+  "project": {
+    "fit": "rogner",
+    "transition": {
+      "type": "zoom",
+      "duration": 0.3
+    },
+    "lut": {
+      "name": "teal et orange",
+      "intensity": 0.6
+    },
+    "subtitles": {
+      "source": "whisper",
+      "max_words": 3,
+      "karaoke": true,
+      "animation": "pop",
+      "language": "fr",
+      "whisper_model": "small",
+      "style": {
+        "position": 0.72,
+        "size": 80
+      }
+    },
+    "music": {
+      "path": "",
+      "volume": 0.15,
+      "ducking": true
+    },
+    "clips": [
+      {
+        "slot": {
+          "label": "Toi face caméra : l'accroche",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "Ce dont tu parles",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      },
+      {
+        "slot": {
+          "label": "La chute, le résultat",
+          "duration": 3.0
+        },
+        "keyframes": "0s @50,50 ×1 ; 3s @50,50 ×1.12"
+      }
+    ],
+    "texts": [
+      {
+        "text": "TON TITRE ICI",
+        "start": 0.0,
+        "end": 2.6,
+        "x": 50,
+        "y": 18,
+        "size": 96,
+        "color": "#FFFFFF",
+        "box": true,
+        "animation": "zoom",
+        "keyframes": ""
+      }
+    ]
+  }
+}

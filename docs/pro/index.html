@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MSV Pro · Le studio vidéo qui reste sur ton ordinateur</title>
+<meta name="description" content="MSV Pro : montage, sous-titres animés, Shorts automatiques, miniatures YouTube et détourage IA, sur ton ordinateur. Licence à vie, sans abonnement, sans compte, sans filigrane.">
+<meta property="og:title" content="MSV Pro">
+<meta property="og:description" content="Le studio vidéo qui reste sur ton ordinateur : Shorts automatiques, miniatures, sous-titres, détourage IA. Licence à vie.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="../video/poster.jpg">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="../img/logo.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Montserrat:wght@600;700;800&display=swap">
+<!--
+  Page de vente de MSV Pro (adresse à donner à MSV : variable MSV_PRO_URL, ou fichier PRO_URL à côté de MSV).
+  À COMPLÉTER AVANT LA MISE EN LIGNE (cherche « À COMPLÉTER ») :
+    1. le prix ;
+    2. le lien de paiement (Lemon Squeezy, Gumroad, Stripe Payment Link… : la clé de licence est créée avec
+       outils/licence_vendeur.py et envoyée à l'acheteur) ;
+    3. les conditions de licence (nombre d'ordinateurs, remboursement) et les mentions légales.
+-->
+<style>
+:root {
+  --bg: #F8F6F2; --surface: #FFFFFF; --ink: #1C1712; --muted: #5E554B; --line: #E8E1D6;
+  --bronze: #A85F05; --bronze-light: #C47A12; --bronze-soft: #FBF1E2; --amber: #FBBF24; --ok: #2E7D32;
+  --font-display: "Montserrat", "Segoe UI", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --radius: 16px; color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E0B08; --surface: #18140F; --ink: #F3EEE7; --muted: #B3AA9E; --line: #2C251D;
+    --bronze: #E0A23A; --bronze-light: #C47A12; --bronze-soft: #251C10; --ok: #81C784; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E0B08; --surface: #18140F; --ink: #F3EEE7; --muted: #B3AA9E; --line: #2C251D;
+  --bronze: #E0A23A; --bronze-light: #C47A12; --bronze-soft: #251C10; --ok: #81C784; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 1rem/1.6 var(--font-body); }
+a { color: var(--bronze); }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+header.nav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+header.nav .wrap { display: flex; align-items: center; gap: 16px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 800 1.05rem var(--font-display); color: var(--ink); text-decoration: none; }
+.brand img { width: 28px; height: 28px; }
+.brand b { color: var(--bronze); }
+nav.links { margin-left: auto; display: flex; gap: 18px; font-weight: 500; }
+nav.links a { color: var(--muted); text-decoration: none; }
+nav.links a:hover { color: var(--ink); }
+.btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; padding: 12px 20px; font: 700 1rem var(--font-display);
+  text-decoration: none; border: 1.5px solid transparent; cursor: pointer; }
+.btn-primary { background: linear-gradient(135deg, var(--bronze-light), var(--bronze)); color: #fff; }
+.btn-ghost { border-color: var(--line); color: var(--ink); background: var(--surface); }
+.hero { padding: 64px 0 40px; }
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 40px; align-items: center; }
+.eyebrow { display: inline-block; font: 700 .8rem var(--font-display); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--bronze); background: var(--bronze-soft); padding: 4px 10px; border-radius: 999px; }
+h1 { font: 800 clamp(2rem, 4.6vw, 3.3rem)/1.08 var(--font-display); margin: 14px 0 14px; letter-spacing: -.02em; }
+h1 em { font-style: normal; color: var(--bronze); }
+.lead { font-size: 1.15rem; color: var(--muted); margin: 0 0 24px; max-width: 54ch; }
+.ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.promesses { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 22px; color: var(--muted); font-size: .95rem; padding: 0; list-style: none; }
+.promesses li::before { content: "✓ "; color: var(--ok); font-weight: 700; }
+.capture { border-radius: var(--radius); border: 1px solid var(--line); box-shadow: 0 18px 50px rgba(0,0,0,.18); width: 100%; height: auto; display: block; }
+section { padding: 56px 0; }
+h2 { font: 800 clamp(1.5rem, 3vw, 2.1rem)/1.15 var(--font-display); margin: 0 0 10px; }
+.intro { color: var(--muted); max-width: 64ch; margin: 0 0 28px; }
+.grille { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.carte { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; }
+.carte .ico { font-size: 1.7rem; }
+.carte h3 { font: 700 1.05rem var(--font-display); margin: 8px 0 6px; }
+.carte p { margin: 0; color: var(--muted); font-size: .95rem; }
+.carte.nouveau { border-color: var(--bronze); }
+.carte.nouveau h3::after { content: "Nouveau"; margin-left: 8px; font: 700 .7rem var(--font-display); color: var(--bronze);
+  background: var(--bronze-soft); padding: 2px 8px; border-radius: 999px; vertical-align: middle; }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: center; }
+.duo img { width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+th, td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { font: 700 .85rem var(--font-display); color: var(--muted); }
+td.oui { color: var(--ok); font-weight: 600; }
+.tableau { overflow-x: auto; }
+.prix { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.offre { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px; display: grid; gap: 10px; align-content: start; }
+.offre.pro { border: 2px solid var(--bronze); }
+.offre .montant { font: 800 2.4rem var(--font-display); }
+.offre .montant small { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.offre ul { margin: 6px 0 12px; padding-left: 20px; }
+.offre li { margin: 4px 0; }
+.note { color: var(--muted); font-size: .9rem; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 18px; margin-bottom: 10px; }
+summary { font-weight: 600; cursor: pointer; }
+details p { color: var(--muted); margin: 10px 0 0; }
+footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: .9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+@media (max-width: 860px) {
+  .hero .wrap, .duo, .prix { grid-template-columns: 1fr; }
+  nav.links { display: none; }
+  .hero { padding-top: 36px; }
+}
+</style>
+</head>
+<body>
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#"><img src="../img/logo.svg" alt="">MSV <b>Pro</b></a>
+    <nav class="links" aria-label="Sections">
+      <a href="#fonctions">Fonctions</a><a href="#comparer">Comparer</a><a href="#prix">Prix</a><a href="#faq">Questions</a>
+    </nav>
+    <a class="btn btn-primary" href="#prix">Acheter</a>
+  </div>
+</header>
+
+<main>
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">Montage Studio Video · édition Pro</span>
+      <h1>Le studio vidéo qui reste <em>sur ton ordinateur</em></h1>
+      <p class="lead">Une vidéo longue devient des Shorts tout seuls. Des miniatures qui donnent envie de cliquer.
+        Des sous-titres animés, du détourage IA, un vrai éditeur avec timeline. Le tout sans abonnement, sans compte
+        et sans envoyer tes vidéos sur Internet.</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#prix">Acheter MSV Pro</a>
+        <a class="btn btn-ghost" href="../">Essayer l'édition gratuite</a>
+      </div>
+      <ul class="promesses">
+        <li>Licence à vie</li><li>Sans filigrane</li><li>Fonctionne hors ligne</li><li>Usage commercial</li>
+      </ul>
+    </div>
+    <img class="capture" src="../img/interface.webp" alt="L'interface de MSV : médias, aperçu de la vidéo et réglages" width="1280" height="800">
+  </div>
+</section>
+
+<section id="fonctions">
+  <div class="wrap">
+    <h2>Tout ce qu'il faut pour publier, au même endroit</h2>
+    <p class="intro">L'édition Pro reprend toute l'édition gratuite et ajoute les outils des créateurs qui publient
+      souvent. Tout se calcule sur ton ordinateur.</p>
+    <div class="grille">
+      <article class="carte nouveau"><span class="ico" aria-hidden="true">✂</span><h3>Long → Shorts automatique</h3>
+        <p>MSV écoute ton podcast ou ton interview, choisit les passages qui accrochent, les recadre en 9:16 sur le
+          visage et ajoute les sous-titres. Tu gardes ou tu écartes chaque moment.</p></article>
+      <article class="carte nouveau"><span class="ico" aria-hidden="true">🖼</span><h3>Miniatures Pro</h3>
+        <p>20 modèles de tendance (podcast, réaction, duel VS, horreur, survie dans un jeu, minimaliste, tuto…), personnalisables à volonté (textes, couleurs, calques déplacés à la souris), visages cadrés tout seuls,
+          personne détourée, ta charte (logo, couleurs), aperçu à la taille de YouTube, trois variantes pour les
+          tests A/B.</p></article>
+      <article class="carte nouveau"><span class="ico" aria-hidden="true">🪄</span><h3>Détourage IA</h3>
+        <p>Retire le fond d'une vidéo ou d'une photo sans fond vert : fond transparent, couleur, image ou flou.</p></article>
+      <article class="carte"><span class="ico" aria-hidden="true">💬</span><h3>Sous-titres animés</h3>
+        <p>Transcription automatique au mot près, karaoké, animations pop, rebond, mot par mot.</p></article>
+      <article class="carte nouveau"><span class="ico" aria-hidden="true">🎯</span><h3>Éditeur avec timeline</h3>
+        <p>Images clés à la souris, suivi d'objet (un texte suit ce qui bouge), courbes de vitesse, filtres LUT,
+          stickers animés.</p></article>
+      <article class="carte nouveau"><span class="ico" aria-hidden="true">🧩</span><h3>Modèles de montage</h3>
+        <p>Des montages tout prêts (Short tendance, top 3, produit, vlog, recette…) : remplace les plans par tes
+          vidéos, c'est fini.</p></article>
+      <article class="carte"><span class="ico" aria-hidden="true">🎞</span><h3>Export 4K, en série, vers Premiere</h3>
+        <p>Export en 4K, plusieurs vidéos d'un coup avec les mêmes réglages, et export vers Premiere Pro ou DaVinci
+          Resolve pour finir le montage.</p></article>
+      <article class="carte"><span class="ico" aria-hidden="true">🖥</span><h3>Application de bureau</h3>
+        <p>L'éditeur dans sa propre fenêtre, sans navigateur. Encodage par la carte graphique.</p></article>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap duo">
+    <img src="../img/outil_miniature.webp" alt="Création d'une miniature YouTube dans MSV" width="1280" height="800" loading="lazy">
+    <div>
+      <h2>Tes vidéos ne quittent pas ton ordinateur</h2>
+      <p class="intro">Pas de téléversement, pas de compte, pas de crédits IA à racheter. Les modèles d'IA (transcription,
+        détourage, cadrage des visages) tournent sur ta machine. Ta clé de licence se vérifie sans connexion.</p>
+      <p class="intro">L'édition Pro ne contient aucun composant sous licence GPL : tu peux l'utiliser pour des vidéos
+        commerciales et pour tes clients.</p>
+    </div>
+  </div>
+</section>
+
+<section id="comparer">
+  <div class="wrap">
+    <h2>Gratuite ou Pro ?</h2>
+    <p class="intro">L'édition gratuite reste gratuite et complète pour monter des vidéos. Pro ajoute ce qui fait gagner
+      des heures chaque semaine.</p>
+    <div class="tableau">
+      <table>
+        <thead><tr><th scope="col">Fonction</th><th scope="col">Gratuite</th><th scope="col">Pro</th></tr></thead>
+        <tbody>
+          <tr><td>Montage, timeline, sous-titres, voix off, stickers</td><td class="oui">Oui</td><td class="oui">Oui</td></tr>
+          <tr><td>Long → Shorts automatique</td><td>Recherche des moments</td><td class="oui">Oui, Shorts créés</td></tr>
+          <tr><td>Miniatures Pro (20 modèles, détourage, charte, A/B)</td><td>Aperçu avec filigrane</td><td class="oui">Oui</td></tr>
+          <tr><td>Export 4K et en série</td><td>—</td><td class="oui">Oui</td></tr>
+          <tr><td>Export vers Premiere Pro et DaVinci Resolve</td><td>—</td><td class="oui">Oui</td></tr>
+          <tr><td>Application de bureau</td><td>—</td><td class="oui">Oui</td></tr>
+          <tr><td>Usage commercial sans contrainte de licence GPL</td><td>Licence GPL</td><td class="oui">Oui</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="prix">
+  <div class="wrap">
+    <h2>Un seul paiement, pour toujours</h2>
+    <p class="intro">Pas d'abonnement. Tu reçois ta clé de licence par e-mail juste après l'achat.</p>
+    <div class="prix">
+      <div class="offre">
+        <h3>Édition gratuite</h3>
+        <div class="montant">0 €</div>
+        <ul><li>Montage complet</li><li>Sous-titres, voix off, stickers</li><li>Code source ouvert (GPL)</li></ul>
+        <a class="btn btn-ghost" href="../">Télécharger</a>
+      </div>
+      <div class="offre pro">
+        <h3>MSV Pro · licence à vie</h3>
+        <!-- À COMPLÉTER : le prix -->
+        <div class="montant" id="montant">XX € <small>une fois</small></div>
+        <ul>
+          <li>Toute l'édition gratuite</li><li>Long → Shorts, Miniatures Pro, détourage IA</li>
+          <li>Export 4K, en série, vers Premiere et Resolve</li><li>Application de bureau</li>
+          <li>Mises à jour de la version achetée</li>
+        </ul>
+        <!-- À COMPLÉTER : le lien de paiement (Lemon Squeezy, Gumroad, Stripe Payment Link…) -->
+        <a class="btn btn-primary" id="acheter" href="#acheter">Acheter MSV Pro</a>
+        <p class="note">Paiement sécurisé par notre prestataire. Clé envoyée par e-mail.</p>
+      </div>
+    </div>
+    <p class="note">Configuration : Windows 10 ou 11 (64 bits), 8 Go de mémoire, une carte graphique est conseillée pour
+      aller plus vite.</p>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <h2>Questions</h2>
+    <details><summary>Comment j'active ma licence ?</summary>
+      <p>Dans MSV Pro, clique sur « 🔑 Licence Pro » en haut, colle la clé reçue par e-mail et clique sur Activer.
+        La clé se vérifie sans connexion Internet.</p></details>
+    <details><summary>Sur combien d'ordinateurs ?</summary>
+      <!-- À COMPLÉTER : conditions de licence -->
+      <p>Selon les conditions de licence indiquées au moment de l'achat.</p></details>
+    <details><summary>Faut-il une connexion Internet ?</summary>
+      <p>Non pour le montage et la licence. Une connexion sert seulement la première fois à télécharger certains
+        modèles d'IA (transcription, détourage), puis tout fonctionne hors ligne.</p></details>
+    <details><summary>Mes vidéos sont-elles envoyées quelque part ?</summary>
+      <p>Non. Tout est calculé sur ton ordinateur ; MSV n'a pas besoin de compte.</p></details>
+    <details><summary>Et si ça ne me convient pas ?</summary>
+      <!-- À COMPLÉTER : politique de remboursement -->
+      <p>Essaie d'abord l'édition gratuite : elle a la même interface. Pour le remboursement, voir les conditions de vente.</p></details>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© Montage Studio Video. MSV Pro est l'édition professionnelle de MSV.</span>
+    <!-- À COMPLÉTER : mentions légales, conditions de vente, contact -->
+    <span><a href="#">Mentions légales</a> · <a href="#">Conditions de vente</a> · <a href="#">Contact</a></span>
+  </div>
+</footer>
+</body>
+</html>

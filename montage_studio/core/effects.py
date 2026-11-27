@@ -58,7 +58,8 @@ def _look(kind: str, i: float, W: int, s: float, e: float) -> str:
     if kind == "vintage":
         return f"curves=preset=vintage{en},noise=alls={max(1, int(24 * i))}:allf=t{en}"
     if kind == "couleurs vives":
-        return f"eq=saturation={1 + i:.2f}:contrast={1 + 0.15 * i:.3f}{en}"
+        return (f"hue=s={1 + i:.2f}{en},"
+                f"lutyuv=y='clip((val-128)*{1 + 0.15 * i:.3f}+128,minval,maxval)'{en}")
     if kind == "cinéma":              # ombres bleu-vert, hautes lumières orangées
         return f"colorbalance=rs={-a:.3f}:bs={a:.3f}:rh={a:.3f}:bh={-a:.3f}{en}"
     if kind == "chaud":

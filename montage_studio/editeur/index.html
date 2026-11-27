@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Éditeur MSV</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/editeur/editeur.css">
+</head>
+<body>
+<header class="barre">
+  <a class="marque" href="/" title="Retour à Montage Studio Video">◀ MSV</a>
+  <input id="nom" class="nom" value="mon_montage" aria-label="Nom du projet" spellcheck="false">
+  <label class="champ">Format
+    <select id="format"></select>
+  </label>
+  <span class="espace"></span>
+  <button id="annuler" title="Annuler (Ctrl+Z)">↶</button>
+  <button id="refaire" title="Rétablir (Ctrl+Y)">↷</button>
+  <button id="modeles" title="Montages tout prêts : remplace les plans par tes vidéos">Modèles</button>
+  <button id="ouvrir">Ouvrir</button>
+  <button id="enregistrer">Enregistrer</button>
+  <button id="miniature" title="Miniature YouTube à partir de l'image sous le curseur (modèles de tendance)">🖼 Miniature</button>
+  <button id="exporter" class="primaire">Exporter</button>
+  <button id="aide" class="rond-petit" title="Aide rapide" aria-haspopup="dialog">?</button>
+  <a id="edition" class="pastille" href="/pro?lang=fr" hidden title="Licence MSV Pro">PRO</a>
+  <a id="vers-pro" class="vers-pro" href="/pro?lang=fr" hidden title="Découvrir MSV Pro, l'édition professionnelle">⭐ Passer à Pro</a>
+</header>
+<div id="alerte" class="alerte" role="alert" hidden></div>
+
+<main class="espace-travail">
+  <section class="medias" aria-label="Médiathèque">
+    <div class="titre-panneau">Médias
+      <label class="bouton petit">Importer<input id="importer" type="file" multiple hidden
+        accept="video/*,image/*,audio/*,.mkv,.mov,.m4a,.flac"></label>
+    </div>
+    <div id="liste-medias" class="liste-medias"><p class="vide">Chargement…</p></div>
+    <div class="bord-panneau" data-panneau="medias" role="separator" aria-orientation="vertical" tabindex="0"
+      aria-label="Largeur du panneau Médias" title="Glisse pour élargir ou réduire les médias (double-clic : taille d'origine)"></div>
+  </section>
+
+  <section class="apercu" aria-label="Aperçu">
+    <div id="scene" class="scene">
+      <canvas id="ecran2d"></canvas>
+      <canvas id="ecrangl"></canvas>
+      <canvas id="ecrancalques" class="calques"></canvas>
+      <div id="poignee" class="poignee" hidden></div>
+      <div id="cadre-suivi" class="cadre-suivi" hidden></div>
+    </div>
+    <div class="transport">
+      <button id="debut" title="Début (Origine)">⏮</button>
+      <button id="lecture" class="rond" title="Lecture / pause (Espace)">▶</button>
+      <button id="fin" title="Fin (Fin)">⏭</button>
+      <span id="temps" class="temps">0:00.00 / 0:00.00</span>
+      <span class="espace"></span>
+      <button id="grand" aria-pressed="false" title="Grand aperçu : masque les panneaux, timeline réduite (F)">⛶</button>
+      <button id="ajouter" aria-haspopup="menu" title="Ajouter un texte, un emoji ou un sticker au curseur">＋ Ajouter</button>
+    </div>
+  </section>
+
+  <section class="inspecteur" aria-label="Réglages">
+    <div class="titre-panneau" id="titre-inspecteur">Projet</div>
+    <div id="formulaire" class="formulaire"></div>
+    <div class="bord-panneau" data-panneau="reglages" role="separator" aria-orientation="vertical" tabindex="0"
+      aria-label="Largeur du panneau Réglages" title="Glisse pour élargir ou réduire les réglages (double-clic : taille d'origine)"></div>
+  </section>
+</main>
+
+<section class="timeline" aria-label="Timeline">
+  <div id="separateur" class="separateur" role="separator" aria-orientation="horizontal" tabindex="0"
+    aria-label="Taille de l'aperçu et de la timeline" title="Glisse pour agrandir l'aperçu ou la timeline (double-clic : taille d'origine)"></div>
+  <div class="outils-timeline">
+    <span class="titre-panneau">Timeline</span>
+    <span class="espace"></span>
+    <label class="champ">Zoom <input id="zoom" type="range" min="10" max="300" value="70"></label>
+  </div>
+  <div id="pistes" class="pistes" tabindex="0">
+    <div id="contenu" class="contenu">
+      <div id="regle" class="regle"></div>
+      <div class="piste" data-piste="clips"><span class="etiquette">Vidéo</span><div class="couloir" id="p-clips"></div></div>
+      <div class="piste" data-piste="overlays"><span class="etiquette">Calques</span><div class="couloir" id="p-overlays"></div></div>
+      <div class="piste" data-piste="texts"><span class="etiquette">Textes</span><div class="couloir" id="p-texts"></div></div>
+      <div class="piste" data-piste="audio"><span class="etiquette">Audio</span><div class="couloir" id="p-audio"></div></div>
+      <div id="tete" class="tete"></div>
+      <div id="insertion" class="insertion" hidden></div>
+    </div>
+  </div>
+</section>
+
+<dialog id="dlg-modeles" class="dlg-modeles" aria-labelledby="titre-modeles">
+  <h2 id="titre-modeles">Modèles de montage</h2>
+  <p class="note">Un montage tout prêt (plans, textes, transitions, filtre, sous-titres) : remplace chaque plan par ta
+    vidéo (double-clic sur un média, ou glisse-le sur le plan).</p>
+  <div id="liste-modeles" class="liste-modeles"></div>
+  <form method="dialog"><button>Fermer</button></form>
+</dialog>
+
+<dialog id="dlg-ouvrir">
+  <h2>Ouvrir un projet</h2>
+  <div id="liste-projets" class="liste-projets"></div>
+  <form method="dialog"><button>Fermer</button></form>
+</dialog>
+
+<dialog id="dlg-export" class="dlg-export" aria-labelledby="titre-export">
+  <h2 id="titre-export">Exporter</h2>
+  <div id="export-choix">
+    <div class="choix-export" role="radiogroup" aria-label="Que veux-tu exporter ?">
+      <label><input type="radio" name="export-type" value="hd" checked>
+        <span><b>Vidéo MP4 · HD</b><small>1080 px : pour YouTube, TikTok, Instagram</small></span></label>
+      <label data-extra="4k"><input type="radio" name="export-type" value="4k">
+        <span><b>Vidéo MP4 · 4K <i class="badge-pro">⭐ Pro</i></b><small>2160 px : qualité maximale, fichier plus lourd</small></span></label>
+      <label data-extra="serie"><input type="radio" name="export-type" value="serie">
+        <span><b>Plusieurs vidéos d'un coup <i class="badge-pro">⭐ Pro</i></b><small>Ce montage sert de modèle : ses textes,
+          calques, filtre, sous-titres et musique sont appliqués à chaque vidéo choisie</small></span></label>
+      <label data-extra="nle"><input type="radio" name="export-type" value="nle">
+        <span><b>Projet Premiere Pro / DaVinci Resolve <i class="badge-pro">⭐ Pro</i></b><small>Pour finir le montage
+          dans ces logiciels (fichiers XML et OTIO)</small></span></label>
+    </div>
+    <div id="export-serie" class="export-serie" hidden>
+      <div class="serie-tete"><span>Vidéos à traiter</span>
+        <label class="champ">Qualité <select id="serie-qualite"><option value="haute">HD 1080p</option>
+          <option value="4K">4K</option></select></label></div>
+      <div id="serie-liste" class="serie-liste"></div>
+    </div>
+    <p id="export-verrou" class="verrou" role="alert" hidden></p>
+    <div class="pied-export">
+      <button id="export-annuler" type="button">Annuler</button>
+      <button id="export-go" type="button" class="primaire">Lancer l'export</button>
+    </div>
+  </div>
+  <div id="export-suivi" hidden>
+    <p id="export-msg">Préparation…</p>
+    <progress id="export-barre" max="1" value="0"></progress>
+    <div id="export-lien" hidden></div>
+    <form method="dialog"><button id="export-fermer">Fermer</button></form>
+  </div>
+</dialog>
+
+<dialog id="dlg-stickers" class="dlg-stickers">
+  <h2>Stickers et emojis</h2>
+  <div class="onglets" role="tablist">
+    <button role="tab" data-onglet="emoji" aria-selected="true">Emojis</button>
+    <button role="tab" data-onglet="stickers" aria-selected="false">Stickers MSV</button>
+    <button role="tab" data-onglet="creer" aria-selected="false">✎ Créer le mien</button>
+  </div>
+  <div id="panneau-emoji">
+    <label class="champ coller">Autre emoji : <input id="emoji-libre" type="text" maxlength="12" placeholder="colle-le ici (Windows + .)">
+      <button id="emoji-ok">Poser</button></label>
+    <div id="grille-emoji"></div>
+  </div>
+  <div id="panneau-stickers" hidden><div id="grille-stickers" class="grille"></div></div>
+  <div id="panneau-creer" class="createur" hidden>
+    <div class="createur-form">
+      <label class="ligne-form"><span>Base</span><select id="cs-base"><option value="emoji">un emoji</option>
+        <option value="photo">une photo</option></select></label>
+      <label class="ligne-form" id="cs-ligne-emoji"><span>Emoji</span><input id="cs-emoji" type="text" maxlength="12" value="😂"></label>
+      <label class="ligne-form" id="cs-ligne-photo" hidden><span>Photo</span><select id="cs-photo"></select></label>
+      <label class="ligne-form"><span>Forme</span><select id="cs-forme"></select></label>
+      <label class="ligne-form"><span>Accessoire</span><input id="cs-acc" type="text" maxlength="12" value="🔥"
+        placeholder="un emoji, ou vide"></label>
+      <label class="ligne-form"><span>Coin</span><select id="cs-coin"></select></label>
+      <label class="ligne-form"><span>Taille accessoire</span><input id="cs-taille" type="range" min="0.15" max="0.6" step="0.05" value="0.35"></label>
+      <label class="ligne-form"><span>Texte</span><input id="cs-texte" type="text" maxlength="40" value="mdr"></label>
+      <label class="ligne-form"><span>Position texte</span><select id="cs-pos"><option value="bas">en bas</option>
+        <option value="haut">en haut</option></select></label>
+      <label class="ligne-form"><span>Couleur texte</span><input id="cs-couleur" type="color" value="#FFD60A"></label>
+      <label class="ligne-form"><span>Contour blanc</span><input id="cs-contour" type="checkbox" checked></label>
+    </div>
+    <div class="createur-apercu">
+      <img id="cs-apercu" alt="Aperçu du sticker">
+      <p id="cs-erreur" class="note" role="alert"></p>
+      <button id="cs-creer" class="primaire">Créer et poser</button>
+    </div>
+  </div>
+  <form method="dialog"><button>Fermer</button></form>
+</dialog>
+
+<dialog id="dlg-aide" class="dlg-aide" aria-labelledby="titre-aide">
+  <h2 id="titre-aide">Aide rapide : un montage en 8 étapes</h2>
+  <p class="invite-visite"><span>Nouveau ici ? La <b>visite guidée</b> te montre chaque étape directement dans l'éditeur.</span>
+    <button type="button" id="visite-go" class="primaire">▶ Visite guidée pas à pas</button></p>
+  <ol class="etapes">
+    <li><b>Importer</b> : bouton « Importer » en haut des médias, ou glisse tes fichiers dans la liste.</li>
+    <li><b>Ajouter à la timeline</b> : double-clic sur un média. Les stickers et images transparentes se posent
+      en calque, un son devient la musique.</li>
+    <li><b>Arranger</b> : glisse un clip pour changer l'ordre, tire ses bords pour le raccourcir, touche
+      <kbd>S</kbd> pour le couper au curseur.</li>
+    <li><b>Ajouter textes et emojis</b> : bouton « ＋ Ajouter » sous l'aperçu, ou clic droit dans l'aperçu.
+      Tu peux aussi créer ton propre sticker, ou poser l'animation « Like · Abonne-toi · Commente · Partage ».</li>
+    <li><b>Placer un calque</b> : glisse-le dans l'aperçu ; molette = taille ; <kbd>Maj</kbd> + molette = rotation.</li>
+    <li><b>Animer</b> : choisis un calque, pose une image clé (<kbd>K</kbd>), avance le curseur, puis bouge le calque :
+      il ira d'une position à l'autre.</li>
+    <li><b>Finir</b> : clique dans le vide de l'aperçu pour voir les réglages du projet (filtre couleur, sous-titres,
+      musique).</li>
+    <li><b>Exporter</b> : bouton « Exporter » en haut à droite.</li>
+  </ol>
+  <p class="note"><b>Clic droit</b> : chaque zone propose seulement ce qu'on peut y faire (piste Textes : ajouter
+    un texte ; un calque : tourner, dupliquer, supprimer…).</p>
+  <p class="raccourcis"><kbd>Espace</kbd> lecture · <kbd>S</kbd> couper · <kbd>K</kbd> image clé ·
+    <kbd>Suppr</kbd> supprimer · <kbd>Ctrl+Z</kbd> annuler · <kbd>Ctrl+S</kbd> enregistrer · <kbd>←</kbd> <kbd>→</kbd> image par image ·
+    <kbd>F</kbd> grand aperçu · glisse la barre au-dessus de la timeline pour agrandir l'aperçu</p>
+  <form method="dialog" class="pied-aide">
+    <label><input id="aide-masquer" type="checkbox"> Ne plus afficher au démarrage</label>
+    <button>Compris</button>
+  </form>
+</dialog>
+
+<div id="visite" class="visite" hidden>
+  <div class="spot"></div>
+  <div class="bulle" role="dialog" aria-modal="true" aria-labelledby="visite-titre" aria-describedby="visite-texte">
+    <div class="bulle-num" id="visite-num"></div>
+    <h3 id="visite-titre"></h3>
+    <p id="visite-texte"></p>
+    <div class="points" id="visite-points" aria-hidden="true"></div>
+    <div class="bulle-pied">
+      <button id="visite-quitter" type="button">Quitter</button>
+      <span class="espace"></span>
+      <button id="visite-prec" type="button">‹ Précédent</button>
+      <button id="visite-ok" type="button" class="primaire">OK</button>
+    </div>
+  </div>
+</div>
+<div id="menu" class="menu" role="menu" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+<script src="/editeur/editeur.js"></script>
+</body>
+</html>

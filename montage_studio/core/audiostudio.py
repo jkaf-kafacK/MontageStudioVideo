@@ -20,6 +20,7 @@ est placé à sa position (adelay), avec ses fondus, puis tout est additionné (
 """
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 from typing import Callable, Optional
@@ -59,7 +60,7 @@ ISO_SPLIT = "250 2500"                             # isolateur : graves < 250 Hz
 ISO_MIN, ISO_MAX = -26.0, 6.0
 BANDS = ("low", "mid", "high")
 
-# préréglages d'effets micro : filtres FFmpeg (chaîne audio)
+# préréglages d'effets micro : filtres FFmpeg (chaîne audio) ; PITCH(...) : voir preset_filter
 MIC_PRESETS = {
     "aucun": "",
     "voix studio": ("highpass=f=80,deesser=i=0.4,acompressor=threshold=0.08:ratio=3:attack=8:release=150:makeup=2,"
@@ -71,11 +72,11 @@ MIC_PRESETS = {
               "flanger=delay=2:depth=2:speed=0.3,volume=0.9"),
     "écho": "aecho=0.8:0.85:320|640:0.35|0.18",
     "grande salle": "aecho=0.8:0.9:40|70|110|160|230|320:0.4|0.34|0.28|0.22|0.16|0.1",
-    "voix grave": "rubberband=pitch=0.78:formant=preserved",
-    "voix aiguë": "rubberband=pitch=1.45",
-    "monstre": "rubberband=pitch=0.6,aecho=0.8:0.6:60:0.3,volume=3,asoftclip=type=tanh,volume=0.5",
+    "voix grave": "PITCH(0.78,formant)",
+    "voix aiguë": "PITCH(1.45)",
+    "monstre": "PITCH(0.6),aecho=0.8:0.6:60:0.3,volume=3,asoftclip=type=tanh,volume=0.5",
     "chorale": "chorus=0.6:0.9:50|60|40:0.4|0.32|0.3:0.25|0.4|0.3:2|2.3|1.3",
-    "alien": "rubberband=pitch=1.2,vibrato=f=6:d=0.4,aphaser=type=t:speed=0.8",
+    "alien": "PITCH(1.2),vibrato=f=6:d=0.4,aphaser=type=t:speed=0.8",
 }
 
 Progress = Optional[Callable[[float], None]]
@@ -534,6 +535,12 @@ def _clock(t: float) -> str:
 
 # --------------------------------------------------------------------------- effets micro et mixage
 
+def preset_filter(preset: str) -> str:
+    """Filtres d'un préréglage micro ; PITCH(r) / PITCH(r,formant) = changement de hauteur (voir ff.pitch_filter)."""
+    return re.sub(r"PITCH\(([\d.]+)(,formant)?\)", lambda m: ff.pitch_filter(float(m.group(1)), bool(m.group(2))),
+                  MIC_PRESETS.get(preset, ""))
+
+
 def mic_chain(preset: str = "aucun", low: float = 0.0, mid: float = 0.0, high: float = 0.0, compress: float = 0.0,
               noise: str = "aucune", gain: float = 0.0, speed: float = 1.0) -> list[str]:
     """Filtres dans l'ordre d'une console : nettoyage, effet, égaliseur, compresseur, gain, vitesse."""
@@ -542,7 +549,7 @@ def mic_chain(preset: str = "aucun", low: float = 0.0, mid: float = 0.0, high: f
     if dn:
         chain.append(dn)
     if MIC_PRESETS.get(preset):
-        chain.append(MIC_PRESETS[preset])
+        chain.append(preset_filter(preset))
     if low:
         chain.append(f"bass=g={low:.1f}:f=110")
     if mid:

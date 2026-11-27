@@ -1,0 +1,775 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miniatures Pro</title>
+<link rel="icon" href="/favicon.ico">
+<style>
+:root {
+  --fond: #0f1115; --panneau: #171a21; --panneau-2: #1e222b; --ligne: #2a2f3a; --texte: #e8eaef;
+  --doux: #9aa1ae; --accent: #f97316; --danger: #ef4444; --ok: #22c55e; color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --fond: #f3f4f6; --panneau: #ffffff; --panneau-2: #f8fafc; --ligne: #d8dce3; --texte: #111827;
+    --doux: #5b6472; color-scheme: light;
+  }
+}
+:root[data-theme="dark"] { color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--fond); color: var(--texte); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif; }
+button, select, input, textarea { font: inherit; color: inherit; }
+button, .bouton {
+  background: var(--panneau-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 7px 12px; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+button:hover, .bouton:hover { border-color: var(--doux); }
+button:disabled { opacity: .55; cursor: progress; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.primaire { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
+header { display: flex; align-items: center; gap: 12px; padding: 10px 16px; background: var(--panneau);
+  border-bottom: 1px solid var(--ligne); flex-wrap: wrap; }
+header a.retour { color: var(--doux); text-decoration: none; }
+header h1 { font-size: 17px; margin: 0; }
+header h1 b { color: var(--accent); }
+.espace { flex: 1; }
+.pastille { font-size: 12px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: #facc15; color: #111;
+  text-decoration: none; }
+.verrou { background: color-mix(in srgb, var(--accent) 14%, var(--panneau)); border-bottom: 1px solid var(--ligne);
+  padding: 9px 16px; }
+.verrou a { color: var(--accent); font-weight: 700; }
+main { display: grid; grid-template-columns: minmax(300px, 420px) minmax(0, 1fr); gap: 16px; padding: 16px;
+  max-width: 1500px; margin: 0 auto; }
+.reglages { display: grid; gap: 12px; align-content: start; }
+section.carte { background: var(--panneau); border: 1px solid var(--ligne); border-radius: 12px; padding: 12px 14px; }
+h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 0 0 10px; }
+.modeles { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
+.modeles button { flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; text-align: left;
+  white-space: normal; min-height: 62px; }
+.modeles button .ico { font-size: 20px; }
+.modeles button[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, var(--panneau-2)); }
+.desc { color: var(--doux); margin: 8px 0 0; font-size: 13px; }
+.seg { display: inline-flex; background: var(--panneau-2); border: 1px solid var(--ligne); border-radius: 9px; padding: 2px; }
+.seg button { border: 0; background: transparent; padding: 5px 12px; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #111; font-weight: 700; }
+label.champ { display: grid; gap: 4px; margin-bottom: 10px; }
+label.champ > span { color: var(--doux); font-size: 13px; }
+input[type=text], input[type=number], select, textarea {
+  width: 100%; min-width: 0; background: var(--panneau-2); border: 1px solid var(--ligne); border-radius: 8px; padding: 7px 9px;
+}
+textarea { resize: vertical; min-height: 64px; }
+.aide { color: var(--doux); font-size: 12px; }
+.aide code { background: var(--panneau-2); border-radius: 4px; padding: 0 4px; }
+.ligne { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.ligne > * { min-width: 0; }
+.source { border: 1px dashed var(--ligne); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+.source .titre { font-weight: 600; margin-bottom: 6px; }
+.temps { display: grid; grid-template-columns: minmax(0, 1fr) 84px; gap: 8px; align-items: center; margin-top: 8px; }
+.cases { display: flex; gap: 14px; flex-wrap: wrap; }
+.cases label { display: flex; gap: 6px; align-items: center; cursor: pointer; }
+.couleurs { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.couleurs input[type=color] { width: 42px; height: 32px; padding: 0; border: 1px solid var(--ligne); border-radius: 8px; background: none; }
+.palette { width: 34px; height: 26px; border-radius: 7px; padding: 0; overflow: hidden; display: inline-grid;
+  grid-template-columns: 1fr 1fr; }
+.palette i { display: block; height: 100%; }
+.emojis button { padding: 3px 7px; font-size: 18px; }
+.apercu { position: sticky; top: 12px; align-self: start; display: grid; gap: 12px; }
+.cadre { background: repeating-conic-gradient(var(--panneau-2) 0 25%, var(--panneau) 0 50%) 0 0 / 20px 20px;
+  border: 1px solid var(--ligne); border-radius: 12px; display: grid; place-items: center; padding: 12px; min-height: 240px; position: relative; }
+.cadre img { max-width: 100%; max-height: calc(100vh - 230px); border-radius: 6px; box-shadow: 0 6px 30px rgba(0,0,0,.45); display: block; }
+.cadre .charge { position: absolute; top: 18px; right: 18px; background: rgba(0,0,0,.65); color: #fff; padding: 3px 9px;
+  border-radius: 999px; font-size: 12px; }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+#msg { color: var(--doux); }
+#msg.erreur { color: var(--danger); }
+.resultats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.resultats figure { margin: 0; background: var(--panneau); border: 1px solid var(--ligne); border-radius: 10px; padding: 8px; }
+.resultats img { width: 100%; border-radius: 6px; display: block; }
+.resultats figcaption { font-size: 12px; color: var(--doux); margin: 6px 0; word-break: break-all; }
+.charte { border-top: 1px dashed var(--ligne); margin-top: 12px; padding-top: 10px; }
+.charte .ligne label.champ { flex: 1 1 140px; margin-bottom: 6px; }
+#charte-note { color: var(--doux); font-size: 12px; }
+.yt { background: var(--panneau); border: 1px solid var(--ligne); border-radius: 12px; padding: 12px 14px; }
+.yt h2 { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.yt-champs { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 8px; margin-bottom: 10px; }
+.yt-scene { border-radius: 10px; padding: 14px; display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start;
+  font-family: Roboto, Arial, sans-serif; }
+.yt-scene.sombre { background: #0f0f0f; color: #f1f1f1; }
+.yt-scene.clair { background: #ffffff; color: #0f0f0f; }
+.yt-bloc { display: grid; gap: 6px; }
+.yt-bloc > small { color: var(--doux); font-family: "Segoe UI", system-ui, sans-serif; }
+.yt-vignette { position: relative; border-radius: 12px; overflow: hidden; background: #000; }
+.yt-vignette img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.yt-duree { position: absolute; right: 6px; bottom: 6px; background: rgba(0,0,0,.8); color: #fff; font-size: 12px;
+  font-weight: 500; padding: 1px 4px; border-radius: 4px; }
+.yt-carte { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 10px; margin-top: 10px; }
+.yt-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #f97316, #db2777); }
+.yt-titre { font-size: 15px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical; overflow: hidden; }
+.yt-meta { font-size: 13px; opacity: .65; margin-top: 2px; }
+.yt-sugg { display: grid; grid-template-columns: 168px minmax(0, 190px); gap: 8px; }
+.yt-sugg .yt-vignette { border-radius: 8px; }
+.yt-sugg .yt-titre { font-size: 13.5px; }
+.yt-sugg .yt-meta { font-size: 12px; }
+.reglages, .reglages > *, details.carte > .corps, .apercu { min-width: 0; }   /* la galerie défile sans élargir la colonne */
+details.carte { padding: 0; }
+details.carte > summary { list-style: none; cursor: pointer; padding: 11px 14px; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); font-weight: 700; }
+details.carte > summary::-webkit-details-marker { display: none; }
+details.carte > summary::after { content: "▸"; margin-left: auto; transition: transform .15s; }
+details.carte[open] > summary::after { transform: rotate(90deg); }
+details.carte > .corps { padding: 0 14px 12px; }
+.filtres { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.filtres button { padding: 3px 10px; border-radius: 999px; font-size: 12px; }
+.filtres button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 700; }
+.galerie { display: grid; grid-auto-flow: column; grid-auto-columns: 132px; gap: 8px; overflow-x: auto; padding-bottom: 6px;
+  scroll-snap-type: x proximity; }
+.galerie button { flex-direction: column; align-items: stretch; padding: 4px; gap: 4px; white-space: normal; scroll-snap-align: start;
+  text-align: left; font-size: 11.5px; line-height: 1.25; }
+.galerie button img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 5px; background: var(--panneau-2); display: block; }
+.galerie button[aria-pressed="true"] { border-color: var(--accent); outline: 2px solid var(--accent); }
+.galerie button[hidden] { display: none; }
+.grille2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+.grille2 label.champ { margin-bottom: 4px; }
+.reglage { display: grid; grid-template-columns: 96px minmax(0, 1fr) 42px; gap: 8px; align-items: center; margin: 4px 0; font-size: 13px; }
+.reglage span:first-child { color: var(--doux); }
+.reglage output { text-align: right; font-variant-numeric: tabular-nums; color: var(--doux); font-size: 12px; }
+.sous { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--doux); margin: 12px 0 4px; font-weight: 700; }
+.calque { border: 1px solid var(--ligne); border-radius: 8px; padding: 6px 8px; margin: 6px 0; display: grid; gap: 4px; }
+.calque .haut { display: flex; gap: 6px; align-items: center; }
+.calque .haut input[type=text] { flex: 1; }
+.calque .haut input[type=color] { width: 34px; height: 30px; padding: 0; border-radius: 6px; border: 1px solid var(--ligne); }
+.barre-apercu { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.cadre .scene { position: relative; line-height: 0; }
+.poignees { position: absolute; inset: 0; pointer-events: none; }
+.poignee { position: absolute; transform: translate(-50%, -50%); pointer-events: auto; cursor: grab; touch-action: none;
+  min-width: 30px; height: 30px; padding: 0 6px; border-radius: 999px; background: rgba(249, 115, 22, .92); color: #111;
+  font: 700 13px/30px "Segoe UI", sans-serif; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,.4); border: 2px solid #fff; }
+.poignee:active { cursor: grabbing; }
+.poignee.titre-p { background: rgba(255, 255, 255, .92); }
+@media (max-width: 860px) {
+  main { grid-template-columns: 1fr; padding: 12px 16px; }
+  .apercu { position: static; order: -1; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <a class="retour" href="/editeur">◀ Éditeur</a>
+  <a class="retour" href="/">MSV</a>
+  <h1>🖼 Miniatures <b>Pro</b></h1>
+  <span class="espace"></span>
+  <a id="edition" class="pastille" href="/pro?lang=fr" hidden>PRO</a>
+</header>
+<div id="verrou" class="verrou" role="status" hidden></div>
+
+<main>
+  <div class="reglages">
+    <details class="carte" id="sec-modele" open>
+      <summary>1 · Modèle <span id="nom-modele" style="text-transform:none;letter-spacing:0;color:var(--texte)"></span></summary>
+      <div class="corps">
+        <div class="filtres" id="filtres" role="group" aria-label="Styles">
+          <button data-style="" aria-pressed="true">Tous</button><button data-style="viral" aria-pressed="false">🔥 Viral</button>
+          <button data-style="minimaliste" aria-pressed="false">◻ Minimaliste</button><button data-style="tuto" aria-pressed="false">🎓 Tuto</button>
+        </div>
+        <div id="modeles" class="galerie" role="group" aria-label="Modèles de miniature"></div>
+        <label class="ligne aide"><input type="checkbox" id="vignettes-moi"> Vignettes avec mon image</label>
+        <div class="ligne" style="margin-top:6px">
+          <button id="exemples-creer" title="MSV prend des images dans tes vidéos et fait un exemple de chaque modèle">🎬 Créer les exemples avec mes vidéos</button>
+          <button id="exemple-reprendre" hidden title="Reprendre les images (vidéo et moment) de l'exemple de ce modèle">Reprendre l'exemple</button>
+        </div>
+        <p id="exemples-msg" class="aide" role="status" aria-live="polite"></p>
+        <p id="desc" class="desc"></p>
+      </div>
+    </details>
+
+    <details class="carte" id="sec-images" open>
+      <summary>2 · Images</summary>
+      <div class="corps">
+        <div id="sources"></div>
+        <input id="fichier" type="file" accept="image/*,video/*" hidden>
+        <p class="aide">Une vidéo : choisis le moment exact. Une image PNG détourée reçoit un contour blanc façon sticker.</p>
+      </div>
+    </details>
+
+    <details class="carte" id="sec-textes" open>
+      <summary>3 · Textes</summary>
+      <div class="corps">
+        <label class="champ" data-f="numero"><span>Numéro</span><input type="text" id="f-numero" maxlength="40"></label>
+        <label class="champ" data-f="titre"><span>Titre <span class="aide">· <code>*mot*</code> = couleur</span></span><textarea id="f-titre" maxlength="200" rows="2"></textarea></label>
+        <div class="grille2">
+          <label class="champ" data-f="badge"><span>Badge</span><input type="text" id="f-badge" maxlength="60"></label>
+          <label class="champ" data-f="bandeau_label"><span>Bandeau : étiquette</span><input type="text" id="f-bandeau_label" maxlength="40"></label>
+          <label class="champ" data-f="bandeau"><span id="l-bandeau">Bandeau</span><input type="text" id="f-bandeau" maxlength="80"></label>
+          <label class="champ" data-f="label_a"><span>Étiquette 1</span><input type="text" id="f-label_a" maxlength="30"></label>
+          <label class="champ" data-f="label_b"><span>Étiquette 2</span><input type="text" id="f-label_b" maxlength="30"></label>
+        </div>
+        <div data-f="emoji">
+          <label class="champ"><span>Emoji</span><input type="text" id="f-emoji" maxlength="8"></label>
+          <div class="ligne emojis" id="emojis" aria-label="Emojis fréquents"></div>
+        </div>
+        <div class="cases" style="margin-top:6px">
+          <label data-f="guillemets"><input type="checkbox" id="f-guillemets"> Guillemets « »</label>
+          <label data-f="fleche"><input type="checkbox" id="f-fleche"> Flèche vers le visage</label>
+          <label><input type="checkbox" id="f-miroir"> Inverser les côtés</label>
+          <label data-f="detourer" title="La personne est détourée par l'IA (sur ton PC), avec un contour blanc, devant l'image floutée"><input type="checkbox" id="f-detourer"> ✂ Détourer la personne (IA)</label>
+        </div>
+      </div>
+    </details>
+
+    <details class="carte" id="sec-perso">
+      <summary>4 · Personnaliser</summary>
+      <div class="corps">
+        <div class="sous">Titre</div>
+        <div class="reglage"><span>Taille</span><input type="range" id="p-titre_taille" min="0.4" max="2" step="0.05"><output></output></div>
+        <div class="reglage"><span>Gauche ↔ droite</span><input type="range" id="p-titre_dx" min="-45" max="45" step="1"><output></output></div>
+        <div class="reglage"><span>Haut ↕ bas</span><input type="range" id="p-titre_dy" min="-45" max="45" step="1"><output></output></div>
+        <div class="reglage"><span>Inclinaison</span><input type="range" id="p-titre_angle" min="-30" max="30" step="1"><output></output></div>
+        <div class="reglage"><span>Contour</span><input type="range" id="p-contour" min="0" max="3" step="0.1"><output></output></div>
+        <div class="couleurs" style="margin:6px 0">
+          <label class="ligne"><input type="checkbox" id="p-titre_couleur_on"> Couleur <input type="color" id="p-titre_couleur" value="#FFFFFF"></label>
+          <label class="ligne">Contour <input type="color" id="p-contour_couleur" value="#000000"></label>
+          <label class="ligne"><input type="checkbox" id="p-lueur_on"> Lueur <input type="color" id="p-lueur" value="#00E5FF"></label>
+          <label class="ligne"><input type="checkbox" id="p-majuscules" checked> MAJUSCULES</label>
+        </div>
+        <div class="sous">Image</div>
+        <div class="reglage"><span>Luminosité</span><input type="range" id="p-luminosite" min="0.4" max="1.8" step="0.05"><output></output></div>
+        <div class="reglage"><span>Contraste</span><input type="range" id="p-contraste" min="0.4" max="1.8" step="0.05"><output></output></div>
+        <div class="reglage"><span>Couleurs</span><input type="range" id="p-saturation" min="0" max="2" step="0.05"><output></output></div>
+        <div class="sous">Cadre</div>
+        <div class="reglage"><span>Épaisseur</span><input type="range" id="p-cadre_epaisseur" min="0" max="6" step="0.5"><output></output></div>
+        <label class="ligne">Couleur du cadre <input type="color" id="p-cadre" value="#FFD60A"></label>
+        <div class="sous">Calques libres <span class="aide" style="text-transform:none;letter-spacing:0">· glisse-les sur l'aperçu</span></div>
+        <div class="ligne">
+          <button id="ajout-texte">＋ Texte</button><button id="ajout-emoji">＋ Emoji</button><button id="ajout-image">＋ Image</button>
+          <input id="calque-fichier" type="file" accept="image/*" hidden>
+        </div>
+        <div id="calques"></div>
+        <button id="perso-raz" class="lien" style="margin-top:8px">Tout remettre comme le modèle</button>
+      </div>
+    </details>
+
+    <details class="carte" id="sec-style">
+      <summary>5 · Couleurs, police et ma charte</summary>
+      <div class="corps">
+      <div class="couleurs">
+        <label class="ligne">Accent <input type="color" id="f-accent"></label>
+        <label class="ligne">Badge <input type="color" id="f-badge_color"></label>
+        <span id="palettes" class="ligne" aria-label="Palettes"></span>
+      </div>
+      <label class="champ" style="margin-top:10px"><span>Police du titre</span><select id="f-police"></select></label>
+      <div class="charte">
+        <h2>Ma charte</h2>
+        <div class="ligne">
+          <label class="champ"><span>Logo</span><select id="f-logo"></select></label>
+          <button id="logo-importer" title="Ajouter un logo (PNG transparent conseillé) à la médiathèque">Importer…</button>
+        </div>
+        <div class="ligne">
+          <label class="champ"><span>Coin</span><select id="f-logo_pos"></select></label>
+          <label class="champ"><span>Taille du logo</span><input type="range" id="f-logo_size" min="0.05" max="0.3" step="0.01"></label>
+        </div>
+        <div class="ligne">
+          <button id="charte-garder" title="Couleurs, police et logo appliqués à chaque nouvelle miniature">💾 Enregistrer comme ma charte</button>
+          <button id="charte-retirer" hidden>Oublier ma charte</button>
+        </div>
+        <p id="charte-note" role="status" aria-live="polite"></p>
+        <input id="logo-fichier" type="file" accept="image/*" hidden>
+      </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="apercu">
+    <div class="barre-apercu">
+      <div id="formats" class="seg" role="group" aria-label="Format"></div>
+      <span class="aide" id="format-aide"></span>
+    </div>
+    <div class="cadre">
+      <div class="scene"><img id="img" alt="Aperçu de la miniature"><div id="poignees" class="poignees"></div></div>
+      <span id="charge" class="charge" hidden>Calcul…</span>
+    </div>
+    <div class="actions">
+      <button id="creer" class="primaire">Créer la miniature</button>
+      <button id="variantes" title="Trois versions (couleurs et côtés différents) pour « Tester et comparer » de YouTube">Créer 3 variantes (test A/B)</button>
+      <span id="msg" role="status" aria-live="polite"></span>
+    </div>
+    <div id="resultats" class="resultats"></div>
+    <details class="yt" id="sec-yt"><summary class="sous" style="cursor:pointer">Aperçu sur YouTube (taille réelle)</summary>
+    <section aria-labelledby="h-yt">
+      <h2 id="h-yt">Aperçu sur YouTube
+        <span class="seg" role="group" aria-label="Thème de YouTube">
+          <button data-yt="sombre" aria-pressed="true">Sombre</button><button data-yt="clair" aria-pressed="false">Clair</button>
+        </span></h2>
+      <p class="aide" style="margin:0 0 8px">À la taille réelle : le texte doit se lire même dans la petite vignette des suggestions.</p>
+      <div class="yt-champs">
+        <label class="champ"><span>Titre de la vidéo</span><input type="text" id="yt-titre" maxlength="100" value="Le titre de ta vidéo apparaît ici, sur deux lignes au plus"></label>
+        <label class="champ"><span>Nom de la chaîne</span><input type="text" id="yt-chaine" maxlength="40" value="Ma chaîne"></label>
+      </div>
+      <div id="yt-scene" class="yt-scene sombre"></div>
+    </section>
+    </details>
+  </div>
+</main>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const enc = encodeURIComponent;
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const FIELDS = ["titre", "badge", "bandeau_label", "bandeau", "label_a", "label_b", "numero", "emoji"];
+const CHECKS = ["guillemets", "fleche", "miroir", "detourer"];
+const EMOJIS = ["😱", "🤯", "🔥", "😂", "😡", "💰", "❌", "✅", "👀", "💯"];
+const OLD_SERVER = "MSV tourne avec une ancienne version : ferme sa fenêtre noire, relance-le, puis recharge cette page (Ctrl+F5).";
+const S = { cfg: null, spec: null, medias: [], seq: 0, ctl: null, timer: 0, url: "" };
+
+async function api(url, opts = {}) {
+  const r = await fetch(url, opts.body && !(opts.body instanceof FormData)
+    ? { ...opts, body: JSON.stringify(opts.body), headers: { "Content-Type": "application/json" } } : opts);
+  if (!r.ok) {
+    let m = String(r.status);
+    try { m = (await r.json()).detail || m; } catch (e) { /* pas du JSON */ }
+    if (r.status === 404 && m === "Not Found") m = OLD_SERVER;
+    throw new Error(m);
+  }
+  return r;
+}
+
+function setMsg(text, error = false) { $("#msg").textContent = text; $("#msg").classList.toggle("erreur", error); }
+
+// ------------------------------------------------------------------ réglages ↔ formulaire
+function tpl() { return S.cfg.templates[S.spec.modele]; }
+
+// ------------------------------------------------------------------ aperçu sur YouTube (tailles réelles)
+let ytTheme = "sombre";
+function renderYouTube() {
+  const box = $("#yt-scene"); if (!box || !S.url) return;
+  const title = esc($("#yt-titre").value || "Titre de la vidéo"), chan = esc($("#yt-chaine").value || "Ma chaîne");
+  const vert = S.spec.format === "9:16";
+  const img = (w, h, dur = true) => `<div class="yt-vignette" style="width:${w}px;height:${h}px"><img src="${S.url}" alt="">${dur ? '<span class="yt-duree">12:34</span>' : ""}</div>`;
+  const meta = `${chan}<br>12 k vues · il y a 2 jours`;
+  box.className = "yt-scene " + ytTheme;
+  box.innerHTML = vert
+    ? `<div class="yt-bloc"><small>Étagère Shorts (accueil)</small>${img(180, 320, false)}<div class="yt-titre" style="width:180px">${title}</div><div class="yt-meta">12 k vues</div></div>
+       <div class="yt-bloc"><small>Shorts sur téléphone</small>${img(120, 213, false)}</div>`
+    : `<div class="yt-bloc"><small>Accueil (ordinateur)</small>${img(360, 202)}<div class="yt-carte" style="width:360px"><span class="yt-avatar"></span><div><div class="yt-titre">${title}</div><div class="yt-meta">${meta}</div></div></div></div>
+       <div class="yt-bloc"><small>Suggestions (à côté d'une vidéo)</small><div class="yt-sugg">${img(168, 94)}<div><div class="yt-titre">${title}</div><div class="yt-meta">${meta}</div></div></div>
+       <small style="margin-top:14px">Téléphone, liste de recherche</small>${img(240, 135)}</div>`;
+}
+document.querySelectorAll("[data-yt]").forEach((b) => b.addEventListener("click", () => {
+  ytTheme = b.dataset.yt;
+  document.querySelectorAll("[data-yt]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  renderYouTube();
+}));
+["#yt-titre", "#yt-chaine"].forEach((s) => $(s).addEventListener("input", renderYouTube));
+
+// ------------------------------------------------------------------ ma charte
+const CHARTE = ["accent", "badge_color", "police", "logo", "logo_pos", "logo_size"];
+function fillLogos() {
+  const imgs = S.medias.filter((m) => m.kind === "image");
+  if (S.spec.logo && !imgs.some((m) => m.path === S.spec.logo)) imgs.unshift({ path: S.spec.logo, name: S.spec.logo.split(/[\\/]/).pop() });
+  $("#f-logo").innerHTML = `<option value="">(aucun logo)</option>` + imgs.map((m) =>
+    `<option value="${esc(m.path)}" ${m.path === S.spec.logo ? "selected" : ""}>${esc(m.name)}</option>`).join("");
+}
+async function saveCharte() {
+  try {
+    const body = Object.fromEntries(CHARTE.map((k) => [k, S.spec[k]]));
+    S.cfg.charte = await (await api("/api/miniature/charte", { method: "POST", body })).json();
+    $("#charte-retirer").hidden = false;
+    $("#charte-note").textContent = "✅ Charte enregistrée : elle sera appliquée à chaque nouvelle miniature.";
+  } catch (err) { $("#charte-note").textContent = err.message; }
+}
+async function forgetCharte() {
+  await api("/api/miniature/charte", { method: "DELETE" }).catch(() => {});
+  S.cfg.charte = {}; $("#charte-retirer").hidden = true;
+  $("#charte-note").textContent = "Charte oubliée (les réglages en cours restent).";
+}
+
+function fillForm() {
+  for (const f of FIELDS) $("#f-" + f).value = S.spec[f] || "";
+  for (const f of CHECKS) $("#f-" + f).checked = !!S.spec[f];
+  $("#f-accent").value = S.spec.accent; $("#f-badge_color").value = S.spec.badge_color; $("#f-police").value = S.spec.police;
+  $("#f-logo_pos").value = S.spec.logo_pos; $("#f-logo_size").value = S.spec.logo_size;
+  if (S.medias) fillLogos();
+}
+
+// ------------------------------------------------------------------ galerie des modèles (vignettes)
+let vignTimer = 0;
+function loadVignettes() {
+  clearTimeout(vignTimer);
+  vignTimer = setTimeout(() => {
+    const mine = $("#vignettes-moi").checked ? S.spec.images.filter((it) => it.path) : [];
+    document.querySelectorAll("#modeles button").forEach((b, n) => {
+      setTimeout(async () => {
+        try {
+          const r = await api("/api/miniature/vignette", { method: "POST", body: { modele: b.dataset.k, format: "16:9", images: mine } });
+          const url = URL.createObjectURL(await r.blob()), img = b.querySelector("img");
+          if (img.dataset.url) URL.revokeObjectURL(img.dataset.url);
+          img.src = url; img.dataset.url = url;
+        } catch (e) { /* vignette indisponible : le nom suffit */ }
+      }, n * 40);
+    });
+  }, mine_changed_delay());
+}
+const mine_changed_delay = () => ($("#vignettes-moi").checked ? 700 : 0);
+// ------------------------------------------------------------------ exemples faits avec mes vidéos
+let examplesReady = 0;
+async function examplesStatus() {
+  try {
+    const st = await (await api("/api/miniature/exemples")).json();
+    examplesReady = st.disponibles || 0;
+    $("#exemple-reprendre").hidden = !examplesReady;
+    if (st.etat === "en cours") {
+      $("#exemples-msg").textContent = `Création des exemples… ${Math.round(st.progress * 100)} % · ${st.message || ""}`;
+      $("#exemples-creer").disabled = true;
+      setTimeout(examplesStatus, 1200);
+      return;
+    }
+    $("#exemples-creer").disabled = false;
+    if (st.etat === "erreur") $("#exemples-msg").textContent = "⚠ " + st.erreur;
+    else if (st.etat === "fini") { $("#exemples-msg").textContent = `✅ ${st.nombre} exemples créés avec ${st.videos.length} de tes vidéos, rangés dans ${st.dossier}.`; loadVignettes(); }
+    else if (examplesReady) $("#exemples-msg").textContent = `Les vignettes montrent tes exemples (${examplesReady}) · dossier : ${st.dossier}`;
+  } catch (e) { /* ancienne version de MSV : rien à afficher */ }
+}
+async function examplesBuild() {
+  try {
+    await api("/api/miniature/exemples", { method: "POST" });
+    $("#exemples-msg").textContent = "Création des exemples… (environ une minute)";
+    setTimeout(examplesStatus, 800);
+  } catch (err) { $("#exemples-msg").textContent = "⚠ " + err.message; }
+}
+async function exampleReuse() {
+  try {
+    const ex = await (await api("/api/miniature/exemple?modele=" + enc(S.spec.modele))).json();
+    S.spec.images = ex.images.map((it) => ({ path: it.path, t: it.t || 0 }));
+    for (const it of S.spec.images) {
+      if (!mediaOf(it.path)) { try { S.medias.unshift(await (await api("/api/editeur/info?path=" + enc(it.path))).json()); } catch (e) { /* hors médiathèque */ } }
+    }
+    renderSources(); refresh(0);
+  } catch (err) { setMsg("Pas encore d'exemple pour ce modèle : clique sur « Créer les exemples avec mes vidéos ».", true); }
+}
+
+function filterTemplates(style) {
+  document.querySelectorAll("#filtres button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.style === style)));
+  document.querySelectorAll("#modeles button").forEach((b) => { b.hidden = !!style && S.cfg.templates[b.dataset.k].style !== style; });
+}
+
+// ------------------------------------------------------------------ personnaliser
+const PERSO = ["titre_taille", "titre_dx", "titre_dy", "titre_angle", "contour", "luminosite", "contraste", "saturation", "cadre_epaisseur"];
+function fillPerso() {
+  for (const k of PERSO) { const el = $("#p-" + k); el.value = S.spec[k]; el.nextElementSibling.textContent = (+S.spec[k]).toFixed(k.includes("dx") || k.includes("dy") || k.includes("angle") ? 0 : 2); }
+  $("#p-titre_couleur_on").checked = !!S.spec.titre_couleur; if (S.spec.titre_couleur) $("#p-titre_couleur").value = S.spec.titre_couleur;
+  $("#p-lueur_on").checked = !!S.spec.lueur; if (S.spec.lueur) $("#p-lueur").value = S.spec.lueur;
+  $("#p-contour_couleur").value = S.spec.contour_couleur || "#000000";
+  $("#p-majuscules").checked = S.spec.majuscules !== false;
+  if (S.spec.cadre) $("#p-cadre").value = S.spec.cadre;
+  renderLayers();
+}
+function bindPerso() {
+  for (const k of PERSO) $("#p-" + k).addEventListener("input", (e) => {
+    S.spec[k] = +e.target.value; e.target.nextElementSibling.textContent = (+e.target.value).toFixed(k.includes("dx") || k.includes("dy") || k.includes("angle") ? 0 : 2);
+    if (k === "cadre_epaisseur" && !S.spec.cadre) S.spec.cadre = $("#p-cadre").value.toUpperCase();
+    refresh(150);
+  });
+  const color = (id, key, onId) => {
+    $(id).addEventListener("input", (e) => { if (!onId || $(onId).checked) S.spec[key] = e.target.value.toUpperCase(); refresh(150); });
+    if (onId) $(onId).addEventListener("change", (e) => { S.spec[key] = e.target.checked ? $(id).value.toUpperCase() : ""; refresh(0); });
+  };
+  color("#p-titre_couleur", "titre_couleur", "#p-titre_couleur_on");
+  color("#p-lueur", "lueur", "#p-lueur_on");
+  color("#p-contour_couleur", "contour_couleur");
+  color("#p-cadre", "cadre");
+  $("#p-majuscules").addEventListener("change", (e) => { S.spec.majuscules = e.target.checked; refresh(0); });
+  $("#ajout-texte").onclick = () => addLayer({ type: "texte", contenu: "WOW", taille: 12, couleur: "#FFD60A" });
+  $("#ajout-emoji").onclick = () => addLayer({ type: "emoji", contenu: "🔥", taille: 22 });
+  $("#ajout-image").onclick = () => $("#calque-fichier").click();
+  $("#calque-fichier").addEventListener("change", async () => {
+    const f = $("#calque-fichier").files[0]; if (!f) return;
+    const fd = new FormData(); fd.append("fichier", f);
+    try {
+      const m = await (await api("/api/editeur/importer", { method: "POST", body: fd })).json();
+      S.medias.unshift(m); addLayer({ type: "image", contenu: m.path, taille: 35 });
+    } catch (err) { setMsg(err.message, true); }
+    $("#calque-fichier").value = "";
+  });
+  $("#perso-raz").onclick = () => {
+    for (const k of [...PERSO, "titre_couleur", "lueur", "contour_couleur", "majuscules", "cadre", "calques"]) S.spec[k] = structuredClone(S.cfg.defaults[k]);
+    fillPerso(); refresh(0);
+  };
+}
+function addLayer(l) {
+  S.spec.calques = [...(S.spec.calques || []), { x: 50 + (S.spec.calques || []).length * 6 % 30, y: 50, angle: 0, couleur: "#FFFFFF", contour: true, ...l }];
+  renderLayers(); refresh(0);
+}
+function renderLayers() {
+  const box = $("#calques"), L = S.spec.calques || [];
+  const imgs = S.medias.filter((m) => m.kind === "image");
+  box.innerHTML = L.map((l, i) => `<div class="calque" data-i="${i}">
+    <div class="haut">${l.type === "image"
+      ? `<select data-k="contenu" aria-label="Image du calque">${imgs.map((m) => `<option value="${esc(m.path)}" ${m.path === l.contenu ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select>`
+      : `<input type="text" data-k="contenu" value="${esc(l.contenu)}" aria-label="${l.type === "emoji" ? "Emoji" : "Texte"} du calque" maxlength="${l.type === "emoji" ? 8 : 80}">`}
+      ${l.type === "texte" ? `<input type="color" data-k="couleur" value="${l.couleur}" aria-label="Couleur du texte">` : ""}
+      <button data-act="suppr" aria-label="Supprimer ce calque">✕</button></div>
+    <div class="reglage"><span>Taille</span><input type="range" data-k="taille" min="2" max="90" step="1" value="${l.taille}"><output>${l.taille}</output></div>
+    <div class="reglage"><span>Rotation</span><input type="range" data-k="angle" min="-180" max="180" step="1" value="${l.angle}"><output>${l.angle}°</output></div>
+  </div>`).join("");
+  renderHandles();
+}
+$("#calques").addEventListener("input", (e) => {
+  const row = e.target.closest(".calque"); if (!row) return;
+  const l = S.spec.calques[+row.dataset.i], k = e.target.dataset.k; if (!k) return;
+  l[k] = e.target.type === "range" ? +e.target.value : e.target.value;
+  if (e.target.type === "range") e.target.nextElementSibling.textContent = l[k] + (k === "angle" ? "°" : "");
+  renderHandles(); refresh(150);
+});
+$("#calques").addEventListener("change", (e) => { if (e.target.tagName === "SELECT") { const row = e.target.closest(".calque"); S.spec.calques[+row.dataset.i].contenu = e.target.value; refresh(0); } });
+$("#calques").addEventListener("click", (e) => {
+  if (e.target.dataset.act !== "suppr") return;
+  S.spec.calques.splice(+e.target.closest(".calque").dataset.i, 1); renderLayers(); refresh(0);
+});
+function renderHandles() {   // poignées des calques sur l'aperçu : glisser pour déplacer
+  const box = $("#poignees");
+  box.innerHTML = (S.spec.calques || []).map((l, i) =>
+    `<div class="poignee" data-i="${i}" style="left:${l.x}%;top:${l.y}%" title="Glisse pour déplacer">${l.type === "emoji" ? esc(l.contenu) : l.type === "texte" ? "T" : "🖼"}</div>`).join("");
+}
+$("#poignees").addEventListener("pointerdown", (e) => {
+  const h = e.target.closest(".poignee"); if (!h) return;
+  e.preventDefault(); h.setPointerCapture(e.pointerId);
+  const l = S.spec.calques[+h.dataset.i], r = $("#poignees").getBoundingClientRect();
+  const move = (ev) => {
+    l.x = Math.round(Math.min(105, Math.max(-5, (ev.clientX - r.left) / r.width * 100)) * 10) / 10;
+    l.y = Math.round(Math.min(105, Math.max(-5, (ev.clientY - r.top) / r.height * 100)) * 10) / 10;
+    h.style.left = l.x + "%"; h.style.top = l.y + "%";
+  };
+  const up = () => { h.removeEventListener("pointermove", move); h.removeEventListener("pointerup", up); refresh(0); };
+  h.addEventListener("pointermove", move); h.addEventListener("pointerup", up);
+});
+
+function showFields() {
+  const t = tpl();
+  $("#nom-modele").textContent = "· " + t.name;
+  document.querySelectorAll("[data-f]").forEach((el) => { el.hidden = !t.fields.includes(el.dataset.f); });
+  $("#l-bandeau").textContent = S.spec.modele === "podcast" ? "Bandeau : nom" : S.spec.modele === "alerte" ? "Bandeau défilant" : "Bandeau (en bas)";
+  $("#desc").textContent = t.desc;
+  document.querySelectorAll("#modeles button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === S.spec.modele)));
+  document.querySelectorAll("#formats button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.k === S.spec.format)));
+  const [w, h] = S.cfg.formats[S.spec.format];
+  $("#format-aide").textContent = `${w} × ${h} px, JPG de 2 Mo au plus (limite de YouTube).` + (S.spec.format === "9:16" ? " Pour les Shorts." : "");
+  renderSources();
+}
+
+function setTemplate(k) {
+  const old = tpl().example || {}, ex = S.cfg.templates[k].example || {};
+  for (const f of [...FIELDS, "guillemets", "fleche"]) {   // un texte d'exemple non modifié suit le modèle choisi
+    const v = S.spec[f];
+    if (v === "" || v === false || v === undefined || v === old[f]) S.spec[f] = ex[f] ?? (CHECKS.includes(f) ? false : "");
+  }
+  S.spec.modele = k;
+  fillForm(); showFields(); refresh(0);
+  showSelected();
+}
+function showSelected() {   // la rangée de vignettes défile jusqu'au modèle choisi (sans faire défiler la page)
+  const g = $("#modeles"), b = g.querySelector(`button[data-k="${S.spec.modele}"]`);
+  if (b && (b.offsetLeft < g.scrollLeft || b.offsetLeft + b.offsetWidth > g.scrollLeft + g.clientWidth)) g.scrollLeft = b.offsetLeft - 8;
+}
+
+// ------------------------------------------------------------------ images
+const mediaOf = (p) => S.medias.find((m) => m.path === p);
+
+function renderSources() {
+  const n = tpl().images, box = $("#sources");
+  while (S.spec.images.length > n) S.spec.images.pop();
+  const opts = (sel) => `<option value="">${n > 1 ? "(aucune : la 1re image sert aux deux)" : "(aucune)"}</option>` +
+    S.medias.filter((m) => m.kind === "video" || m.kind === "image").map((m) =>
+      `<option value="${esc(m.path)}" ${m.path === sel ? "selected" : ""}>${m.kind === "video" ? "🎬" : "🖼"} ${esc(m.name)}</option>`).join("");
+  box.innerHTML = Array.from({ length: n }, (_v, i) => {
+    const it = S.spec.images[i] || { path: "", t: 0 }, m = mediaOf(it.path), dur = m && m.kind === "video" ? m.duration : 0;
+    const names = tpl().sources || (S.spec.modele === "avant_apres" ? ["Image AVANT", "Image APRÈS"] : ["Personne de gauche", "Personne de droite"]);
+    const lab = n > 1 ? names[i] : "Image";
+    return `<div class="source" data-i="${i}">
+      <div class="titre">${lab}</div>
+      <div class="ligne"><select aria-label="${lab}" data-r="path" style="flex:1 1 160px">${opts(it.path)}</select>
+        <button data-r="importer" title="Ajouter un fichier de l'ordinateur à la médiathèque">Importer…</button></div>
+      ${dur ? `<div class="temps"><input type="range" min="0" max="${dur.toFixed(2)}" step="0.04" value="${it.t || 0}" aria-label="Moment de la vidéo" data-r="t">
+        <input type="number" min="0" max="${dur.toFixed(2)}" step="0.1" value="${(it.t || 0).toFixed(1)}" aria-label="Moment en secondes" data-r="tn"></div>` : ""}
+    </div>`;
+  }).join("") + (n > 1 && S.spec.modele === "podcast" ? `<p class="aide">Une seule image avec les deux visages suffit : MSV cadre chaque personne.</p>` : "");
+}
+
+function setImage(i, patch) {
+  while (S.spec.images.length <= i) S.spec.images.push({ path: "", t: 0 });
+  Object.assign(S.spec.images[i], patch);
+}
+
+$("#sources").addEventListener("change", (e) => {
+  const src = e.target.closest(".source"); if (!src) return;
+  const i = +src.dataset.i, r = e.target.dataset.r;
+  if (r === "path") { setImage(i, { path: e.target.value, t: 0 }); renderSources(); refresh(0); if ($("#vignettes-moi").checked) loadVignettes(); }
+  if (r === "tn") { setImage(i, { t: Math.max(0, +e.target.value || 0) }); src.querySelector("[data-r=t]").value = S.spec.images[i].t; refresh(); }
+});
+$("#sources").addEventListener("input", (e) => {
+  if (e.target.dataset.r !== "t") return;
+  const src = e.target.closest(".source"), i = +src.dataset.i;
+  setImage(i, { t: +e.target.value }); src.querySelector("[data-r=tn]").value = (+e.target.value).toFixed(1); refresh(250);
+});
+let importFor = 0;
+$("#sources").addEventListener("click", (e) => {
+  if (e.target.dataset.r !== "importer") return;
+  importFor = +e.target.closest(".source").dataset.i; $("#fichier").click();
+});
+$("#fichier").addEventListener("change", async () => {
+  const f = $("#fichier").files[0]; if (!f) return;
+  const fd = new FormData(); fd.append("fichier", f);
+  setMsg("Import de " + f.name + "…");
+  try {
+    const m = await (await api("/api/editeur/importer", { method: "POST", body: fd })).json();
+    S.medias.unshift(m); setImage(importFor, { path: m.path, t: 0 }); renderSources(); refresh(0); setMsg("");
+  } catch (err) { setMsg(err.message, true); }
+  $("#fichier").value = "";
+});
+
+// ------------------------------------------------------------------ aperçu
+function payload() {
+  return { ...S.spec, images: S.spec.images.filter((it) => it.path) };
+}
+
+function refresh(delay = 300) {
+  clearTimeout(S.timer);
+  S.timer = setTimeout(async () => {
+    const seq = ++S.seq;
+    if (S.ctl) S.ctl.abort();
+    S.ctl = new AbortController();
+    $("#charge").hidden = false;
+    try {
+      const r = await api("/api/miniature/apercu", { method: "POST", body: payload(), signal: S.ctl.signal });
+      const blob = await r.blob();
+      if (seq !== S.seq) return;
+      if (S.url) URL.revokeObjectURL(S.url);
+      S.url = URL.createObjectURL(blob); $("#img").src = S.url; renderYouTube();
+      if ($("#msg").classList.contains("erreur") || $("#msg").textContent.startsWith("Détourage")) setMsg("");
+    } catch (err) {
+      if (err.name !== "AbortError" && seq === S.seq) setMsg(err.message, true);
+    } finally { if (seq === S.seq) $("#charge").hidden = true; }
+  }, delay);
+}
+
+// ------------------------------------------------------------------ création
+async function create(n) {
+  const btns = [$("#creer"), $("#variantes")];
+  btns.forEach((b) => { b.disabled = true; });
+  setMsg(n > 1 ? "Création des 3 variantes…" : "Création de la miniature…");
+  try {
+    const r = await (await api("/api/miniature/creer", { method: "POST", body: { spec: payload(), variantes: n } })).json();
+    setMsg(n > 1 ? "3 variantes prêtes : envoie-les dans « Tester et comparer » de YouTube Studio." : "Miniature prête.");
+    const t = Date.now();
+    $("#resultats").innerHTML = r.files.map((f) => `<figure><img src="${f.url}&t=${t}" alt="${esc(f.name)}">
+      <figcaption>${esc(f.name)} · ${Math.round(f.size / 1024)} Ko</figcaption>
+      <div class="ligne"><a class="bouton" href="${f.url}" download="${esc(f.name)}">Télécharger</a>
+      <button data-montrer="${esc(f.path)}">Afficher dans le dossier</button></div></figure>`).join("");
+  } catch (err) {
+    setMsg(err.message, true);
+  } finally { btns.forEach((b) => { b.disabled = false; }); }
+}
+$("#creer").onclick = () => create(1);
+$("#variantes").onclick = () => create(3);
+$("#resultats").addEventListener("click", async (e) => {
+  const p = e.target.dataset.montrer; if (!p) return;
+  try { await api("/api/editeur/montrer", { method: "POST", body: { path: p } }); } catch (err) { setMsg(err.message, true); }
+});
+
+// ------------------------------------------------------------------ démarrage
+function bindInputs() {
+  for (const f of FIELDS) $("#f-" + f).addEventListener("input", (e) => { S.spec[f] = e.target.value; refresh(); });
+  for (const f of CHECKS) $("#f-" + f).addEventListener("change", (e) => {
+    S.spec[f] = e.target.checked;
+    if (f === "detourer" && e.target.checked) setMsg("Détourage de la personne… (la première fois, le modèle de 26 Mo se télécharge)");
+    refresh(0);
+  });
+  for (const f of ["accent", "badge_color"]) $("#f-" + f).addEventListener("input", (e) => { S.spec[f] = e.target.value.toUpperCase(); refresh(150); });
+  $("#f-police").addEventListener("change", (e) => { S.spec.police = e.target.value; refresh(0); });
+  $("#f-logo").addEventListener("change", (e) => { S.spec.logo = e.target.value; refresh(0); });
+  $("#f-logo_pos").addEventListener("change", (e) => { S.spec.logo_pos = e.target.value; refresh(0); });
+  $("#f-logo_size").addEventListener("input", (e) => { S.spec.logo_size = +e.target.value; refresh(150); });
+  $("#charte-garder").onclick = saveCharte;
+  $("#charte-retirer").onclick = forgetCharte;
+  $("#logo-importer").onclick = () => $("#logo-fichier").click();
+  $("#logo-fichier").addEventListener("change", async () => {
+    const f = $("#logo-fichier").files[0]; if (!f) return;
+    const fd = new FormData(); fd.append("fichier", f);
+    try {
+      const m = await (await api("/api/editeur/importer", { method: "POST", body: fd })).json();
+      S.medias.unshift(m); S.spec.logo = m.path; fillLogos(); refresh(0);
+    } catch (err) { $("#charte-note").textContent = err.message; }
+    $("#logo-fichier").value = "";
+  });
+}
+
+async function start() {
+  let cfg;
+  try { cfg = await (await api("/api/miniature/config")).json(); } catch (err) { setMsg(err.message, true); return; }
+  S.cfg = cfg;
+  const q = new URLSearchParams(location.search);
+  const back = q.get("retour") || "";
+  if (back.startsWith("/editeur")) $(".retour").href = back;   // application de bureau : retour au même instant
+  const k = cfg.templates[q.get("modele")] ? q.get("modele") : cfg.defaults.modele;
+  S.spec = { ...cfg.defaults, ...cfg.templates[k].example, modele: k, images: [] };
+  if (q.get("src")) S.spec.images.push({ path: q.get("src"), t: Math.max(0, parseFloat(q.get("t")) || 0) });
+  if (q.get("format") && cfg.formats[q.get("format")]) S.spec.format = q.get("format");
+
+  $("#modeles").innerHTML = Object.entries(cfg.templates).map(([key, t]) =>
+    `<button data-k="${key}" aria-pressed="false" title="${esc(t.desc)}"><img alt=""><span><span aria-hidden="true">${t.ico}</span> ${esc(t.name)}</span></button>`).join("");
+  $("#filtres").onclick = (e) => { const b = e.target.closest("button"); if (b) filterTemplates(b.dataset.style); };
+  $("#vignettes-moi").addEventListener("change", loadVignettes);
+  $("#exemples-creer").onclick = examplesBuild;
+  $("#exemple-reprendre").onclick = exampleReuse;
+  document.querySelectorAll("details.carte, details.yt").forEach((d) => {   // sections ouvertes : mémorisées
+    try { const v = localStorage.getItem("msv-mini-" + d.id); if (v) d.open = v === "1"; } catch (e) { /* stockage indisponible */ }
+    d.addEventListener("toggle", () => { try { localStorage.setItem("msv-mini-" + d.id, d.open ? "1" : "0"); } catch (e) { /* idem */ } });
+  });
+  $("#modeles").onclick = (e) => { const b = e.target.closest("button"); if (b) setTemplate(b.dataset.k); };
+  $("#formats").innerHTML = Object.keys(cfg.formats).map((f) => `<button data-k="${f}" aria-pressed="false">${f}</button>`).join("");
+  $("#formats").onclick = (e) => { const b = e.target.closest("button"); if (b) { S.spec.format = b.dataset.k; showFields(); refresh(0); } };
+  $("#f-police").innerHTML = cfg.fonts.map((f) => `<option>${esc(f)}</option>`).join("");
+  $("#f-logo_pos").innerHTML = cfg.logo_positions.map((v) => `<option>${esc(v)}</option>`).join("");
+  if (cfg.charte && Object.keys(cfg.charte).length) {      // ma charte : appliquée d'office
+    Object.assign(S.spec, cfg.charte);
+    $("#charte-retirer").hidden = false;
+    $("#charte-note").textContent = "Ma charte est appliquée (couleurs, police" + (cfg.charte.logo ? ", logo" : "") + ").";
+  }
+  $("#palettes").innerHTML = cfg.palettes.map(([a, b], i) =>
+    `<button class="palette" data-i="${i}" title="Palette ${i + 1}" aria-label="Palette ${i + 1}"><i style="background:${a}"></i><i style="background:${b}"></i></button>`).join("");
+  $("#palettes").onclick = (e) => {
+    const b = e.target.closest("button"); if (!b) return;
+    [S.spec.accent, S.spec.badge_color] = cfg.palettes[+b.dataset.i]; fillForm(); refresh(0);
+  };
+  $("#emojis").innerHTML = EMOJIS.map((x) => `<button aria-label="Emoji ${x}">${x}</button>`).join("");
+  $("#emojis").onclick = (e) => { const b = e.target.closest("button"); if (b) { S.spec.emoji = b.textContent; fillForm(); refresh(0); } };
+
+  if (cfg.edition === "pro") {
+    const ed = $("#edition"); ed.hidden = false;
+    if (!cfg.allowed) ed.textContent = "PRO · activer la licence";
+  }
+  if (!cfg.allowed) {
+    const v = $("#verrou"); v.hidden = false;
+    v.innerHTML = cfg.edition === "pro"
+      ? `Aperçu avec filigrane : la création des miniatures demande une licence MSV Pro active. <a href="${cfg.pro_page}">Activer ma licence</a>`
+      : `Aperçu avec filigrane : les miniatures Pro font partie de MSV Pro. <a href="${cfg.pro_page}">⭐ Passer à Pro</a>`;
+  }
+  bindInputs(); bindPerso(); fillForm(); fillPerso(); showFields(); refresh(0); loadVignettes();
+  showSelected(); examplesStatus();
+  try {
+    S.medias = await (await api("/api/editeur/medias")).json();
+    const it = S.spec.images[0];
+    if (it && !mediaOf(it.path)) {                      // fichier venu de l'éditeur, hors de la liste : on l'ajoute
+      try { S.medias.unshift(await (await api("/api/editeur/info?path=" + enc(it.path))).json()); } catch (e) { S.spec.images = []; }
+    }
+    renderSources(); fillLogos(); renderLayers();
+  } catch (err) { setMsg(err.message, true); }
+}
+start();
+</script>
+</body>
+</html>

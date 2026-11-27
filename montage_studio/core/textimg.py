@@ -161,6 +161,7 @@ def render_text(
     base: Image.Image | None = None,
     highlight_indices: Iterable[int] | None = None,
     highlight_colors: dict[int, str] | None = None,
+    anim: dict | None = None,
 ) -> Image.Image:
     """Dessine `text` sur un calque transparent W×H (ou sur `base`).
 
@@ -169,7 +170,22 @@ def render_text(
     s'ajoutent à highlight_index.
     highlight_colors : couleur propre à certains mots surlignés ({indice: couleur}) ; les autres gardent
     highlight_color (deuxième couleur du titre de classement).
+    anim : état d'une image d'animation (sous-titres animés, voir core/subanim.py), clés facultatives :
+      "scale" (taille du bloc, 1 = normale), "dy" (décalage vertical en px), "alpha" (opacité 0..1),
+      "visible" (nombre de mots déjà apparus ; la mise en page reste celle du texte entier),
+      "word_scale" ({indice: taille} : un mot grossi autour de son centre).
     """
+    if anim and base is not None:      # animation : texte dessiné à part, puis posé sur l'image de fond
+        layer = render_text(text, W, H, style, None, highlight_index, None, highlight_indices, highlight_colors,
+                            anim)
+        out = base.convert("RGBA")
+        out.alpha_composite(layer)
+        if out_path:
+            out.save(out_path)
+        return out
+    anim = anim or {}
+    visible = anim.get("visible")
+    word_scale = anim.get("word_scale") or {}
     highlighted = set(highlight_indices or ())
     if highlight_index is not None:
         highlighted.add(highlight_index)
@@ -226,15 +242,30 @@ def render_text(
         img.alpha_composite(overlay)
         draw = ImageDraw.Draw(img)
 
+    # mots grossis (animation) : police plus grande ; leurs voisins s'écartent et la ligne reste centrée
+    big = {i: load_font(st.get("font", ""), max(8, int(round(font.size * float(s)))), int(st.get("weight", 700)))
+           for i, s in word_scale.items() if 0 <= i < len(words) and abs(float(s) - 1.0) > 0.01}
     for li, ln in enumerate(lines):
+        extra = sum(big[i].getlength(words[i]) - font.getlength(words[i]) for i in ln if i in big)
         if st.get("align") == "left":
             x = (W - max_w) / 2
         else:
-            x = (W - widths[li]) / 2
+            x = (W - widths[li] - extra) / 2
         y = y0 + li * line_h
         for i in ln:
             w = words[i]
             ww = font.getlength(w)
+            if visible is not None and i >= visible:     # pas encore apparu (machine à écrire) : place gardée
+                x += ww + space
+                continue
+            f, sw, wx, wy, wwi, asc, desc = font, stroke, x, y, ww, ascent, descent
+            if i in big:                                 # même centre vertical, place élargie
+                f = big[i]
+                sw = int(round(stroke * float(word_scale[i])))
+                wwi = f.getlength(w)
+                asc, desc = f.getmetrics()
+                wy = y + (ascent + descent) / 2 - (asc + desc) / 2
+                ww = wwi
             is_hl = i in highlighted
             fill = color
             if is_hl and highlight_colors and i in highlight_colors:
@@ -244,7 +275,7 @@ def render_text(
             if is_hl and st.get("highlight_mode") == "fond":
                 hb = ImageDraw.Draw(img)
                 hb.rounded_rectangle(
-                    [x - pad * 0.35, y - pad * 0.15, x + ww + pad * 0.35, y + ascent + descent + pad * 0.1],
+                    [wx - pad * 0.35, wy - pad * 0.15, wx + wwi + pad * 0.35, wy + asc + desc + pad * 0.1],
                     radius=int(12 * k), fill=hl_c,
                 )
                 draw = ImageDraw.Draw(img)
@@ -252,13 +283,40 @@ def render_text(
                 fill = hl_c
             if st.get("shadow"):
                 off = max(2, int(5 * k))
-                draw.text((x + off, y + off), w, font=font, fill=(0, 0, 0, 140),
-                          stroke_width=stroke, stroke_fill=(0, 0, 0, 140))
-            draw.text((x, y), w, font=font, fill=fill, stroke_width=stroke, stroke_fill=stroke_c)
+                draw.text((wx + off, wy + off), w, font=f, fill=(0, 0, 0, 140),
+                          stroke_width=sw, stroke_fill=(0, 0, 0, 140))
+            draw.text((wx, wy), w, font=f, fill=fill, stroke_width=sw, stroke_fill=stroke_c)
             x += ww + space
 
+    if anim:
+        img = _transform(img, float(anim.get("scale", 1.0)), float(anim.get("dy", 0.0)),
+                         float(anim.get("alpha", 1.0)))
     if out_path:
         img.save(out_path)
+    return img
+
+
+def _transform(img: Image.Image, scale: float, dy: float, alpha: float) -> Image.Image:
+    """Bloc de texte agrandi autour de son centre, décalé verticalement et rendu transparent (animations)."""
+    box = img.getbbox()
+    if box is None:
+        return img
+    if abs(scale - 1.0) > 0.005 or abs(dy) >= 0.5:
+        part = img.crop(box)
+        if abs(scale - 1.0) > 0.005:
+            part = part.resize((max(1, round(part.width * scale)), max(1, round(part.height * scale))),
+                               Image.BICUBIC)
+        cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2 + dy
+        px, py = round(cx - part.width / 2), round(cy - part.height / 2)
+        # ce qui sort de l'image à gauche ou en haut est coupé (alpha_composite exige une position positive)
+        part = part.crop((max(0, -px), max(0, -py), part.width, part.height))
+        out = Image.new("RGBA", img.size, (0, 0, 0, 0))
+        if part.width and part.height:
+            out.alpha_composite(part, (max(0, px), max(0, py)))
+        img = out
+    if alpha < 0.999:
+        a = img.getchannel("A").point(lambda v: int(v * max(0.0, alpha)))
+        img.putalpha(a)
     return img
 
 

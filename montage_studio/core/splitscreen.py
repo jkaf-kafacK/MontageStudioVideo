@@ -25,7 +25,9 @@ AUDIO = ["toutes (mélange)", "vidéo 1", "vidéo 2", "vidéo 3", "vidéo 4", "a
 FORMATS = {"16:9": (1920, 1080), "9:16": (1080, 1920), "1:1": (1080, 1080)}
 MIN, MAX = 2, 4
 FPS = 30
-_ENC = ["-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
+def _enc() -> list[str]:
+    """H.264 haute qualité (x264 en édition libre, encodeur sans GPL en édition pro)."""
+    return [*ff.video_args(18, "fast"), "-pix_fmt", "yuv420p"]
 
 
 def _even(v: float) -> int:
@@ -168,7 +170,7 @@ def render(files: list, out_path: str | Path, layout: str, fmt: str, gap: int, f
            audio: str, on_progress: Optional[Callable[[float], None]] = None) -> str:
     infos = check_files(files)
     args, graph, sound, D = build(infos, layout, fmt, gap, fit, bg, length, audio)
-    cmd = [*args, "-filter_complex", graph, "-map", "[v]", *_ENC, "-r", str(FPS)]
+    cmd = [*args, "-filter_complex", graph, "-map", "[v]", *_enc(), "-r", str(FPS)]
     if sound:
         cmd += ["-map", "[a]", "-c:a", "aac", "-b:a", "192k"]
     ff.run_ffmpeg(cmd + ["-t", f"{D:.3f}", "-movflags", "+faststart", str(out_path)],

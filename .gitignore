@@ -19,6 +19,9 @@ cache/
 
 # Voix off : clé API ElevenLabs et voix Piper téléchargées (ne jamais publier)
 voix_config.json
+licence_pro.txt
+# Clé privée du vendeur de MSV Pro : jamais dans le dépôt (elle est rangée dans %APPDATA%\MSV-vendeur)
+cle_privee.txt
 modeles_voix/
 
 *.mp3
@@ -30,3 +33,7 @@ modeles_voix/
 # Vidéo de présentation : fichiers générés
 promo/build/
 promo/output/
+
+# Édition pro : FFmpeg LGPL préparé par outils/ffmpeg_lgpl.py (gros binaire, recréé à la demande)
+installer/pro/ffmpeg/
+montage_studio/EDITION

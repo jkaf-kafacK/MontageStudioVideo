@@ -165,8 +165,27 @@ def extract_embedded(path: str, track_index: int) -> list[dict]:
     return parse_srt_text(res.stdout)
 
 
+def _without_pyav() -> None:
+    """Édition pro : PyAV n'est pas installé (son FFmpeg contient x264 / x265, sous GPL). faster-whisper l'importe
+    pour lire les fichiers audio, ce que MSV ne lui demande jamais (il reçoit le son décodé par le FFmpeg de MSV,
+    load_audio_16k) : un module vide prend sa place et explique l'erreur si quelque chose essayait de s'en servir."""
+    import importlib.util
+    import sys
+    import types
+    if "av" in sys.modules or importlib.util.find_spec("av") is not None:
+        return
+
+    class _NoPyAV(types.ModuleType):
+        def __getattr__(self, name):
+            if name.startswith("__"):
+                raise AttributeError(name)
+            raise RuntimeError("PyAV n'est pas installé (édition pro, sans GPL) : MSV décode le son avec son FFmpeg.")
+    sys.modules["av"] = _NoPyAV("av")
+
+
 def whisper_available() -> bool:
     try:
+        _without_pyav()
         import faster_whisper  # noqa: F401
         return True
     except Exception:
@@ -202,27 +221,39 @@ def _cuda_libraries() -> None:
         os.environ["PATH"] = str(lib) + os.pathsep + os.environ.get("PATH", "")
 
 
-def transcribe(audio_path: str, language: str | None = "fr", model_size: str = "small", max_words: int = 3) -> list[dict]:
-    """Transcription avec minutage au mot (nécessite : pip install faster-whisper).
+def transcribe_words(audio_path: str, language: str | None = "fr", model_size: str = "small",
+                     progress=None) -> list[tuple[str, float, float]]:
+    """Mots (texte, début, fin) d'un fichier audio ou vidéo (nécessite : pip install faster-whisper).
+    progress(fraction) suit l'avancée dans le fichier.
 
     Sur la carte graphique si possible ; si ses bibliothèques CUDA manquent, sur le processeur (plus lent).
     """
+    _without_pyav()
     from faster_whisper import WhisperModel
 
     _cuda_libraries()
     audio = load_audio_16k(audio_path)
+    total = max(1e-6, len(audio) / 16000)
 
     def run(device: str, compute: str) -> list:
         model = WhisperModel(model_size, device=device, compute_type=compute)
         segments, _info = model.transcribe(audio, language=(language or None), word_timestamps=True,
                                            vad_filter=True)
-        return [(w.word.strip(), float(w.start), float(w.end))
-                for seg in segments for w in seg.words or [] if w.word.strip()]
+        out = []
+        for seg in segments:
+            out += [(w.word.strip(), float(w.start), float(w.end)) for w in seg.words or [] if w.word.strip()]
+            if progress:
+                progress(min(1.0, float(seg.end) / total))
+        return out
 
     try:
-        words = run("auto", "int8")
+        return run("auto", "int8")
     except RuntimeError as e:   # ex. « Library cublas64_12.dll is not found or cannot be loaded »
         if not re.search(r"cuda|cublas|cudnn|\.dll|\.so", str(e), re.I):
             raise
-        words = run("cpu", "int8")
-    return group_words(words, max_words=max_words)
+        return run("cpu", "int8")
+
+
+def transcribe(audio_path: str, language: str | None = "fr", model_size: str = "small", max_words: int = 3) -> list[dict]:
+    """Transcription en sous-titres, avec minutage au mot (voir transcribe_words)."""
+    return group_words(transcribe_words(audio_path, language, model_size), max_words=max_words)

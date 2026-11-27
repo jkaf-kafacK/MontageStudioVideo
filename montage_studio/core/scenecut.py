@@ -34,7 +34,9 @@ PAUSE_MARGIN = 6.0       # une pause = moins de (bruit de fond + 6 dB)
 DIGITAL_SILENCE = -90.0  # silence numérique (zéros) : ignoré pour estimer le bruit de fond
 MIN_SPLIT = 0.4          # « couper en deux » : chaque moitié dure au moins 0,2 s
 MAX_HISTORY = 30
-_ENC = ["-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p"]
+def _enc() -> list[str]:
+    """H.264 haute qualité (x264 en édition libre, encodeur sans GPL en édition pro)."""
+    return [*ff.video_args(18, "fast"), "-pix_fmt", "yuv420p"]
 
 Progress = Optional[Callable[[float], None]]
 
@@ -294,7 +296,7 @@ def export(path: str, ranges: list[tuple[float, float]], out_path: str | Path, o
         f.write(";\n".join(parts))
         script = f.name
     try:
-        args = ["-i", path, "-/filter_complex", script, "-map", "[v]", *_ENC]
+        args = ["-i", path, "-/filter_complex", script, "-map", "[v]", *_enc()]
         if audio:
             args += ["-map", "[a]", "-c:a", "aac", "-b:a", "192k"]
         ff.run_ffmpeg(args + ["-movflags", "+faststart", str(out_path)], duration=total, on_progress=on_progress)
