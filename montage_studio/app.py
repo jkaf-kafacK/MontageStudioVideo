@@ -4890,10 +4890,13 @@ def home_html(root: Path | None = None) -> str:
         recents = f"<ul>{items}</ul>"
     else:
         recents = f'<p class="acc-note">{esc(_("Aucun fichier pour l’instant : tes créations apparaîtront ici."))}</p>'
-    mode = (f'<p class="si-simple">{esc(_("Mode simple : seuls les réglages essentiels sont affichés. Les valeurs "
-                                          "par défaut sont déjà bonnes."))}</p>'
-            f'<p class="si-avance">{esc(_("Mode avancé : tous les réglages sont affichés (effets, rythme, bus "
-                                          "d’effets, encodeur…)."))}</p>'
+    # textes hors des f-strings : une expression sur plusieurs lignes dans {…} n'est acceptée qu'à partir de Python 3.12
+    simple = esc(_("Mode simple : seuls les réglages essentiels sont affichés. Les valeurs "
+                   "par défaut sont déjà bonnes."))
+    advanced = esc(_("Mode avancé : tous les réglages sont affichés (effets, rythme, bus "
+                     "d’effets, encodeur…)."))
+    mode = (f'<p class="si-simple">{simple}</p>'
+            f'<p class="si-avance">{advanced}</p>'
             f'<button type="button" class="acc-mode-btn" data-mode-toggle>'
             f'<span class="si-simple">🧩 {esc(_("Afficher tous les réglages"))}</span>'
             f'<span class="si-avance">🌱 {esc(_("Passer en mode simple"))}</span></button>')

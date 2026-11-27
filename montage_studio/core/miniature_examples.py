@@ -7,7 +7,7 @@ vidéos » de la page /miniature).
   3. chaque modèle reçoit les images qui lui conviennent (ROLES), en variant les vidéos d'un modèle à l'autre ;
   4. l'exemple est dessiné avec les textes d'exemple du modèle et rangé dans sorties/miniatures/exemples/<modèle>.jpg,
      avec ses réglages (<modèle>.json). La galerie de la page les montre à la place des illustrations de MSV.
-Sans licence MSV Pro, les exemples portent le filigrane de l'aperçu.
+Sans licence MSV Pro, les exemples portent le filigrane de l'aperçu ; sans ONNX Runtime, ils sont faits sans détourage IA.
 """
 from __future__ import annotations
 
@@ -112,7 +112,7 @@ def _is_game(item: dict) -> bool:
 
 def build(progress=None) -> dict:
     """Crée (ou recrée) les exemples de tous les modèles. -> {"dossier", "exemples": {modèle: fichier}, "videos"}."""
-    from . import miniature
+    from . import miniature, modnet
     people, scenes = collect(progress)
     if not people and not scenes:
         raise ValueError("Aucune vidéo dans la médiathèque : importe d'abord tes vidéos.")
@@ -120,6 +120,7 @@ def build(progress=None) -> dict:
     dest.mkdir(parents=True, exist_ok=True)
     used: dict = {}
     made = {}
+    cut = modnet.problem() is None          # sans ONNX Runtime (édition libre) : exemples sans détourage IA
     keys = list(miniature.TEMPLATES)
     for i, key in enumerate(keys):
         roles = ROLES.get(key, "p")[: miniature.TEMPLATES[key]["images"]]
@@ -135,7 +136,7 @@ def build(progress=None) -> dict:
                 avoid.add(it["video"])
                 imgs.append({"path": it["path"], "t": it["t"]})
         spec = {**miniature.TEMPLATES[key]["example"], "modele": key, "format": "16:9", "images": imgs}
-        img = miniature.render(spec)
+        img = miniature.render(spec, cutout=cut)
         if not licence.allowed("miniature"):
             img = miniature._watermark(img)
         f = miniature.save(img, dest / f"{key}.jpg")

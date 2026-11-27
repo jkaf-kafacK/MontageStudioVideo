@@ -298,6 +298,18 @@ def test_exemples_avec_mes_videos_et_images(client, monkeypatch):
     assert client.get("/api/miniature/exemple", params={"modele": "inconnu"}).status_code == 404
 
 
+def test_exemples_sans_onnxruntime(monkeypatch):
+    """Édition libre (ONNX Runtime absent) : les exemples sont faits sans détourage IA, au lieu d'échouer."""
+    from core import miniature_examples, modnet
+    folder = paths.MEDIA_DIR / miniature_examples.IMAGES_SUB
+    folder.mkdir()
+    Image.new("RGB", (400, 300), (40, 90, 160)).save(folder / "photo.png")
+    monkeypatch.setattr(modnet, "problem", lambda: "ONNX Runtime absent")
+    monkeypatch.setattr(modnet, "cutout", lambda im, side=0: pytest.fail("détourage IA appelé sans ONNX Runtime"))
+    res = miniature_examples.build()
+    assert len(res["exemples"]) == len(miniature.TEMPLATES)
+
+
 def test_exemples_sans_media_message_clair(monkeypatch):
     from core import miniature_examples
     with pytest.raises(ValueError, match="Aucune vidéo"):
