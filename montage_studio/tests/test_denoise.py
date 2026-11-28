@@ -54,7 +54,8 @@ def test_filtres():
     assert "afftdn" in denoise.denoise_filter("légère")
     assert denoise.MODEL.exists()
     forte = denoise.denoise_filter("forte (voix)")
-    assert forte.startswith(denoise.HIGHPASS + ",arnndn=m='") and "\\:" in forte    # « C\: » échappé pour FFmpeg
+    assert forte == denoise.HIGHPASS + ",arnndn=m=" + denoise.filter_path(denoise.MODEL)
+    assert ("\\:" in forte) == (":" in str(denoise.MODEL))      # Windows : « C\: » échappé pour FFmpeg
     assert denoise.filter_path(Path("C:/a b/l'x.rnnn")) == "'C\\:/a b/l'\\''x.rnnn'"
 
 

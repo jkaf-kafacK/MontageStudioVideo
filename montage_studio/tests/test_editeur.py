@@ -296,7 +296,8 @@ def test_montrer_une_video_exportee(client, dossiers, monkeypatch, tmp_path):
     monkeypatch.setattr(os, "startfile", lambda p: calls.append(["startfile", p]), raising=False)
     assert client.post("/api/editeur/montrer", json={"path": str(video), "action": "ouvrir"}).json() == {"ok": True}
     assert client.post("/api/editeur/montrer", json={"path": str(video), "action": "dossier"}).status_code == 200
-    assert len(calls) == 2 and str(video) in " ".join(map(str, calls[0])) and str(video) in " ".join(map(str, calls[1]))
+    shown = str(video.parent) if sys.platform.startswith("linux") else str(video)   # Linux : xdg-open ouvre le dossier
+    assert len(calls) == 2 and str(video) in " ".join(map(str, calls[0])) and shown in " ".join(map(str, calls[1]))
     ailleurs = tmp_path / "secret.mp4"
     ailleurs.write_bytes(b"0")
     assert client.post("/api/editeur/montrer", json={"path": str(ailleurs)}).status_code == 403

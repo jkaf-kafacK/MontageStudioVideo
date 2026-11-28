@@ -26,3 +26,17 @@ voix_clonees/
 
 # Modèles d'IA téléchargés au premier usage (YuNet, MODNet) : vérifiés par empreinte, jamais dans le dépôt
 modeles_vision/
+
+# Réglages personnels écrits par MSV sur cet ordinateur (core/paths.py : PRIVATE_DIR, DATA_DIR)
+barre.json
+screen_record_options.json
+charte_miniatures.json
+luts/
+# Clé secrète du serveur MCP en mode HTTP (mcp_server.py --http) : ne jamais publier
+mcp_cle.txt
+
+# Fichiers d'outils, produits en local
+.ruff_cache/
+pytest.log
+# Dossier créé par erreur (commande « python -m venv 3.12 » ou similaire)
+3.12/

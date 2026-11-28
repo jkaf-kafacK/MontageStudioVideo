@@ -176,10 +176,26 @@ def x264_args(opts, cpu: bool = False) -> list[str]:
     return video_args(crf, speed, cpu=cpu)
 
 
+@functools.lru_cache(maxsize=8)
+def filter_names(exe: str) -> frozenset:
+    """Filtres disponibles dans ce FFmpeg (`ffmpeg -filters`)."""
+    try:
+        res = subprocess.run([exe, "-hide_banner", "-filters"], capture_output=True, text=True, encoding="utf-8",
+                             errors="replace", timeout=30, **NO_WINDOW)
+    except (OSError, subprocess.TimeoutExpired):
+        return frozenset()
+    return frozenset(m.group(1) for m in re.finditer(r"^\s*[TSC.]{2,3}\s+(\w+)\s", res.stdout, re.M))
+
+
+def has_filter(name: str, exe: Optional[str] = None) -> bool:
+    return name in filter_names(exe or ffmpeg_exe())
+
+
 def pitch_filter(ratio: float, formant: bool = False) -> str:
     """Filtre audio qui change la hauteur sans changer la durée. Édition libre : Rubber Band (garde le timbre si
-    formant=True). Édition pro : rééchantillonnage + atempo (sans GPL ; le timbre suit la hauteur)."""
-    if not is_pro():
+    formant=True). Édition pro, ou FFmpeg sans Rubber Band (celui d'imageio-ffmpeg sous macOS) : rééchantillonnage
+    + atempo (sans GPL ; le timbre suit la hauteur)."""
+    if not is_pro() and has_filter("rubberband"):
         return f"rubberband=pitch={ratio:.5f}" + (":formant=preserved" if formant else "")
     return f"aresample=48000,asetrate={round(48000 * ratio)},aresample=48000,atempo={1 / ratio:.5f}"
 

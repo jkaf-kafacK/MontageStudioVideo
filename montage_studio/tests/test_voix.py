@@ -150,7 +150,7 @@ def test_son_studio_et_hauteur(tmp_path):
     brut, out = tmp_path / "brut.wav", tmp_path / "voix.wav"
     subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=f=220:d=1.5:r=22050",
                     str(brut)], check=True)
-    voice.finish_audio(brut, out, "rubberband=pitch=0.94387:formant=preserved", studio=True)
+    voice.finish_audio(brut, out, ff.pitch_filter(0.94387, formant=True), studio=True)  # Rubber Band s'il existe
     info = ff.probe(str(out))
     assert info.duration == pytest.approx(1.5, abs=0.1)             # la hauteur change, pas la durée
 

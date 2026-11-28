@@ -212,6 +212,11 @@ def tons(tmp_path_factory) -> dict:
         out[nom] = str(d / f"{nom}.wav")
         subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i",
                         f"sine=f={f}:d={dur}:sample_rate=48000", "-af", "volume=0.5", out[nom]], check=True)
+        if not ff.probe(out[nom]).has_audio:      # vu sous macOS (CI) pour B.wav : montrer ce que lit FFmpeg
+            res = subprocess.run([ff.ffmpeg_exe(), "-hide_banner", "-i", out[nom]], capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace")
+            pytest.fail(f"{nom}.wav créé sans son lisible ({Path(out[nom]).stat().st_size} octets) : "
+                        + " | ".join(res.stderr.strip().splitlines()[-6:]))
     out["bips"] = []
     for k in range(12):
         p = str(d / f"bip{k}.wav")

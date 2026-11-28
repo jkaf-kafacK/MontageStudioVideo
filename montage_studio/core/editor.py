@@ -421,8 +421,10 @@ def router() -> APIRouter:
         if body.get("action") == "dossier":
             if sys.platform == "win32":
                 subprocess.Popen(["explorer", f"/select,{p}"])
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", "-R", str(p)])                  # Finder, fichier sélectionné
             else:
-                subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", str(p.parent)])
+                subprocess.Popen(["xdg-open", str(p.parent)])              # Linux : le dossier (pas de sélection)
         elif sys.platform == "win32":
             os.startfile(str(p))                                          # noqa: S606 (fichier des dossiers de travail)
         else:

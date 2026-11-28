@@ -262,7 +262,9 @@ def test_pause_et_reprise(monkeypatch, tmp_path):
         return {"video": "x.mp4", "vertical": None, "duration": 1.0, "raw_duration": 1.0, "removed": 0.0,
                 "zooms": 0, "log": []}
 
-    monkeypatch.setattr(sr, "WINDOWS", True)
+    monkeypatch.setattr(sr, "WINDOWS", True)                # simule Windows, quel que soit le système du test
+    monkeypatch.setattr(sr, "LINUX", False)
+    monkeypatch.setattr(sr, "MAC", False)
     monkeypatch.setattr(sr, "RAW_DIR", tmp_path)
     monkeypatch.setattr(sr, "resolve_source", lambda v: (0, 0, 64, 64))
     monkeypatch.setattr(sr, "InputTracker", Suivi)

@@ -47,9 +47,18 @@ jobs:
           python -m pip install --no-deps --require-hashes --only-binary :all: -r requirements-mcp.txt
 
       - name: Lancer les tests
+        shell: bash
         env:
           PYTHONIOENCODING: utf-8
-        run: python -m pytest tests -v
+        # chaque test en échec devient une annotation (visible dans le résumé de l'exécution, sans ouvrir le journal)
+        run: |
+          set +e
+          python -m pytest tests -v -rfE 2>&1 | tee pytest.log
+          status=${PIPESTATUS[0]}
+          grep -E "^(FAILED|ERROR) " pytest.log | head -n 10 | while IFS= read -r line; do
+            echo "::error title=Test en échec::${line:0:900}"
+          done
+          exit $status
 
   securite:
     name: Audit des dépendances

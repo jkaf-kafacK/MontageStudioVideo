@@ -1,5 +1,14 @@
-# Réglages personnels de l'éditeur
+# Réglages personnels de l'éditeur et de Claude Code
 .vscode/
+.claude/settings.local.json
+
+# Secrets : certificat de signature du code (outils/signer.py), clés, variables d'environnement
+*.pfx
+*.p12
+*.pem
+*.key
+.env
+.env.*
 
 # Fichiers produits par la compilation de l'installateur
 installer/uv.exe

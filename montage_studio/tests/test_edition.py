@@ -167,8 +167,19 @@ def test_libre_garde_x264(libre):
                                                                     "-crf", "16"]
 
 
+def _skip_sans_encodeur_mac(cpu: bool) -> None:
+    """Mac virtuel de GitHub : ni VideoToolbox (pas de puce vidéo) ni OpenH264 dans le FFmpeg d'imageio-ffmpeg.
+    Un vrai Mac a VideoToolbox ; sous Windows et Linux, l'absence d'encodeur reste une erreur."""
+    if sys.platform == "darwin":
+        try:
+            ff.pro_encoder(cpu, ff.ffmpeg_exe())
+        except ff.FFmpegError:
+            pytest.skip("aucun encodeur H.264 sans GPL sur ce Mac (machine virtuelle)")
+
+
 @pytest.mark.parametrize("cpu", [False, True])
 def test_pro_encode_sans_gpl(pro, tmp_path, cpu):
+    _skip_sans_encodeur_mac(cpu)
     args = ff.video_args(20, "veryfast", cpu=cpu)
     name = args[1]
     assert name in (ff._PRO_CPU if cpu else ff._PRO_GPU + ff._PRO_CPU) and not ff.gpl_parts(args)
@@ -203,6 +214,7 @@ def test_reglages_de_chaque_encodeur():
 
 
 def test_capture_ecran_processeur_pro(pro):
+    _skip_sans_encodeur_mac(True)
     name, live, final = screenrec._cpu_encoder()
     assert live[1] in ff._PRO_CPU and final[1] in ff._PRO_CPU and name != "CPU x264"
 
@@ -227,9 +239,22 @@ def _pitch(path) -> tuple[float, float]:
 
 def test_filtre_de_hauteur(monkeypatch):
     monkeypatch.setenv("MSV_EDITION", "libre")
+    monkeypatch.setattr(ff, "has_filter", lambda name, exe=None: True)
     assert ff.pitch_filter(0.78, formant=True) == "rubberband=pitch=0.78000:formant=preserved"
     monkeypatch.setenv("MSV_EDITION", "pro")
     assert ff.pitch_filter(2.0) == "aresample=48000,asetrate=96000,aresample=48000,atempo=0.50000"
+
+
+def test_filtre_de_hauteur_sans_rubberband(monkeypatch):
+    """Édition libre avec un FFmpeg sans Rubber Band (imageio-ffmpeg sous macOS) : le filtre sans GPL est pris."""
+    monkeypatch.setenv("MSV_EDITION", "libre")
+    monkeypatch.setattr(ff, "has_filter", lambda name, exe=None: name != "rubberband")
+    assert ff.pitch_filter(2.0, formant=True) == "aresample=48000,asetrate=96000,aresample=48000,atempo=0.50000"
+
+
+def test_liste_des_filtres():
+    names = ff.filter_names(ff.ffmpeg_exe())
+    assert {"atempo", "aresample", "volume"} <= names and ff.has_filter("atempo") and not ff.has_filter("inexistant")
 
 
 @pytest.mark.parametrize("ratio", [0.78, 1.45, 2.0])
@@ -302,7 +327,8 @@ def test_effets_micro_sans_gpl(pro, tmp_path):
         assert Path(r["path"]).is_file(), preset
 
 
-def test_effets_micro_libre_inchanges(libre):
+def test_effets_micro_libre_inchanges(libre, monkeypatch):
+    monkeypatch.setattr(ff, "has_filter", lambda name, exe=None: True)   # FFmpeg avec Rubber Band
     assert audiostudio.preset_filter("voix grave") == "rubberband=pitch=0.78000:formant=preserved"
     assert audiostudio.preset_filter("alien").startswith("rubberband=pitch=1.20000,vibrato=")
     assert audiostudio.preset_filter("radio") == audiostudio.MIC_PRESETS["radio"]
@@ -487,7 +513,8 @@ def test_lanceur_choisit_l_edition(tmp_path, edition_txt, lock, venv):
     env = {**os.environ, "XDG_DATA_HOME": str(tmp_path / "data"), "UV_LOG": str(journal)}
     to_posix = lambda p: subprocess.run([bash, "-c", 'cygpath -u "$1" 2>/dev/null || echo "$1"', "_", str(p)],
                                         capture_output=True, text=True).stdout.strip()
-    subprocess.run([bash, "-c", f'chmod +x "{to_posix(uv)}" "{to_posix(ff_fake)}"; "{to_posix(ici)}/lancer_msv.sh"'],
+    launcher = f"{to_posix(ici)}/lancer_msv.sh"               # copie sans droit d'exécution : Linux et macOS l'exigent
+    subprocess.run([bash, "-c", f'chmod +x "{to_posix(uv)}" "{to_posix(ff_fake)}" "{launcher}"; "{launcher}"'],
                    env=env, check=True, capture_output=True, timeout=60)
     log = journal.read_text(encoding="utf-8")
     assert f"/{venv} " in log.splitlines()[0] or log.splitlines()[0].rstrip().endswith(f"/{venv}")

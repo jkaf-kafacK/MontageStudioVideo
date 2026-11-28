@@ -101,7 +101,9 @@ def test_export_premiere_resolve(client, pro):
     assert v1[0].find("file/pathurl").text.startswith("file://localhost/") and v1[2].find("file").get("id") == \
         v1[0].find("file").get("id")                                       # même fichier : un seul descriptif
     assert len(vtracks) == 2 and vtracks[1].find("clipitem/start").text == "6"
-    png = Path(vtracks[1].find("clipitem/file/pathurl").text.replace("file://localhost/", "").replace("%20", " "))
+    from urllib.parse import unquote, urlparse
+    url_path = unquote(urlparse(vtracks[1].find("clipitem/file/pathurl").text).path)  # « /C:/… » ou « /tmp/… »
+    png = Path(url_path[1:] if url_path[2:3] == ":" else url_path)
     im = Image.open(png)
     assert im.size == (1080, 1920) and im.mode == "RGBA" and im.getbbox() is not None and im.getpixel((0, 0))[3] == 0
     atracks = seq.findall("media/audio/track")
