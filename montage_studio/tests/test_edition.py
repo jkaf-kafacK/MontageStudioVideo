@@ -510,7 +510,8 @@ def test_lanceur_choisit_l_edition(tmp_path, edition_txt, lock, venv):
         'exec "$VENV/bin/python"', 'echo "FFMPEG=${MONTAGE_FFMPEG:-}" >> "$UV_LOG"; exec "$VENV/bin/python"')
     (ici / "lancer_msv.sh").write_text(script, encoding="utf-8", newline="\n")
     bash = shutil.which("bash")
-    env = {**os.environ, "XDG_DATA_HOME": str(tmp_path / "data"), "UV_LOG": str(journal)}
+    # dossier personnel temporaire : le lanceur n'écrit jamais dans le vrai (macOS : ~/Library/Application Support)
+    env = {**os.environ, "HOME": str(tmp_path / "home"), "XDG_DATA_HOME": str(tmp_path / "data"), "UV_LOG": str(journal)}
     to_posix = lambda p: subprocess.run([bash, "-c", 'cygpath -u "$1" 2>/dev/null || echo "$1"', "_", str(p)],
                                         capture_output=True, text=True).stdout.strip()
     launcher = f"{to_posix(ici)}/lancer_msv.sh"               # copie sans droit d'exécution : Linux et macOS l'exigent
@@ -520,7 +521,9 @@ def test_lanceur_choisit_l_edition(tmp_path, edition_txt, lock, venv):
     assert f"/{venv} " in log.splitlines()[0] or log.splitlines()[0].rstrip().endswith(f"/{venv}")
     assert f"-r {to_posix(ici)}/app/{lock}" in log or f"/app/{lock}" in log
     assert "FFMPEG=" in log and log.strip().endswith("/ffmpeg/ffmpeg")      # FFmpeg fourni utilisé
-    assert (tmp_path / "data" / "montage-studio-video" / venv / "requirements.lock").read_text() == lock
+    data = (tmp_path / "home" / "Library" / "Application Support" / "MontageStudioVideo" if sys.platform == "darwin"
+            else tmp_path / "data" / "montage-studio-video")
+    assert (data / venv / "requirements.lock").read_text() == lock
 
 
 def test_lanceur_windows_edition_pro():

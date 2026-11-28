@@ -205,10 +205,12 @@ def test_isolateur_tactile_etat():
 
 @pytest.fixture(scope="module")
 def tons(tmp_path_factory) -> dict:
-    """Sons purs : A à 440 Hz et B à 1000 Hz (4 s), G à 80 Hz (graves seuls), 12 bips courts."""
+    """Sons purs : A à 440 Hz et B à ≈ 1000 Hz (4 s), G à 80 Hz (graves seuls), 12 bips courts.
+    B n'est pas à 1000 Hz pile : à 48 kHz, sa période ferait 96 octets et le motif répété tous les 192 octets
+    ressemble à des paquets MPEG-TS ; le FFmpeg de macOS lisait alors le .wav comme une vidéo mpegts sans son."""
     d = tmp_path_factory.mktemp("tons")
     out = {}
-    for nom, f, dur in (("A", 440, 4), ("B", 1000, 4), ("G", 80, 4)):
+    for nom, f, dur in (("A", 440, 4), ("B", 1003, 4), ("G", 80, 4)):
         out[nom] = str(d / f"{nom}.wav")
         subprocess.run([ff.ffmpeg_exe(), "-y", "-loglevel", "error", "-f", "lavfi", "-i",
                         f"sine=f={f}:d={dur}:sample_rate=48000", "-af", "volume=0.5", out[nom]], check=True)

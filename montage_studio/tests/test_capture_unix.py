@@ -230,7 +230,10 @@ def test_suivi_souris_clavier_independant_du_systeme():
     tr = sr.InputTracker(lambda: events.__setitem__("stop", events["stop"] + 1),
                          lambda: events.__setitem__("pause", events["pause"] + 1), backend=FauxSysteme)
     tr.start()
-    time.sleep(1.2)
+    end = time.monotonic() + 10               # 46 relevés à 60 par seconde : bien plus long sur une machine lente (CI)
+    while events["stop"] == 0 and time.monotonic() < end:
+        time.sleep(0.05)
+    time.sleep(0.4)                           # le raccourci reste appuyé quelques relevés : pas de 2ᵉ déclenchement
     tr.stop()
     ev = tr.events()
     assert not tr.error
